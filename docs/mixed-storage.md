@@ -9,6 +9,7 @@ TiDB 目标：`v9.0.0-beta.2.pre-1854-gb1d4142f99`，完整提交
 入口是 `tidb --oracle AI_MIXED_STORAGE`，实现位于 `src/sqlancer/tidb/mixed/`。
 原始设计见 [设计归档](mixed_storage_differential_testing_oracle_design.md)。
 本次离线、真实集群与随机运行结果见 [验证记录](mixed-storage-validation.md)。
+混合路径比较和确认逻辑的修复见 [简要改动说明](mixed-storage-comparison-fix.md)。
 使用独立 SQLancer 基线是为了保留原工作目录的未提交改动，并使交付可重复构建。
 
 `TiDBMixedTarget` 校验 `TIDB_VERSION()` 的 Git Commit Hash，而不是仅相信发布名称。
