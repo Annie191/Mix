@@ -1,0 +1,74 @@
+[
+  {
+    "decision": "observe",
+    "reason": "样本共享键为1，但WHERE要求t0.k>10，先测量",
+    "goal": "获取当前版本的精确事实，再决定是否补行",
+    "expected_effect": "测量结果未知，不依据样本宣称全表覆盖",
+    "observation_requests": [
+      "j0_pairs_before",
+      "j0_pairs_after",
+      "query_empty"
+    ]
+  },
+  {
+    "decision": "append_rows",
+    "reason": "实测WHERE前1对、后0对；t1无唯一键，补12形成一对多",
+    "goal": "验证过滤后的匹配及重复匹配",
+    "expected_effect": "预期WHERE后有2对匹配及1个重复匹配键，必须重新测量",
+    "operations": [
+      {
+        "table": "t0",
+        "rows": [
+          {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            },
+            "n": {
+              "type": "decimal",
+              "value": "12.34"
+            },
+            "s": {
+              "type": "text",
+              "value": "kept"
+            },
+            "b": {
+              "type": "binary",
+              "value": "AP8="
+            }
+          }
+        ]
+      },
+      {
+        "table": "t1",
+        "rows": [
+          {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          }
+        ]
+      }
+    ],
+    "verification_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after",
+      "query_empty"
+    ],
+    "verification_limit": null
+  },
+  {
+    "decision": "stop",
+    "reason": "最新精确观测显示匹配和重复匹配已达到本实验目标",
+    "goal": "结束本次数据准备，保留当前数据",
+    "expected_effect": "不追加行；目标状态由程序观测判断",
+    "stop_reason": "最新精确观测显示匹配和重复匹配已达到本实验目标"
+  }
+]

@@ -427,6 +427,13 @@ class MixedAppendTest {
                         }
                         if (name.equals("executeQuery")) {
                             String sql = (String) args[0];
+                            if (sql.startsWith("SELECT @@tidb_snapshot")) {
+                                return MixedObservationTest.rows(new String[] { "snapshot", "engines" },
+                                        new Object[] { snapshot, engines });
+                            }
+                            if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
+                                return MixedObservationTest.rows(new String[] { "tso" }, new Object[] { "1234567" });
+                            }
                             if (sql.startsWith("SELECT DATABASE()")) {
                                 return MixedObservationTest.rows(
                                         new String[] { "db", "autocommit", "transaction_ts", "snapshot", "engines" },
@@ -447,7 +454,22 @@ class MixedAppendTest {
                                 if (failSetup && sql.endsWith("='tikv'")) {
                                     throw new SQLException("injected session setup failure", "HY000", 0);
                                 }
-                                engines = sql.contains("CONVERT") ? "tikv,tiflash" : "tikv";
+                                String value = sql.substring(sql.indexOf('=') + 1);
+                                if (value.startsWith("CONVERT(X'")) {
+                                    String hex = value.substring(10, value.indexOf('\'', 10));
+                                    java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+                                    for (int i = 0; i < hex.length(); i += 2) {
+                                        bytes.write(Integer.parseInt(hex.substring(i, i + 2), 16));
+                                    }
+                                    value = bytes.toString(java.nio.charset.StandardCharsets.UTF_8);
+                                } else {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                if (sql.contains("tidb_snapshot")) {
+                                    snapshot = value;
+                                } else {
+                                    engines = value;
+                                }
                                 return false;
                             }
                             if (sql.equals("BEGIN")) {

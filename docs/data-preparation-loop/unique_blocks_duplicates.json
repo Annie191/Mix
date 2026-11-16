@@ -1,0 +1,79 @@
+[
+  {
+    "decision": "observe",
+    "reason": "先确认已有匹配；t0主键禁止在该侧复制键",
+    "goal": "获取当前版本的精确事实，再决定是否补行",
+    "expected_effect": "测量结果未知，不依据样本宣称全表覆盖",
+    "observation_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after"
+    ]
+  },
+  {
+    "decision": "append_rows",
+    "reason": "负向模拟：忽视主键仍试图复制已有t0.k=12",
+    "goal": "验证过滤后的匹配及重复匹配",
+    "expected_effect": "错误预期：重复插入会形成2对匹配",
+    "operations": [
+      {
+        "table": "t0",
+        "rows": [
+          {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            },
+            "n": {
+              "type": "decimal",
+              "value": "12.34"
+            },
+            "s": {
+              "type": "text",
+              "value": "kept"
+            },
+            "b": {
+              "type": "binary",
+              "value": "AP8="
+            }
+          }
+        ]
+      }
+    ],
+    "verification_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after"
+    ],
+    "verification_limit": null
+  },
+  {
+    "decision": "append_rows",
+    "reason": "上轮主键冲突；改变操作表，在无唯一键的t1增加重复值",
+    "goal": "验证过滤后的匹配及重复匹配",
+    "expected_effect": "预期保留t0唯一键并得到2对匹配、1个重复键",
+    "operations": [
+      {
+        "table": "t1",
+        "rows": [
+          {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          }
+        ]
+      }
+    ],
+    "verification_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after"
+    ],
+    "verification_limit": null
+  },
+  {
+    "decision": "stop",
+    "reason": "换侧后实测覆盖达成，无需继续补行",
+    "goal": "结束本次数据准备，保留当前数据",
+    "expected_effect": "不追加行；目标状态由程序观测判断",
+    "stop_reason": "换侧后实测覆盖达成，无需继续补行"
+  }
+]

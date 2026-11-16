@@ -221,3 +221,25 @@ observationEvidence、observationSnapshot 和 availableObservations。
 完整构建及静态检查通过。
 真实验证使用目标提交的 unistore 实例，非分布式 TiFlash 验证；详细结果见
 [验证记录](mixed-storage-validation.md#可控追加行执行器回归第三环节)。
+
+## 追加：提示词与闭环行为验证（第四环节）
+
+新增 [TiDBMixedPreparationHarness](../src/sqlancer/tidb/mixed/TiDBMixedPreparationHarness.java)，
+将模拟响应、v1 协议、追加执行器和只读观测串联。每轮独立记录：
+**模型预期 → 逐行写入结果 → 当前实际观测 → 已达成／未达成／未验证**。
+
+目标由固定用例提供可测断言，只有相同查询/Schema/数据版本的 exact 事实能证明达成。
+补行后刷新观测，写入成功、模型解释、有限样本、非空结果或 stop 都不能直接算覆盖成功。
+空结果不触发自动补行；“WHERE 前有匹配、WHERE FALSE 后为空”作为保留目标通过实测验证。
+
+已失败的相同行提案在再次写入前拒绝，改 reason 或观测 ID 不算新依据；
+不同方案连续两轮无成功写入也会停止。提交不确定时终止并保持未验证，不自动重试。
+提示词同步明确上述边界。
+
+新增六份模拟脚本和 11 项离线测试，覆盖共享值被过滤、唯一键阻止重复并换侧修补、
+覆盖已足够、仅有限样本、连续约束失败及有意义的空结果，并加入误判和重试反例。
+使用实际 H2 写入/事务/探测，TiDB 元数据和会话由 fixture 模拟；未调用真实模型或接入 Oracle 自动补行。
+场景结果和逐轮证据见 [闭环验证说明](data-preparation-loop.md) 与 [运行记录](data-preparation-loop/results.json)。
+共 132 项测试，124 项通过、8 项真实集群测试预期跳过；完整构建及静态检查通过。
+本轮未重跑真实 TiDB/TiFlash，命令和反例断言见
+[验证记录](mixed-storage-validation.md#提示词与闭环行为回归第四环节)。

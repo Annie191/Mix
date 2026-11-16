@@ -67,6 +67,9 @@ class DataPreparationProtocolTest {
         assertTrue(messages.get(0).get("content").contains("空结果也应保留"));
         assertTrue(messages.get(0).get("content").contains("不得通过补数据消除已发现的差异"));
         assertTrue(messages.get(1).get("content").contains("observe、append_rows、stop"));
+        assertTrue(messages.get(1).get("content").contains("解释、写入成功、有限样本或 stop 均不能证明覆盖"));
+        assertTrue(messages.get(1).get("content").contains("不能仅因 query_result_empty=true 就强制 append_rows"));
+        assertTrue(messages.get(1).get("content").contains("改写 reason 本身不是重试依据"));
         assertEquals("req_1", JsonParser.parseString(messages.get(2).get("content")).getAsJsonObject().get("request_id")
                 .getAsString());
     }

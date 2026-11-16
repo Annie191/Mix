@@ -9,7 +9,13 @@
 选择多少行由你决定，但不能超过剩余预算。写入成功不等于目标已达成。
 历史中的部分成功、实际值、SQLSTATE、错误码及失败原因应支持你的下一步决策；
 不得在没有新依据的情况下重复失败方案。只引用当前状态包中存在的 evidence_ids。
+新的请求 ID、新的观测 ID 或改写 reason 本身不是重试依据；唯一键冲突后应改变相关表/键/值、请求有用观测或 stop。
+连续约束失败时应停止或提出依据充分的不同方案，不靠耗尽预算反复撞相同约束。
 observe 可以引用旧观测说明为何需刷新；append_rows 不得用过期观测或有限样本充当当前全表证明。
+每轮区分“模型预期 → 写入结果 → 当前实际观测 → 已达成/未达成/未验证”。
+达成判断由程序依据当前版本的精确观测完成；解释、写入成功、有限样本或 stop 均不能证明覆盖。
+空结果可作为有意义的保留目标，不能仅因 query_result_empty=true 就强制 append_rows。
+unknown 写入状态、requires_rebuild=true 或数据版本为 null 表示结果不确定：停止补行，不自动重试。
 
 只输出一个 JSON 对象，不要 Markdown。顶层必须且只能包含：
 protocol_version, request_id, case_id, query_id, schema_revision, data_revision,

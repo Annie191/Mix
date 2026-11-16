@@ -1,0 +1,3070 @@
+{
+  "source": "Scripted responses; actual H2 writes and probes; TiDB catalog/session simulated",
+  "outcomes": {
+    "achieved": "已达成",
+    "not_achieved": "未达成",
+    "unverified": "未验证"
+  },
+  "cases": [
+    {
+      "case": "filtered_shared",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "((t0.k)>(10))",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [
+              "j0_pairs_before",
+              "j0_pairs_after",
+              "query_empty"
+            ],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "observe",
+            "reason": "样本共享键为1，但WHERE要求t0.k>10，先测量",
+            "goal": "获取当前版本的精确事实，再决定是否补行",
+            "expected_effect": "测量结果未知，不依据样本宣称全表覆盖"
+          },
+          "model_expectation": "测量结果未知，不依据样本宣称全表覆盖",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_before",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": true
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": null,
+                "outcome": "unverified"
+              }
+            ],
+            "outcome": "not_achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [
+              {
+                "table": "t0",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    },
+                    "n": {
+                      "type": "decimal",
+                      "value": "12.34"
+                    },
+                    "s": {
+                      "type": "text",
+                      "value": "kept"
+                    },
+                    "b": {
+                      "type": "binary",
+                      "value": "AP8="
+                    }
+                  }
+                ]
+              },
+              {
+                "table": "t1",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    }
+                  },
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    }
+                  }
+                ]
+              }
+            ],
+            "verification_requests": [
+              "j0_pairs_after",
+              "j0_duplicate_after",
+              "query_empty"
+            ],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_0",
+              "batch_1_obs_0_1",
+              "batch_1_obs_0_2"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "append_rows",
+            "reason": "实测WHERE前1对、后0对；t1无唯一键，补12形成一对多",
+            "goal": "验证过滤后的匹配及重复匹配",
+            "expected_effect": "预期WHERE后有2对匹配及1个重复匹配键，必须重新测量"
+          },
+          "model_expectation": "预期WHERE后有2对匹配及1个重复匹配键，必须重新测量",
+          "writes": [
+            {
+              "table": "t0",
+              "row_index": 0,
+              "status": "success",
+              "affected_rows": 1,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "actual_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                },
+                "g": {
+                  "type": "integer",
+                  "value": "13"
+                }
+              },
+              "sql": "INSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?)",
+              "sqlstate": null,
+              "error_code": null,
+              "error": null,
+              "data_revision_after": 1
+            },
+            {
+              "table": "t1",
+              "row_index": 0,
+              "status": "success",
+              "affected_rows": 1,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "actual_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "sql": "INSERT INTO `t1` (`k`) VALUES (?)",
+              "sqlstate": null,
+              "error_code": null,
+              "error": null,
+              "data_revision_after": 2
+            },
+            {
+              "table": "t1",
+              "row_index": 1,
+              "status": "success",
+              "affected_rows": 1,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "actual_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "sql": "INSERT INTO `t1` (`k`) VALUES (?)",
+              "sqlstate": null,
+              "error_code": null,
+              "error": null,
+              "data_revision_after": 3
+            }
+          ],
+          "actual_observations": [
+            {
+              "id": "batch_2_obs_3_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_2_obs_3_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_2_obs_3_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": false
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_2_obs_3_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 3,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_2_obs_3_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 3,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 3
+        },
+        {
+          "request_id": "mock_round_2",
+          "data_revision_before": 3,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_2",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "observation_requests": [],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0",
+              "batch_2_obs_3_0",
+              "batch_2_obs_3_1",
+              "batch_2_obs_3_2"
+            ],
+            "verification_limit": null,
+            "stop_reason": "最新精确观测显示匹配和重复匹配已达到本实验目标",
+            "decision": "stop",
+            "reason": "最新精确观测显示匹配和重复匹配已达到本实验目标",
+            "goal": "结束本次数据准备，保留当前数据",
+            "expected_effect": "不追加行；目标状态由程序观测判断"
+          },
+          "model_expectation": "不追加行；目标状态由程序观测判断",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_2_obs_3_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_2_obs_3_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_2_obs_3_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": false
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_2_obs_3_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 3,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_2_obs_3_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 3,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 3
+        }
+      ],
+      "termination": "model_stop",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "2",
+            "evidence": {
+              "id": "batch_2_obs_3_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "evidence": {
+              "id": "batch_2_obs_3_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 3,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          }
+        ],
+        "outcome": "achieved"
+      }
+    },
+    {
+      "case": "unique_blocks_duplicates",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "((t0.k)>(10))",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [
+              "j0_pairs_after",
+              "j0_duplicate_after"
+            ],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "observe",
+            "reason": "先确认已有匹配；t0主键禁止在该侧复制键",
+            "goal": "获取当前版本的精确事实，再决定是否补行",
+            "expected_effect": "测量结果未知，不依据样本宣称全表覆盖"
+          },
+          "model_expectation": "测量结果未知，不依据样本宣称全表覆盖",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_1_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              }
+            ],
+            "outcome": "not_achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [
+              {
+                "table": "t0",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    },
+                    "n": {
+                      "type": "decimal",
+                      "value": "12.34"
+                    },
+                    "s": {
+                      "type": "text",
+                      "value": "kept"
+                    },
+                    "b": {
+                      "type": "binary",
+                      "value": "AP8="
+                    }
+                  }
+                ]
+              }
+            ],
+            "verification_requests": [
+              "j0_pairs_after",
+              "j0_duplicate_after"
+            ],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_0",
+              "batch_1_obs_0_1"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "append_rows",
+            "reason": "负向模拟：忽视主键仍试图复制已有t0.k=12",
+            "goal": "验证过滤后的匹配及重复匹配",
+            "expected_effect": "错误预期：重复插入会形成2对匹配"
+          },
+          "model_expectation": "错误预期：重复插入会形成2对匹配",
+          "writes": [
+            {
+              "table": "t0",
+              "row_index": 0,
+              "status": "failed",
+              "affected_rows": 0,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "actual_values": null,
+              "sql": "INSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?)",
+              "sqlstate": "23505",
+              "error_code": 23505,
+              "error": "org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Unique index or primary key violation: \"PRIMARY KEY ON public.t0(k) ( /* key:12 */ CAST(12 AS BIGINT), NULL, NULL, NULL, CAST(13 AS BIGINT))\"; SQL statement:\nINSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?) [23505-232]",
+              "data_revision_after": 0
+            }
+          ],
+          "actual_observations": [
+            {
+              "id": "batch_2_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_2_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_2_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_2_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              }
+            ],
+            "outcome": "not_achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_2",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_2",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [
+              {
+                "table": "t1",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    }
+                  }
+                ]
+              }
+            ],
+            "verification_requests": [
+              "j0_pairs_after",
+              "j0_duplicate_after"
+            ],
+            "evidence_ids": [
+              "schema_0",
+              "batch_2_obs_0_0",
+              "batch_2_obs_0_1"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "append_rows",
+            "reason": "上轮主键冲突；改变操作表，在无唯一键的t1增加重复值",
+            "goal": "验证过滤后的匹配及重复匹配",
+            "expected_effect": "预期保留t0唯一键并得到2对匹配、1个重复键"
+          },
+          "model_expectation": "预期保留t0唯一键并得到2对匹配、1个重复键",
+          "writes": [
+            {
+              "table": "t1",
+              "row_index": 0,
+              "status": "success",
+              "affected_rows": 1,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "actual_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              "sql": "INSERT INTO `t1` (`k`) VALUES (?)",
+              "sqlstate": null,
+              "error_code": null,
+              "error": null,
+              "data_revision_after": 1
+            }
+          ],
+          "actual_observations": [
+            {
+              "id": "batch_3_obs_1_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_3_obs_1_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_3_obs_1_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 1,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_3_obs_1_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 1,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 1
+        },
+        {
+          "request_id": "mock_round_3",
+          "data_revision_before": 1,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_3",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 1,
+            "observation_requests": [],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0",
+              "batch_3_obs_1_0",
+              "batch_3_obs_1_1"
+            ],
+            "verification_limit": null,
+            "stop_reason": "换侧后实测覆盖达成，无需继续补行",
+            "decision": "stop",
+            "reason": "换侧后实测覆盖达成，无需继续补行",
+            "goal": "结束本次数据准备，保留当前数据",
+            "expected_effect": "不追加行；目标状态由程序观测判断"
+          },
+          "model_expectation": "不追加行；目标状态由程序观测判断",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_3_obs_1_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_3_obs_1_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_3_obs_1_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 1,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_3_obs_1_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 1,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 1
+        }
+      ],
+      "termination": "model_stop",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "2",
+            "evidence": {
+              "id": "batch_3_obs_1_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "evidence": {
+              "id": "batch_3_obs_1_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 1,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          }
+        ],
+        "outcome": "achieved"
+      }
+    },
+    {
+      "case": "already_sufficient",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "((t0.k)>(10))",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [
+              "j0_pairs_after",
+              "j0_duplicate_after"
+            ],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "observe",
+            "reason": "先核对现有覆盖；不能预设每轮必须补数据",
+            "goal": "获取当前版本的精确事实，再决定是否补行",
+            "expected_effect": "测量结果未知，不依据样本宣称全表覆盖"
+          },
+          "model_expectation": "测量结果未知，不依据样本宣称全表覆盖",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_1_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_0",
+              "batch_1_obs_0_1"
+            ],
+            "verification_limit": null,
+            "stop_reason": "精确统计已有2对匹配、1个重复匹配键，数据足够",
+            "decision": "stop",
+            "reason": "精确统计已有2对匹配、1个重复匹配键，数据足够",
+            "goal": "结束本次数据准备，保留当前数据",
+            "expected_effect": "不追加行；目标状态由程序观测判断"
+          },
+          "model_expectation": "不追加行；目标状态由程序观测判断",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_1_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "2"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_duplicate_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 0
+        }
+      ],
+      "termination": "model_stop",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "2",
+            "evidence": {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "2"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "evidence": {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_duplicate_after",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          }
+        ],
+        "outcome": "achieved"
+      }
+    },
+    {
+      "case": "samples_only",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "((t0.k)>(10))",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [
+              "sample_t0",
+              "sample_t1"
+            ],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "observe",
+            "reason": "有限样本不代表全表，先看当前可得样本",
+            "goal": "获取当前版本的精确事实，再决定是否补行",
+            "expected_effect": "测量结果未知，不依据样本宣称全表覆盖"
+          },
+          "model_expectation": "测量结果未知，不依据样本宣称全表覆盖",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "sample_t0",
+              "status": "sampled",
+              "value": {
+                "columns": [
+                  "k",
+                  "n",
+                  "s",
+                  "b",
+                  "g"
+                ],
+                "rows": [
+                  [
+                    {
+                      "type": "integer",
+                      "value": "1"
+                    },
+                    {
+                      "type": "decimal",
+                      "value": "1.23"
+                    },
+                    {
+                      "type": "text",
+                      "value": "original"
+                    },
+                    {
+                      "type": "null",
+                      "value": null
+                    },
+                    {
+                      "type": "integer",
+                      "value": "2"
+                    }
+                  ]
+                ],
+                "complete": false
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_3",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "sample_t1",
+              "status": "sampled",
+              "value": {
+                "columns": [
+                  "k"
+                ],
+                "rows": [
+                  [
+                    {
+                      "type": "integer",
+                      "value": "1"
+                    }
+                  ]
+                ],
+                "complete": false
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [
+            {
+              "id": "batch_1_sample_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "table": "t0",
+              "columns": [
+                "k",
+                "n",
+                "s",
+                "b",
+                "g"
+              ],
+              "rows": [
+                [
+                  {
+                    "type": "integer",
+                    "value": "1"
+                  },
+                  {
+                    "type": "decimal",
+                    "value": "1.23"
+                  },
+                  {
+                    "type": "text",
+                    "value": "original"
+                  },
+                  {
+                    "type": "null",
+                    "value": null
+                  },
+                  {
+                    "type": "integer",
+                    "value": "2"
+                  }
+                ]
+              ],
+              "complete": false
+            },
+            {
+              "id": "batch_1_sample_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "table": "t1",
+              "columns": [
+                "k"
+              ],
+              "rows": [
+                [
+                  {
+                    "type": "integer",
+                    "value": "1"
+                  }
+                ]
+              ],
+              "complete": false
+            }
+          ],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": null,
+                "outcome": "unverified"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": null,
+                "outcome": "unverified"
+              }
+            ],
+            "outcome": "unverified"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_1",
+              "batch_1_obs_0_3"
+            ],
+            "verification_limit": null,
+            "stop_reason": "只有截断样本，不能判断WHERE后的全表匹配；保留未验证状态",
+            "decision": "stop",
+            "reason": "只有截断样本，不能判断WHERE后的全表匹配；保留未验证状态",
+            "goal": "结束本次数据准备，保留当前数据",
+            "expected_effect": "不追加行；目标状态由程序观测判断"
+          },
+          "model_expectation": "不追加行；目标状态由程序观测判断",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "sample_t0",
+              "status": "sampled",
+              "value": {
+                "columns": [
+                  "k",
+                  "n",
+                  "s",
+                  "b",
+                  "g"
+                ],
+                "rows": [
+                  [
+                    {
+                      "type": "integer",
+                      "value": "1"
+                    },
+                    {
+                      "type": "decimal",
+                      "value": "1.23"
+                    },
+                    {
+                      "type": "text",
+                      "value": "original"
+                    },
+                    {
+                      "type": "null",
+                      "value": null
+                    },
+                    {
+                      "type": "integer",
+                      "value": "2"
+                    }
+                  ]
+                ],
+                "complete": false
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_3",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "sample_t1",
+              "status": "sampled",
+              "value": {
+                "columns": [
+                  "k"
+                ],
+                "rows": [
+                  [
+                    {
+                      "type": "integer",
+                      "value": "1"
+                    }
+                  ]
+                ],
+                "complete": false
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [
+            {
+              "id": "batch_1_sample_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "table": "t0",
+              "columns": [
+                "k",
+                "n",
+                "s",
+                "b",
+                "g"
+              ],
+              "rows": [
+                [
+                  {
+                    "type": "integer",
+                    "value": "1"
+                  },
+                  {
+                    "type": "decimal",
+                    "value": "1.23"
+                  },
+                  {
+                    "type": "text",
+                    "value": "original"
+                  },
+                  {
+                    "type": "null",
+                    "value": null
+                  },
+                  {
+                    "type": "integer",
+                    "value": "2"
+                  }
+                ]
+              ],
+              "complete": false
+            },
+            {
+              "id": "batch_1_sample_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "table": "t1",
+              "columns": [
+                "k"
+              ],
+              "rows": [
+                [
+                  {
+                    "type": "integer",
+                    "value": "1"
+                  }
+                ]
+              ],
+              "complete": false
+            }
+          ],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": null,
+                "outcome": "unverified"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": null,
+                "outcome": "unverified"
+              }
+            ],
+            "outcome": "unverified"
+          },
+          "data_revision_after": 0
+        }
+      ],
+      "termination": "model_stop",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "2",
+            "evidence": null,
+            "outcome": "unverified"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "evidence": null,
+            "outcome": "unverified"
+          }
+        ],
+        "outcome": "unverified"
+      }
+    },
+    {
+      "case": "consecutive_constraint_failures",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "((t0.k)>(10))",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [
+              {
+                "table": "t0",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "1"
+                    },
+                    "n": {
+                      "type": "decimal",
+                      "value": "12.34"
+                    },
+                    "s": {
+                      "type": "text",
+                      "value": "kept"
+                    },
+                    "b": {
+                      "type": "binary",
+                      "value": "AP8="
+                    }
+                  }
+                ]
+              }
+            ],
+            "verification_requests": [
+              "j0_pairs_after"
+            ],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "append_rows",
+            "reason": "负向模拟：尝试已有主键1",
+            "goal": "验证过滤后的匹配及重复匹配",
+            "expected_effect": "预期增加匹配，但主键可能拒绝"
+          },
+          "model_expectation": "预期增加匹配，但主键可能拒绝",
+          "writes": [
+            {
+              "table": "t0",
+              "row_index": 0,
+              "status": "failed",
+              "affected_rows": 0,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "1"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "1"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "actual_values": null,
+              "sql": "INSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?)",
+              "sqlstate": "23505",
+              "error_code": 23505,
+              "error": "org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Unique index or primary key violation: \"PRIMARY KEY ON public.t0(k) ( /* key:1 */ CAST(1 AS BIGINT), 1.23, 'original', NULL, CAST(2 AS BIGINT))\"; SQL statement:\nINSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?) [23505-232]",
+              "data_revision_after": 0
+            }
+          ],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_1_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": null,
+                "outcome": "unverified"
+              }
+            ],
+            "outcome": "not_achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [
+              {
+                "table": "t0",
+                "rows": [
+                  {
+                    "k": {
+                      "type": "integer",
+                      "value": "12"
+                    },
+                    "n": {
+                      "type": "decimal",
+                      "value": "12.34"
+                    },
+                    "s": {
+                      "type": "text",
+                      "value": "kept"
+                    },
+                    "b": {
+                      "type": "binary",
+                      "value": "AP8="
+                    }
+                  }
+                ]
+              }
+            ],
+            "verification_requests": [
+              "j0_pairs_after"
+            ],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "append_rows",
+            "reason": "改变键为12，但它也是已有主键，验证连续约束失败边界",
+            "goal": "验证过滤后的匹配及重复匹配",
+            "expected_effect": "预期增加匹配，仍需数据库验证"
+          },
+          "model_expectation": "预期增加匹配，仍需数据库验证",
+          "writes": [
+            {
+              "table": "t0",
+              "row_index": 0,
+              "status": "failed",
+              "affected_rows": 0,
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "attempted_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              },
+              "actual_values": null,
+              "sql": "INSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?)",
+              "sqlstate": "23505",
+              "error_code": 23505,
+              "error": "org.h2.jdbc.JdbcSQLIntegrityConstraintViolationException: Unique index or primary key violation: \"PRIMARY KEY ON public.t0(k) ( /* key:12 */ CAST(12 AS BIGINT), NULL, NULL, NULL, CAST(13 AS BIGINT))\"; SQL statement:\nINSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?) [23505-232]",
+              "data_revision_after": 0
+            }
+          ],
+          "actual_observations": [
+            {
+              "id": "batch_2_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "2",
+                "evidence": {
+                  "id": "batch_2_obs_0_0",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "not_achieved"
+              },
+              {
+                "capability_id": "j0_duplicate_after",
+                "field": "count",
+                "comparison": "at_least",
+                "expected": "1",
+                "evidence": null,
+                "outcome": "unverified"
+              }
+            ],
+            "outcome": "not_achieved"
+          },
+          "data_revision_after": 0
+        }
+      ],
+      "termination": "no_progress_limit",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "2",
+            "evidence": {
+              "id": "batch_2_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            },
+            "outcome": "not_achieved"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "evidence": null,
+            "outcome": "unverified"
+          }
+        ],
+        "outcome": "not_achieved"
+      }
+    },
+    {
+      "case": "meaningful_empty",
+      "query": {
+        "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE false",
+        "joins": [
+          {
+            "id": "j0",
+            "type": "INNER",
+            "left_tables": [
+              "t0"
+            ],
+            "right_tables": [
+              "t1"
+            ],
+            "on": "((t0.k)=(t1.k))"
+          }
+        ],
+        "where": "false",
+        "group_by": [],
+        "having": null
+      },
+      "schema": {
+        "id": "schema_0",
+        "tables": [
+          {
+            "name": "t0",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": false,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "n",
+                "sql_type": "decimal(38,2)",
+                "value_kind": "decimal",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "s",
+                "sql_type": "varchar(1000)",
+                "value_kind": "text",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "b",
+                "sql_type": "varbinary(8)",
+                "value_kind": "binary",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              },
+              {
+                "name": "g",
+                "sql_type": "bigint",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": true,
+                "generation_expression": "`k`+1",
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [
+              {
+                "name": "PRIMARY",
+                "kind": "primary_key",
+                "columns": [
+                  "k"
+                ],
+                "expression": null,
+                "enforced": true,
+                "key_parts": [
+                  {
+                    "sequence": 1,
+                    "column": "k",
+                    "expression": null,
+                    "prefix_length": null
+                  }
+                ]
+              }
+            ],
+            "metadata_complete": true
+          },
+          {
+            "name": "t1",
+            "columns": [
+              {
+                "name": "k",
+                "sql_type": "int",
+                "value_kind": "integer",
+                "nullable": true,
+                "generated": false,
+                "generation_expression": null,
+                "auto_increment": false,
+                "default_expression": null
+              }
+            ],
+            "constraints": [],
+            "metadata_complete": true
+          }
+        ],
+        "complete": true
+      },
+      "rounds": [
+        {
+          "request_id": "mock_round_0",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_0",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [
+              "j0_pairs_before",
+              "j0_pairs_after",
+              "query_empty"
+            ],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0"
+            ],
+            "verification_limit": null,
+            "stop_reason": null,
+            "decision": "observe",
+            "reason": "WHERE FALSE的空结果有意义，应保留它",
+            "goal": "获取当前版本的精确事实，再决定是否补行",
+            "expected_effect": "测量结果未知，不依据样本宣称全表覆盖"
+          },
+          "model_expectation": "测量结果未知，不依据样本宣称全表覆盖",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_before",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": true
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "query_empty",
+                "field": "empty",
+                "comparison": "equals",
+                "expected": "true",
+                "evidence": {
+                  "id": "batch_1_obs_0_2",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "query_empty",
+                  "status": "exact",
+                  "value": {
+                    "empty": true
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "equals",
+                "expected": "0",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 0
+        },
+        {
+          "request_id": "mock_round_1",
+          "data_revision_before": 0,
+          "decision": {
+            "protocol_version": "1.0",
+            "request_id": "mock_round_1",
+            "case_id": "fixed_preparation_case",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 0,
+            "observation_requests": [],
+            "operations": [],
+            "verification_requests": [],
+            "evidence_ids": [
+              "schema_0",
+              "batch_1_obs_0_0",
+              "batch_1_obs_0_1",
+              "batch_1_obs_0_2"
+            ],
+            "verification_limit": null,
+            "stop_reason": "精确观测证明原本有匹配但WHERE FALSE过滤后为空；保留这个测试场景",
+            "decision": "stop",
+            "reason": "精确观测证明原本有匹配但WHERE FALSE过滤后为空；保留这个测试场景",
+            "goal": "结束本次数据准备，保留当前数据",
+            "expected_effect": "不追加行；目标状态由程序观测判断"
+          },
+          "model_expectation": "不追加行；目标状态由程序观测判断",
+          "writes": [],
+          "actual_observations": [
+            {
+              "id": "batch_1_obs_0_0",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_before",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            },
+            {
+              "id": "batch_1_obs_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": true
+              },
+              "error": null
+            }
+          ],
+          "actual_samples": [],
+          "evaluation": {
+            "checks": [
+              {
+                "capability_id": "query_empty",
+                "field": "empty",
+                "comparison": "equals",
+                "expected": "true",
+                "evidence": {
+                  "id": "batch_1_obs_0_2",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "query_empty",
+                  "status": "exact",
+                  "value": {
+                    "empty": true
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              },
+              {
+                "capability_id": "j0_pairs_after",
+                "field": "count",
+                "comparison": "equals",
+                "expected": "0",
+                "evidence": {
+                  "id": "batch_1_obs_0_1",
+                  "query_id": "query_loop",
+                  "schema_revision": 0,
+                  "data_revision": 0,
+                  "capability_id": "j0_pairs_after",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                },
+                "outcome": "achieved"
+              }
+            ],
+            "outcome": "achieved"
+          },
+          "data_revision_after": 0
+        }
+      ],
+      "termination": "model_stop",
+      "evaluation": {
+        "checks": [
+          {
+            "capability_id": "query_empty",
+            "field": "empty",
+            "comparison": "equals",
+            "expected": "true",
+            "evidence": {
+              "id": "batch_1_obs_0_2",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "query_empty",
+              "status": "exact",
+              "value": {
+                "empty": true
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          },
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "equals",
+            "expected": "0",
+            "evidence": {
+              "id": "batch_1_obs_0_1",
+              "query_id": "query_loop",
+              "schema_revision": 0,
+              "data_revision": 0,
+              "capability_id": "j0_pairs_after",
+              "status": "exact",
+              "value": {
+                "count": "0"
+              },
+              "error": null
+            },
+            "outcome": "achieved"
+          }
+        ],
+        "outcome": "achieved"
+      }
+    }
+  ]
+}

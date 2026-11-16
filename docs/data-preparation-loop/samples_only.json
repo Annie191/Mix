@@ -1,0 +1,19 @@
+[
+  {
+    "decision": "observe",
+    "reason": "有限样本不代表全表，先看当前可得样本",
+    "goal": "获取当前版本的精确事实，再决定是否补行",
+    "expected_effect": "测量结果未知，不依据样本宣称全表覆盖",
+    "observation_requests": [
+      "sample_t0",
+      "sample_t1"
+    ]
+  },
+  {
+    "decision": "stop",
+    "reason": "只有截断样本，不能判断WHERE后的全表匹配；保留未验证状态",
+    "goal": "结束本次数据准备，保留当前数据",
+    "expected_effect": "不追加行；目标状态由程序观测判断",
+    "stop_reason": "只有截断样本，不能判断WHERE后的全表匹配；保留未验证状态"
+  }
+]

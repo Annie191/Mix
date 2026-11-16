@@ -255,3 +255,42 @@ python3 src/check_names.py
 1 项原 TiFlash 集群测试预期跳过，0 失败、0 错误。
 完整构建、formatter、XML、Checkstyle、PMD、SpotBugs、命名检查及 git diff --check 通过。
 本次未接入真实模型或自动补行循环，也未重新运行 TiFlash 差分集成测试。
+
+## 提示词与闭环行为回归（第四环节）
+
+新增 MixedPreparationTest 的 11 项离线测试；六类固定场景使用提交的模拟响应脚本，
+其他用例验证误判、重复失败拦截和预算/不确定状态边界。
+每次模拟调用都读取实际打包提示词和最新完整状态，响应经 v1 校验；
+H2 实际执行第三环节的参数化 INSERT、逐行事务、主键约束及第二环节的探测 SQL。
+TiDB 专有会话和元数据由 fixture 模拟，不调用模型网络 API。
+
+```bash
+mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+python3 docs/data-preparation-loop/summarize.py
+git diff --check
+```
+
+| 固定场景 | 实测闭环结果 |
+|---|---|
+| 共享值被 WHERE 过滤 | 初始 1→0 对；追加 3 行后测得 2 对、1 个重复键，达成 |
+| 唯一约束阻止重复 | t0 主键冲突，未达成；改补 t1 后测得 2 对、1 个重复键，达成 |
+| 已有足够覆盖 | 精确观测达成后 stop，无写入 |
+| 仅有截断样本 | 未验证后 stop，无写入，不虚报全表事实 |
+| 连续两次约束失败 | 两次均未达成，程序在第三次模型调用前终止 |
+| 有意义的空结果 | WHERE 前有匹配、WHERE FALSE 后为 0，原查询为空；保持空结果目标达成，无写入 |
+
+额外反例断言：写入成功且模型声称达成，无验证仍为 unverified；实测不足时为 not_achieved。
+重写 reason、提供新观测 ID、改变 DECIMAL 尾随零均不能重复已失败提案；
+旧查询/Schema/数据版本、sampled/unknown/unsupported/error 不能证明目标。
+COMMIT 应答丢失后不继续观测或请求模型，目标为未验证、最终状态为 null；
+空目标列表不因逻辑上的“全称为空”被误判为达成，零调用预算不调用模型。
+
+132 项测试，124 项通过，8 项真实集群测试按环境开关预期跳过，0 失败、0 错误。
+完整构建、formatter、XML、Checkstyle、PMD、SpotBugs、命名检查及 git diff --check 通过。
+完整逐轮证据生成在 target/mixed-preparation；
+[精简运行记录](data-preparation-loop/results.json) 保留模型预期、真实写入、实际观测和每项目标判定。
+详细语义见 [闭环验证说明](data-preparation-loop.md)。
+
+本轮未重跑真实 TiDB/TiFlash，未测试真实 DeepSeek 的策略效果；
+上述结果证明固定响应下的程序语义及提示词约束已被打包，不代表真实模型一定遵循。

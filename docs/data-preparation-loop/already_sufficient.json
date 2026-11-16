@@ -1,0 +1,19 @@
+[
+  {
+    "decision": "observe",
+    "reason": "先核对现有覆盖；不能预设每轮必须补数据",
+    "goal": "获取当前版本的精确事实，再决定是否补行",
+    "expected_effect": "测量结果未知，不依据样本宣称全表覆盖",
+    "observation_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after"
+    ]
+  },
+  {
+    "decision": "stop",
+    "reason": "精确统计已有2对匹配、1个重复匹配键，数据足够",
+    "goal": "结束本次数据准备，保留当前数据",
+    "expected_effect": "不追加行；目标状态由程序观测判断",
+    "stop_reason": "精确统计已有2对匹配、1个重复匹配键，数据足够"
+  }
+]

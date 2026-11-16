@@ -4,6 +4,7 @@
 **当前尚未接入新的模型决策调用或自动反馈调度。**
 第二环节已增加 [实际元数据与只读观测](data-preparation-observations.md)，并接入 Oracle 的初始数据填充后采集。
 第三环节已增加 [可控追加行执行器](data-preparation-append-executor.md)，使用人工 JSON 计划验证，尚未自动调度补行。
+第四环节已增加 [提示词与闭环验证](data-preparation-loop.md)，用模拟响应验证完整实验流程和独立目标判定，仍未调用真实模型或接入 Oracle 自动补行。
 示例中的约束、观测和写入反馈是说明协议的人工 fixture，不是真实集群实验结果。
 
 ## 目的与职责

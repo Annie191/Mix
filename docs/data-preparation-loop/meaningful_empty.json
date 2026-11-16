@@ -1,0 +1,20 @@
+[
+  {
+    "decision": "observe",
+    "reason": "WHERE FALSE的空结果有意义，应保留它",
+    "goal": "获取当前版本的精确事实，再决定是否补行",
+    "expected_effect": "测量结果未知，不依据样本宣称全表覆盖",
+    "observation_requests": [
+      "j0_pairs_before",
+      "j0_pairs_after",
+      "query_empty"
+    ]
+  },
+  {
+    "decision": "stop",
+    "reason": "精确观测证明原本有匹配但WHERE FALSE过滤后为空；保留这个测试场景",
+    "goal": "结束本次数据准备，保留当前数据",
+    "expected_effect": "不追加行；目标状态由程序观测判断",
+    "stop_reason": "精确观测证明原本有匹配但WHERE FALSE过滤后为空；保留这个测试场景"
+  }
+]
