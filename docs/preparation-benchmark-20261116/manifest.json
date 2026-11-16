@@ -1,0 +1,30 @@
+{
+  "primary_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "primary_strategies": [
+    "RANDOM",
+    "SHARED",
+    "AI"
+  ],
+  "primary_case_count": 18,
+  "runner_jar_sha256": "c86202d12b10bf3a69b50d93b2d2e1e2733a6e525e764949cace4d76e75eac97",
+  "oracle_runner_jar_sha256": "842df9608810376a8f52e3d7c37fede86e6dfe94694e9423afd500cfca2200ef",
+  "records_json_gz_sha256": "3f7745093f0e1280c8e44cf96f47b432467b59778bb0d358c33c2573fca0bf8f",
+  "records_json_sha256": "7c16e179811b31a2ef1021d2fc295044905cce8d4e9715b384fe3d7e8d2bfe00",
+  "target_tidb_commit": "b1d4142f99a606aa3cd1ada6ee0caebaa84226dc",
+  "source_base_commit": "0f8fe41a53e942d3b2c82216675234df3266467e",
+  "primary_runner_scope": "Primary used BIGINT (no ZEROFILL); final source additionally canonicalizes integer observation strings after an Oracle smoke failure",
+  "aborted_reason": "Maven replaced a jar while an experiment JVM was reading prompt resources; reran the complete seed set from an immutable jar",
+  "preliminary_counts": {
+    "exploratory_smoke": 1,
+    "aborted_build_overlap": 7,
+    "oracle_before_zerofill_fix": 1,
+    "oracle_smoke": 1
+  }
+}

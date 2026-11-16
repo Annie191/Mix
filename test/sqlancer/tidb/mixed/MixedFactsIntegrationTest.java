@@ -43,6 +43,40 @@ class MixedFactsIntegrationTest {
     Path artifacts;
 
     @Test
+    void zeroFillAndUnsignedIntegersProduceProtocolCompatibleExactSamples() throws Exception {
+        try (Live fixture = new Live()) {
+            // Fixture deliberately exercises deprecated formatting; keep production Warning rejection intact.
+            try (Statement setup = fixture.connection.createStatement()) {
+                setup.execute("CREATE TABLE t0(k SMALLINT(5) UNSIGNED ZEROFILL)");
+                for (java.sql.SQLWarning warning = setup.getWarnings(); warning != null; warning = warning
+                        .getNextWarning()) {
+                    assertEquals(1681, warning.getErrorCode());
+                }
+            }
+            fixture.io.exec("CREATE TABLE t1(k BIGINT UNSIGNED)");
+            fixture.io.exec("INSERT INTO t0 VALUES(0),(12),(65535)");
+            fixture.io.exec("INSERT INTO t1 VALUES(18446744073709551615)");
+            fixture.state.updateSchema();
+            Candidate query = MixedObservationTest.candidate(fixture.state.getSchema().getDatabaseTables(),
+                    TiDBJoin.JoinType.LEFT, TiDBComparisonOperator.EQUALS, false);
+            TiDBMixedObservations facts = new TiDBMixedObservations(query, "zerofill_q", 0, 0);
+            facts.collect(fixture.io, List.of("sample_t0", "sample_t1"),
+                    new TiDBMixedObservations.Budget(10, 64, 60_000));
+            JsonObject metadata = TiDBMixedMetadata.collect(fixture.io, fixture.database, query.tables, 0).schema;
+            JsonObject budget = JsonParser
+                    .parseString("{\"model_calls\":1,\"probe_requests\":10,\"insert_rows\":6,\"time_ms\":5000}")
+                    .getAsJsonObject();
+            JsonObject packet = facts.statePacket("zerofill_req", fixture.database, metadata, new JsonArray(), budget);
+            assertEquals(packet, TiDBDataPreparationProtocol.state(packet.toString()));
+            java.util.Set<String> values = new java.util.HashSet<>();
+            facts.samples.forEach(sample -> sample.getAsJsonObject().getAsJsonArray("rows").forEach(
+                    row -> values.add(row.getAsJsonArray().get(0).getAsJsonObject().get("value").getAsString())));
+            assertEquals(java.util.Set.of("0", "12", "65535", "18446744073709551615"), values);
+            TiDBMixedSupport.save(artifacts.resolve("actual-zerofill-state.json"), packet);
+        }
+    }
+
+    @Test
     void actualGeneratedColumnsDefaultsCompositeKeysPrefixKeysAndChecksArePreserved() throws Exception {
         try (Live fixture = new Live()) {
             String previous = fixture.io.textRows("SELECT @@global.tidb_enable_check_constraint AS enabled").get(0)

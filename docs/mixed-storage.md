@@ -10,10 +10,11 @@ TiDB 目标：`v9.0.0-beta.2.pre-1854-gb1d4142f99`，完整提交
 原始设计见 [设计归档](mixed_storage_differential_testing_oracle_design.md)。
 本次离线、真实集群与随机运行结果见 [验证记录](mixed-storage-validation.md)。
 混合路径比较和确认逻辑的修复见 [简要改动说明](mixed-storage-comparison-fix.md)。
-AI 数据准备闭环的第一环节见 [协议与提示词 v1.0](data-preparation-protocol.md)；当前尚未接入运行调度。
-第二环节的 [实际元数据与只读观测](data-preparation-observations.md) 已接入初始填充后的事实采集，尚未执行 AI 补行。
-第三环节的 [可控追加行执行器](data-preparation-append-executor.md) 已通过人工 JSON 计划验证，尚未接入真实模型或自动补行调度。
+AI 数据准备闭环的第一环节见 [协议与提示词 v1.0](data-preparation-protocol.md)。
+第二环节的 [实际元数据与只读观测](data-preparation-observations.md) 接入初始填充后的事实采集。
+第三环节的 [可控追加行执行器](data-preparation-append-executor.md) 通过人工 JSON 计划验证。
 第四环节的 [提示词与闭环验证](data-preparation-loop.md) 使用模拟响应覆盖六类固定场景，分别记录预期、写入、观测和目标状态。
+第五环节的 [真实 DeepSeek 联调与策略对照](data-preparation-benchmark.md) 提供实际客户端、Oracle 开关、同种子运行器及数据/引擎两套覆盖指标。
 使用独立 SQLancer 基线是为了保留原工作目录的未提交改动，并使交付可重复构建。
 
 `TiDBMixedTarget` 校验 `TIDB_VERSION()` 的 Git Commit Hash，而不是仅相信发布名称。

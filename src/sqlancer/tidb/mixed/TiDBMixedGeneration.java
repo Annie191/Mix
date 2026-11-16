@@ -168,13 +168,9 @@ public final class TiDBMixedGeneration {
         return new Candidate(select, selected, guidedColumns);
     }
 
-    public static Map<String, Object> fill(TiDBGlobalState state, Candidate query, TiDBDeepSeekAdvisor.Profile profile,
-            TiDBMixedSupport io) throws Exception {
-        List<TiDBExpression> sharedPool = new ArrayList<>();
-        for (int i = 0; i < 5; i++) {
-            sharedPool.add(TiDBConstant.createIntConstant(state.getRandomly().getInteger(0, 100)));
-        }
-        BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> policy = (column, original) -> {
+    public static BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> valuePolicy(Candidate query,
+            TiDBDeepSeekAdvisor.Profile profile, List<TiDBExpression> sharedPool) {
+        return (column, original) -> {
             if (profile == TiDBDeepSeekAdvisor.Profile.NULL_HEAVY && column.isNullable() && Randomly.getBoolean()) {
                 return TiDBConstant.createNullConstant();
             }
@@ -184,6 +180,15 @@ public final class TiDBMixedGeneration {
             }
             return original;
         };
+    }
+
+    public static Map<String, Object> fill(TiDBGlobalState state, Candidate query, TiDBDeepSeekAdvisor.Profile profile,
+            TiDBMixedSupport io) throws Exception {
+        List<TiDBExpression> sharedPool = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            sharedPool.add(TiDBConstant.createIntConstant(state.getRandomly().getInteger(0, 100)));
+        }
+        BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> policy = valuePolicy(query, profile, sharedPool);
         int attempted = 0;
         int successful = 0;
         for (TiDBTable table : baseTables(state)) {

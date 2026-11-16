@@ -1,0 +1,352 @@
+{
+  "RANDOM": {
+    "cases": 6,
+    "completed_cases": 6,
+    "append_plans_proposed": 6,
+    "append_plans_executed": 6,
+    "append_goals_achieved": 2,
+    "append_goals_not_achieved": 4,
+    "append_goals_unverified": 0,
+    "responses_accepted": 12,
+    "responses_rejected": 0,
+    "rows_success": 36,
+    "rows_failed": 0,
+    "rows_unknown": 0,
+    "rows_not_attempted": 0,
+    "rows_without_new_scene": 0,
+    "rows_gain_unverified": 0,
+    "productive_append_rounds": 6,
+    "repeated_failure_rejections": 0,
+    "final_goals_achieved": 2,
+    "final_goals_not_achieved": 4,
+    "final_goals_unverified": 0,
+    "new_observed_scene_hits": 15,
+    "new_effective_scene_hits": 12,
+    "lost_scene_hits": 1,
+    "engine_paths_attempted": 24,
+    "engine_paths_valid": 20,
+    "engine_all_paths_valid_cases": 5,
+    "api_calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "preparation_elapsed_ms": 14688,
+    "total_elapsed_ms": 159377,
+    "new_scene_buckets": [
+      "j0_left_unmatched",
+      "j0_pairs_after",
+      "j0_right_repeated",
+      "j0_right_unmatched",
+      "nulls_present_t0.k",
+      "nulls_present_t1.k"
+    ],
+    "engine_ratio_buckets": {
+      "tables=2;tikv=2;tiflash=0": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      },
+      "tables=2;tikv=1;tiflash=1": {
+        "attempted": 12,
+        "valid": 10,
+        "failed": 2
+      },
+      "tables=2;tikv=0;tiflash=2": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      }
+    },
+    "engine_join_buckets": {
+      "tables=2;type=INNER;left=tikv;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tikv;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=LEFT;left=tikv;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tikv;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      }
+    },
+    "known_estimated_usd": 0,
+    "cost_complete": true,
+    "plan_execution_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "ratio": 1.0
+    },
+    "verifiable_append_goal_rate": {
+      "numerator": 2,
+      "denominator": 6,
+      "ratio": 0.3333333333333333
+    },
+    "final_case_goal_rate": {
+      "numerator": 2,
+      "denominator": 6,
+      "ratio": 0.3333333333333333
+    }
+  },
+  "SHARED": {
+    "cases": 6,
+    "completed_cases": 6,
+    "append_plans_proposed": 6,
+    "append_plans_executed": 6,
+    "append_goals_achieved": 2,
+    "append_goals_not_achieved": 4,
+    "append_goals_unverified": 0,
+    "responses_accepted": 12,
+    "responses_rejected": 0,
+    "rows_success": 36,
+    "rows_failed": 0,
+    "rows_unknown": 0,
+    "rows_not_attempted": 0,
+    "rows_without_new_scene": 0,
+    "rows_gain_unverified": 0,
+    "productive_append_rounds": 6,
+    "repeated_failure_rejections": 0,
+    "final_goals_achieved": 2,
+    "final_goals_not_achieved": 4,
+    "final_goals_unverified": 0,
+    "new_observed_scene_hits": 16,
+    "new_effective_scene_hits": 13,
+    "lost_scene_hits": 2,
+    "engine_paths_attempted": 24,
+    "engine_paths_valid": 20,
+    "engine_all_paths_valid_cases": 5,
+    "api_calls": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "preparation_elapsed_ms": 14895,
+    "total_elapsed_ms": 207595,
+    "new_scene_buckets": [
+      "j0_left_unmatched",
+      "j0_pairs_after",
+      "j0_right_unmatched",
+      "nulls_present_t0.v"
+    ],
+    "engine_ratio_buckets": {
+      "tables=2;tikv=2;tiflash=0": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      },
+      "tables=2;tikv=1;tiflash=1": {
+        "attempted": 12,
+        "valid": 10,
+        "failed": 2
+      },
+      "tables=2;tikv=0;tiflash=2": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      }
+    },
+    "engine_join_buckets": {
+      "tables=2;type=INNER;left=tikv;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tikv;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=LEFT;left=tikv;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tikv;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      }
+    },
+    "known_estimated_usd": 0,
+    "cost_complete": true,
+    "plan_execution_rate": {
+      "numerator": 6,
+      "denominator": 6,
+      "ratio": 1.0
+    },
+    "verifiable_append_goal_rate": {
+      "numerator": 2,
+      "denominator": 6,
+      "ratio": 0.3333333333333333
+    },
+    "final_case_goal_rate": {
+      "numerator": 2,
+      "denominator": 6,
+      "ratio": 0.3333333333333333
+    }
+  },
+  "AI": {
+    "cases": 6,
+    "completed_cases": 6,
+    "append_plans_proposed": 5,
+    "append_plans_executed": 3,
+    "append_goals_achieved": 3,
+    "append_goals_not_achieved": 2,
+    "append_goals_unverified": 0,
+    "responses_accepted": 7,
+    "responses_rejected": 2,
+    "rows_success": 15,
+    "rows_failed": 0,
+    "rows_unknown": 0,
+    "rows_not_attempted": 0,
+    "rows_without_new_scene": 0,
+    "rows_gain_unverified": 0,
+    "productive_append_rounds": 3,
+    "repeated_failure_rejections": 0,
+    "final_goals_achieved": 4,
+    "final_goals_not_achieved": 2,
+    "final_goals_unverified": 0,
+    "new_observed_scene_hits": 12,
+    "new_effective_scene_hits": 12,
+    "lost_scene_hits": 2,
+    "engine_paths_attempted": 24,
+    "engine_paths_valid": 20,
+    "engine_all_paths_valid_cases": 5,
+    "api_calls": 9,
+    "prompt_tokens": 67123,
+    "completion_tokens": 5433,
+    "preparation_elapsed_ms": 43509,
+    "total_elapsed_ms": 218641,
+    "new_scene_buckets": [
+      "j0_duplicate_after",
+      "j0_left_repeated",
+      "j0_left_unmatched",
+      "j0_pairs_after",
+      "j0_right_unmatched",
+      "nulls_present_t0.k",
+      "nulls_present_t1.k"
+    ],
+    "engine_ratio_buckets": {
+      "tables=2;tikv=2;tiflash=0": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      },
+      "tables=2;tikv=1;tiflash=1": {
+        "attempted": 12,
+        "valid": 10,
+        "failed": 2
+      },
+      "tables=2;tikv=0;tiflash=2": {
+        "attempted": 6,
+        "valid": 5,
+        "failed": 1
+      }
+    },
+    "engine_join_buckets": {
+      "tables=2;type=INNER;left=tikv;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tikv;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tikv": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=INNER;left=tiflash;right=tiflash": {
+        "attempted": 5,
+        "valid": 4,
+        "failed": 1
+      },
+      "tables=2;type=LEFT;left=tikv;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tikv;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tikv": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      },
+      "tables=2;type=LEFT;left=tiflash;right=tiflash": {
+        "attempted": 1,
+        "valid": 1,
+        "failed": 0
+      }
+    },
+    "known_estimated_usd": 0.01125849,
+    "cost_complete": true,
+    "plan_execution_rate": {
+      "numerator": 3,
+      "denominator": 5,
+      "ratio": 0.6
+    },
+    "verifiable_append_goal_rate": {
+      "numerator": 3,
+      "denominator": 5,
+      "ratio": 0.6
+    },
+    "final_case_goal_rate": {
+      "numerator": 4,
+      "denominator": 6,
+      "ratio": 0.6666666666666666
+    }
+  }
+}

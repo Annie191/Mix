@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ public final class TiDBMixedPreparationHarness {
     private final int failureLimit;
     private final JsonArray rounds = new JsonArray();
     private final JsonObject packet;
+    private List<String> verificationFloor = List.of();
     private int batch;
     private int failedRounds;
     private boolean used;
@@ -92,6 +94,30 @@ public final class TiDBMixedPreparationHarness {
         return packet.getAsJsonObject("remaining_budget").get(key).getAsLong();
     }
 
+    public void verificationFloor(List<String> ids) {
+        if (used || ids.stream().distinct().count() != ids.size()) {
+            throw new IllegalArgumentException("set a unique verification floor before running");
+        }
+        List<String> available = new ArrayList<>();
+        packet.getAsJsonArray("available_observations")
+                .forEach(e -> available.add(e.getAsJsonObject().get("id").getAsString()));
+        if (!available.containsAll(ids)) {
+            throw new IllegalArgumentException("unavailable verification floor");
+        }
+        verificationFloor = List.copyOf(ids);
+    }
+
+    private JsonArray verification(JsonObject plan) {
+        java.util.Set<String> ids = new LinkedHashSet<>(verificationFloor);
+        plan.getAsJsonArray("verification_requests").forEach(id -> ids.add(id.getAsString()));
+        if (ids.size() > budget("probe_requests")) {
+            throw new IllegalArgumentException("verification floor exceeds remaining probe budget");
+        }
+        JsonArray requests = new JsonArray();
+        ids.forEach(requests::add);
+        return requests;
+    }
+
     private void budget(String key, long value) {
         packet.getAsJsonObject("remaining_budget").addProperty(key, Math.max(0, value));
     }
@@ -153,6 +179,9 @@ public final class TiDBMixedPreparationHarness {
         JsonObject feedback = executor.execute(plan.toString(), packet);
         round.add("append_feedback", feedback);
         round.add("writes", feedback.get("writes").deepCopy());
+        if (!feedback.get("failure_reason").isJsonNull()) {
+            round.add("failure_reason", feedback.get("failure_reason"));
+        }
         uncertain = feedback.get("requires_rebuild").getAsBoolean();
         boolean changed = false;
         for (JsonElement entry : feedback.getAsJsonArray("writes")) {
@@ -170,7 +199,7 @@ public final class TiDBMixedPreparationHarness {
         packet.add("samples", new JsonArray());
         if (!uncertain) {
             packet.add("data_revision", feedback.get("data_revision_after"));
-            observe(plan.getAsJsonArray("verification_requests"), round);
+            observe(verification(plan), round);
         }
     }
 
@@ -243,6 +272,7 @@ public final class TiDBMixedPreparationHarness {
                 round.add("decision", JsonNull.INSTANCE);
                 round.add("failure_reason", JsonNull.INSTANCE);
                 round.add("data_revision_before", packet.get("data_revision"));
+                JsonObject coverageBefore = TiDBMixedDataCoverage.snapshot(packet);
                 long started = System.nanoTime();
                 long timeBefore = budget("time_ms");
                 long callsBefore = budget("model_calls");
@@ -255,6 +285,7 @@ public final class TiDBMixedPreparationHarness {
                     round.add("model_expectation", plan.get("expected_effect"));
                     if (plan.get("decision").getAsString().equals("append_rows")) {
                         rejectRepeatedFailure(plan);
+                        verification(plan);
                     }
                     round.addProperty("validation_status", "accepted");
                 } catch (IllegalArgumentException invalid) {
@@ -280,6 +311,10 @@ public final class TiDBMixedPreparationHarness {
                 budget("time_ms", Math.min(budget("time_ms"), Math.max(0, timeBefore - elapsed)));
                 round.add("actual_observations", packet.get("observations").deepCopy());
                 round.add("actual_samples", packet.get("samples").deepCopy());
+                JsonObject coverageAfter = TiDBMixedDataCoverage.snapshot(packet);
+                round.add("data_coverage_before", coverageBefore);
+                round.add("data_coverage_after", coverageAfter);
+                round.add("data_coverage_change", TiDBMixedDataCoverage.difference(coverageBefore, coverageAfter));
                 JsonArray observationIds = new JsonArray();
                 packet.getAsJsonArray("observations")
                         .forEach(entry -> observationIds.add(entry.getAsJsonObject().get("id")));

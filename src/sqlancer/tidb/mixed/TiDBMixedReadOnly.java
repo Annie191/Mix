@@ -1,6 +1,7 @@
 package sqlancer.tidb.mixed;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -42,7 +43,8 @@ final class TiDBMixedReadOnly {
         case Types.INTEGER:
         case Types.BIGINT:
             cell.addProperty("type", "integer");
-            cell.addProperty("value", text);
+            // MySQL/TiDB ZEROFILL getString() can include leading zeroes; the protocol uses canonical integers.
+            cell.addProperty("value", new BigInteger(text).toString());
             break;
         case Types.DECIMAL:
         case Types.NUMERIC:

@@ -9,6 +9,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
 import sqlancer.common.oracle.TestOracle;
@@ -149,7 +153,9 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
     @Override
     public void check() throws Exception {
         TiDBMixedSupport io = new TiDBMixedSupport(state);
-        TiDBDeepSeekAdvisor ai = TiDBDeepSeekAdvisor.fromEnvironment();
+        boolean closedLoop = "DEEPSEEK".equalsIgnoreCase(System.getenv("MS_DATA_PREPARATION"));
+        TiDBDeepSeekAdvisor ai = closedLoop ? new TiDBDeepSeekAdvisor(null, "disabled-during-preparation", 0)
+                : TiDBDeepSeekAdvisor.fromEnvironment();
         Path directory = Path.of(System.getenv().getOrDefault("MS_ARTIFACT_DIR", "logs/mixed"),
                 state.getDatabaseName() + "_" + UUID.randomUUID());
         Map<String, Object> report = new LinkedHashMap<>();
@@ -206,8 +212,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 }
                 Advice dataAdvice = ai.suggest(Stage.DATA,
                         Map.of("sql", query.sql, "schema", schema, "guidedColumns", query.guidedColumns));
-                Profile profile = dataAdvice.action == Action.SET_PROFILE ? dataAdvice.profile
-                        : Randomly.fromOptions(Profile.values());
+                Profile profile = closedLoop ? Profile.RANDOM : dataAdvice.action == Action.SET_PROFILE
+                        ? dataAdvice.profile : Randomly.fromOptions(Profile.values());
                 record.put("dataGeneration", TiDBMixedGeneration.fill(state, query, profile, io));
                 TiDBMixedMetadata actualMetadata = TiDBMixedMetadata.collect(io, state.getDatabaseName(), query.tables,
                         revision);
@@ -227,6 +233,35 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     record.put("observationEvidence", facts.audit);
                     record.put("availableObservations", facts.available());
                     record.put("observationSnapshot", facts.snapshot);
+                }
+                if (closedLoop) {
+                    JsonObject budget = JsonParser
+                            .parseString(
+                                    "{\"model_calls\":3,\"probe_requests\":96,\"insert_rows\":6,\"time_ms\":120000}")
+                            .getAsJsonObject();
+                    JsonObject packet = facts.statePacket("prepare_" + revision,
+                            state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
+                    TiDBDeepSeekPreparationClient client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
+                    record.put("preparationApiAudit", client.audit);
+                    TiDBMixedPreparationHarness preparationLoop = new TiDBMixedPreparationHarness(state, query, packet,
+                            List.of(), 10_000, 64, 2);
+                    preparationLoop.verificationFloor(TiDBMixedDataCoverage.measurementIds(facts));
+                    JsonObject prepared = preparationLoop.run(client);
+                    record.put("dataPreparation", prepared);
+                    if (prepared.get("requires_rebuild").getAsBoolean()) {
+                        throw new Rejected("PREPARATION_UNCERTAIN", "append outcome requires rebuilding data");
+                    }
+                    TiDBMixedObservations after = new TiDBMixedObservations(query, "query_" + revision, revision,
+                            prepared.getAsJsonObject("final_state").get("data_revision").getAsLong());
+                    after.collect(io, after.allIds(), new TiDBMixedObservations.Budget(64, 64, 10_000));
+                    JsonObject afterPacket = after.statePacket("measured_" + revision,
+                            packet.get("case_id").getAsString(), actualMetadata.schema, new JsonArray(), budget);
+                    record.put("postPreparationObservations", after.observations);
+                    record.put("postPreparationEvidence", after.audit);
+                    record.put("dataCoverageBefore", TiDBMixedDataCoverage.snapshot(packet));
+                    record.put("dataCoverageAfter", TiDBMixedDataCoverage.snapshot(afterPacket));
+                    record.put("dataCoverageChange", TiDBMixedDataCoverage.difference(
+                            TiDBMixedDataCoverage.snapshot(packet), TiDBMixedDataCoverage.snapshot(afterPacket)));
                 }
                 List<String> dump = io.dump(query.tables);
                 record.put("restoreStatements", dump);

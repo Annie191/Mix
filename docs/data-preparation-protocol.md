@@ -1,10 +1,11 @@
 # AI 数据准备协议与提示词 v1.0
 
 第一环节交付：协议、提示词、可执行的格式校验和完整交互示例。
-**当前尚未接入新的模型决策调用或自动反馈调度。**
+当前运行入口和真实对照结果见 [第五环节](data-preparation-benchmark.md)。以下按交付顺序列出各阶段：
 第二环节已增加 [实际元数据与只读观测](data-preparation-observations.md)，并接入 Oracle 的初始数据填充后采集。
-第三环节已增加 [可控追加行执行器](data-preparation-append-executor.md)，使用人工 JSON 计划验证，尚未自动调度补行。
-第四环节已增加 [提示词与闭环验证](data-preparation-loop.md)，用模拟响应验证完整实验流程和独立目标判定，仍未调用真实模型或接入 Oracle 自动补行。
+第三环节增加 [可控追加行执行器](data-preparation-append-executor.md)，当时使用人工 JSON 计划验证。
+第四环节增加 [提示词与闭环验证](data-preparation-loop.md)，用模拟响应验证完整实验流程和独立目标判定。
+第五环节已增加 [真实 DeepSeek 与配对实验](data-preparation-benchmark.md)；设置 MS_DATA_PREPARATION=DEEPSEEK 可接入 Oracle 补行，其数据目标评价与差分缺陷判定独立。
 示例中的约束、观测和写入反馈是说明协议的人工 fixture，不是真实集群实验结果。
 
 ## 目的与职责
