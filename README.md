@@ -1,3 +1,14 @@
+# Mix: SQLancer TiDB 混合存储差分测试
+
+新增 `tidb --oracle AI_MIXED_STORAGE`，面向 TiDB
+`v9.0.0-beta.2.pre-1854-gb1d4142f99`（源码提交 `b1d4142f99a606aa3cd1ada6ee0caebaa84226dc`）。
+在同一数据、同一查询、共同快照下，对比 TiKV-only、TiFlash-only 和两组逐表混合引擎分配。
+
+构建、运行、DeepSeek 可选建议、证据格式和无模型重放见 **[混合存储 Oracle 使用说明](docs/mixed-storage.md)**。
+实现基于 SQLancer 官方提交 `a513c87781ed879e5aae6bc78f8b6c6056bd7a99`；下文保留上游项目介绍。
+
+---
+
 [![Build Status](https://github.com/sqlancer/sqlancer/workflows/ci/badge.svg)](https://github.com/sqlancer/sqlancer/actions)
 
 

@@ -113,6 +113,12 @@ public class TiDBProvider extends SQLProviderAdapter<TiDBGlobalState, TiDBOption
 
     @Override
     public void generateDatabase(TiDBGlobalState globalState) throws Exception {
+        if (globalState.getDbmsSpecificOptions().oracle.contains(TiDBOracleFactory.AI_MIXED_STORAGE)) {
+            validateMixedOptions(globalState);
+            new sqlancer.tidb.mixed.TiDBMixedSupport(globalState).initialize();
+            sqlancer.tidb.mixed.TiDBMixedGeneration.createEmptySchema(globalState);
+            return; // Query and INSERT generation are scheduled by the new oracle.
+        }
         for (int i = 0; i < Randomly.fromOptions(1, 2); i++) {
             boolean success;
             do {
@@ -172,6 +178,8 @@ public class TiDBProvider extends SQLProviderAdapter<TiDBGlobalState, TiDBOption
 
     @Override
     public SQLConnection createDatabase(TiDBGlobalState globalState) throws SQLException {
+        // Reject incompatible options before opening a connection or changing global variables.
+        validateMixedOptions(globalState);
         String host = globalState.getOptions().getHost();
         int port = globalState.getOptions().getPort();
         if (host == null) {
@@ -203,6 +211,20 @@ public class TiDBProvider extends SQLProviderAdapter<TiDBGlobalState, TiDBOption
         con = DriverManager.getConnection(url + databaseName, globalState.getOptions().getUserName(),
                 globalState.getOptions().getPassword());
         return new SQLConnection(con);
+    }
+
+    private static void validateMixedOptions(TiDBGlobalState globalState) {
+        if (!globalState.getDbmsSpecificOptions().oracle.contains(TiDBOracleFactory.AI_MIXED_STORAGE)) {
+            return;
+        }
+        if (globalState.getDbmsSpecificOptions().oracle.size() != 1) {
+            throw new IllegalArgumentException("AI_MIXED_STORAGE must run alone");
+        }
+        if (globalState.getOptions().enableQPG() || globalState.getDbmsSpecificOptions().nonPreparePlanCache
+                || globalState.getOptions().testOnlyWithMoreThanZeroRows()) {
+            throw new IllegalArgumentException("AI_MIXED_STORAGE requires QPG, global plan-cache mutation, "
+                    + "and the nonempty-table precondition disabled");
+        }
     }
 
     @Override

@@ -16,6 +16,12 @@ import sqlancer.tidb.oracle.TiDBDQPOracle;
 import sqlancer.tidb.oracle.TiDBTLPHavingOracle;
 
 public enum TiDBOracleFactory implements OracleFactory<TiDBProvider.TiDBGlobalState> {
+    AI_MIXED_STORAGE {
+        @Override
+        public TestOracle<TiDBProvider.TiDBGlobalState> create(TiDBProvider.TiDBGlobalState state) {
+            return new sqlancer.tidb.mixed.TiDBAiMixedOracle(state);
+        }
+    },
     HAVING {
         @Override
         public TestOracle<TiDBProvider.TiDBGlobalState> create(TiDBProvider.TiDBGlobalState globalState)

@@ -2,6 +2,7 @@ package sqlancer.tidb.gen;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import sqlancer.Randomly;
@@ -12,6 +13,7 @@ import sqlancer.tidb.TiDBExpressionGenerator;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBColumn;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
+import sqlancer.tidb.ast.TiDBExpression;
 import sqlancer.tidb.visitor.TiDBVisitor;
 
 public class TiDBInsertGenerator {
@@ -19,6 +21,14 @@ public class TiDBInsertGenerator {
     private final TiDBGlobalState globalState;
     private final ExpectedErrors errors = new ExpectedErrors();
     private TiDBExpressionGenerator gen;
+    private BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> valuePolicy = (c, v) -> v;
+
+    public static SQLQueryAdapter getQuery(TiDBGlobalState state, TiDBTable table,
+            BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> policy) {
+        TiDBInsertGenerator generator = new TiDBInsertGenerator(state);
+        generator.valuePolicy = policy;
+        return generator.get(table);
+    }
 
     public TiDBInsertGenerator(TiDBGlobalState globalState) {
         this.globalState = globalState;
@@ -84,7 +94,8 @@ public class TiDBInsertGenerator {
                 if (i++ != 0) {
                     sb.append(", ");
                 }
-                sb.append(TiDBVisitor.asString(gen.generateConstant(c.getType().getPrimitiveDataType())));
+                TiDBExpression randomValue = gen.generateConstant(c.getType().getPrimitiveDataType());
+                sb.append(TiDBVisitor.asString(valuePolicy.apply(c, randomValue)));
             }
             sb.append(")");
         }

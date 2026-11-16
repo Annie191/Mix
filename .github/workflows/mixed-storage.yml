@@ -1,0 +1,23 @@
+name: Mixed storage oracle
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  mixed-storage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: maven
+      - name: Build, test, and check the oracle
+        run: mvn -B -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
