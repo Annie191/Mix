@@ -69,11 +69,17 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 结果包含 JDBC 列标签和类型信息，每次读取最多 10,000 行、16 MiB 字符表示预算；
 超限不比较截断结果。Connector/J 使用流式结果读取。
 
+比较所有状态为 `OK` 的路径对，包括两条混合路径之间的比较；四条有效路径共比较 6 对。
+`outcome.allPathsValid` 独立记录是否具有四种要求的不同配置且全部有效。
+`outcome.differingPairs` 和 `outcome.mismatchTypes` 保留所有已发现的差异对及分类，
+`failures` 保留失败路径；差异判定不要求 `allPathsValid=true`。
+
 | 状态 | 含义 |
 |---|---|
 | PASS | 两条独立单引擎基线和两条不同混合配置全部有效、结果一致 |
 | BASELINE_DISAGREEMENT | TiKV 与 TiFlash 单引擎基线不同 |
 | MIXED_VS_SINGLE_MISMATCH | 有效混合路径与有效单引擎路径不同 |
+| MIXED_VS_MIXED_MISMATCH | 两条有效混合路径不同，即使单引擎基线失败也报告 |
 | INVALID_CONFIGURATION | 表访问/引擎分配不符、配置缺失或重复 |
 | INCONCLUSIVE | Warning、浮点结果或资源预算超限 |
 | EXECUTION_ERROR | SQL、超时、快照/GC 或连接异常 |
@@ -81,6 +87,9 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 | VERSION_MISMATCH / UNSUPPORTED | TiDB 提交不符或缺少必要组件 |
 
 部分路径失败时仍保留其他有效路径已经发现的差异，并记录失败，不报告完整通过。
+同时发现多类差异时，主状态按 BASELINE_DISAGREEMENT、MIXED_VS_SINGLE_MISMATCH、
+MIXED_VS_MIXED_MISMATCH 的顺序选择，完整分类和配置对均保留。
+只有未发现差异且 `allPathsValid=true` 才为 PASS；未发现差异但路径不完整时保留失败分类。
 Oracle 仅将 PASS 计入 SQLancer 成功比较数；跳过的候选保存证据并抛出 `IgnoreMeException`。
 
 ## DeepSeek 建议（可选）
@@ -105,7 +114,11 @@ case 包含目标提交、随机种子、组件与 Session、SQL/DDL/DML、实�
 配置、两种计划、原始结果与多重集、失败分类及 AI 审计。JSON 通过临时文件替换写入。
 
 发现查询差异先保存原始证据，再独立重建实际数据确认两次。
-确认失败不抹去原差异；移除 WHERE 的约简仅在重复保持相同差异签名时接受。
+`confirmationTargets` 记录所有原始差异对；这批配置对必须在两次确认中都有效且继续返回不同结果，
+才标为 STABLE_CANDIDATE。无关路径失败或恢复不会阻止确认，新增差异也不能替代消失的原始差异对。
+`confirmationOutcomes` 分别保留两次确认的比较结果、路径完整性与失败信息。
+确认失败不抹去原差异；移除 WHERE 的约简仍仅在两次重复保持相同差异签名时接受，
+约简的比较结果另存为 `reduction.outcomes`。
 替代分配发现的差异同样先保存、确认，记录 `mismatchRunSet=alternativeRuns`。
 
 ```bash

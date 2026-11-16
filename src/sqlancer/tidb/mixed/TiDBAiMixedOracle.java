@@ -44,10 +44,10 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         return candidate.tables.stream().map(TiDBTable::getName).collect(Collectors.toList());
     }
 
-    private static boolean confirmed(Outcome expected, List<Run> runs) {
-        Outcome actual = TiDBMixedSupport.compare(runs);
-        return runs.size() == 4 && runs.stream().allMatch(r -> r.status.equals("OK"))
-                && expected.signature().equals(actual.signature());
+    static boolean confirmed(Outcome expected, List<Outcome> confirmations) {
+        // Unrelated paths may fail or recover; every original differing pair must recur twice.
+        return expected.mismatch() && confirmations.size() == 2 && confirmations.stream()
+                .allMatch(actual -> actual.differingPairs.containsAll(expected.differingPairs));
     }
 
     private List<Run> replay(TiDBMixedSupport io, Candidate query, List<String> dump, List<Config> configs)
@@ -70,15 +70,18 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             List<Config> configs, Outcome outcome, Map<String, Object> record) throws Exception {
         ai.suggest(Stage.DIAGNOSE,
                 Map.of("sql", query.sql, "comparisons", outcome.comparisons, "failures", outcome.failures));
-        boolean stable = outcome.failures.isEmpty();
         List<List<Run>> confirmations = new ArrayList<>();
+        List<Outcome> confirmationOutcomes = new ArrayList<>();
         record.put("confirmations", confirmations);
+        record.put("confirmationTargets", outcome.differingPairs);
+        record.put("confirmationOutcomes", confirmationOutcomes);
         record.put("confirmation", "UNCONFIRMED");
         for (int i = 0; i < 2; i++) {
             List<Run> repeated = replay(io, query, dump, configs);
             confirmations.add(repeated);
-            stable &= confirmed(outcome, repeated);
+            confirmationOutcomes.add(TiDBMixedSupport.compare(repeated));
         }
+        boolean stable = confirmed(outcome, confirmationOutcomes);
         record.put("confirmation", stable ? "STABLE_CANDIDATE" : "UNCONFIRMED");
         Advice reduction = ai.suggest(Stage.REDUCE,
                 Map.of("sql", query.sql, "hasWhere", query.ast.getWhereClause() != null, "stable", stable));
@@ -95,8 +98,10 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             }
             List<Run> first = replay(io, reduced, dump, configs);
             List<Run> second = replay(io, reduced, dump, configs);
-            record.put("reduction", Map.of("sql", reduced.sql, "runs", List.of(first, second), "accepted",
-                    confirmed(outcome, first) && confirmed(outcome, second)));
+            List<Outcome> reducedOutcomes = List.of(TiDBMixedSupport.compare(first), TiDBMixedSupport.compare(second));
+            record.put("reduction", Map.of("sql", reduced.sql, "runs", List.of(first, second), "outcomes",
+                    reducedOutcomes, "accepted",
+                    reducedOutcomes.stream().allMatch(actual -> outcome.signature().equals(actual.signature()))));
         }
     }
 

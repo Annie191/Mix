@@ -146,6 +146,32 @@ class MixedJdbcTest {
     }
 
     @Test
+    void baselineExecutionErrorsPreserveMixedDisagreementInJsonEvidence() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.mixedOnlyDisagreement = true;
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        List<Run> runs = io.executeAll("SELECT t0.c FROM t0,t1", TiDBMixedSupport.configurations(List.of("t0", "t1")));
+        TiDBMixedSupport.Outcome outcome = TiDBMixedSupport.compare(runs);
+        assertEquals("MIXED_VS_MIXED_MISMATCH", outcome.status);
+        assertTrue(outcome.mismatch());
+        assertFalse(outcome.allPathsValid);
+        assertEquals(2, runs.stream().filter(r -> r.status.equals("OK")).count());
+        assertEquals(1, outcome.comparisons.size());
+        assertEquals(2, outcome.failures.size());
+        assertTrue(runs.stream().allMatch(r -> r.snapshot.equals(io.snapshot)));
+        Path file = temporary.resolve("mixed-disagreement.json");
+        TiDBMixedSupport.save(file, Map.of("outcome", outcome, "runs", runs));
+        com.google.gson.JsonObject saved = JsonParser.parseString(Files.readString(file)).getAsJsonObject()
+                .getAsJsonObject("outcome");
+        assertEquals("MIXED_VS_MIXED_MISMATCH", saved.get("status").getAsString());
+        assertFalse(saved.get("allPathsValid").getAsBoolean());
+        assertEquals(1, saved.getAsJsonArray("differingPairs").size());
+        assertEquals(2, saved.getAsJsonArray("failures").size());
+        assertEquals("MIXED_VS_MIXED_MISMATCH", saved.getAsJsonArray("mismatchTypes").get(0).getAsString());
+    }
+
+    @Test
     void warningsErrorsAndResourceLimitsNeverBecomePasses() {
         Fixture fixture = new Fixture();
         Config config = new Config(Map.of("t0", "tikv", "t1", "tiflash"));
@@ -203,6 +229,7 @@ class MixedJdbcTest {
     private static final class Fixture {
         final List<String> queries = new ArrayList<>();
         boolean invalidPlan;
+        boolean mixedOnlyDisagreement;
         int streams;
         int rowCount = 2;
         int resultType = Types.INTEGER;
@@ -256,6 +283,9 @@ class MixedJdbcTest {
                 return rows(new String[] { "tso" }, new int[] { Types.VARCHAR },
                         List.<Object[]> of(new Object[] { "123456789" }));
             }
+            if (mixedOnlyDisagreement && (!sql.contains("TIKV[") || !sql.contains("TIFLASH["))) {
+                throw new SQLException("fixture baseline failure", "HY000", 1105);
+            }
             if (sql.startsWith("EXPLAIN")) {
                 List<Object[]> scans = new ArrayList<>();
                 java.util.regex.Matcher flash = java.util.regex.Pattern.compile("TIFLASH\\[([^]]+)\\]").matcher(sql);
@@ -270,8 +300,9 @@ class MixedJdbcTest {
                 return rows(new String[] { "id", "task", "access object" },
                         new int[] { Types.VARCHAR, Types.VARCHAR, Types.VARCHAR }, scans);
             }
+            int value = mixedOnlyDisagreement && sql.contains("TIFLASH[`t0`]") ? 2 : 1;
             return rows(new String[] { "c" }, new int[] { resultType }, java.util.stream.IntStream.range(0, rowCount)
-                    .mapToObj(i -> new Object[] { 1 }).collect(Collectors.toList()));
+                    .mapToObj(i -> new Object[] { value }).collect(Collectors.toList()));
         }
     }
 }

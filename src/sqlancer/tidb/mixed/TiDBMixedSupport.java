@@ -94,12 +94,14 @@ public final class TiDBMixedSupport {
 
     public static final class Outcome {
         public String status;
+        public boolean allPathsValid;
         public final List<Map<String, Object>> comparisons = new ArrayList<>();
         public final List<String> failures = new ArrayList<>();
         public final Set<String> differingPairs = new TreeSet<>();
+        public final Set<String> mismatchTypes = new TreeSet<>();
 
         public boolean mismatch() {
-            return status.equals("BASELINE_DISAGREEMENT") || status.equals("MIXED_VS_SINGLE_MISMATCH");
+            return !differingPairs.isEmpty();
         }
 
         public String signature() {
@@ -407,40 +409,43 @@ public final class TiDBMixedSupport {
 
     public static Outcome compare(List<Run> runs) {
         Outcome verdict = new Outcome();
-        boolean baseline = false;
-        boolean mixed = false;
         for (Run run : runs) {
             if (!run.status.equals("OK")) {
                 verdict.failures.add(run.config.name + ":" + run.status);
             }
         }
+        verdict.allPathsValid = completeConfigurations(runs) && verdict.failures.isEmpty();
         for (int i = 0; i < runs.size(); i++) {
             for (int j = i + 1; j < runs.size(); j++) {
                 Run a = runs.get(i);
                 Run b = runs.get(j);
-                if (!a.status.equals("OK") || !b.status.equals("OK") || a.config.mixed() && b.config.mixed()) {
+                if (!a.status.equals("OK") || !b.status.equals("OK")) {
                     continue;
                 }
                 boolean equal = a.columns.equals(b.columns) && a.bag.equals(b.bag);
                 boolean baselinePair = !a.config.mixed() && !b.config.mixed();
+                boolean mixedPair = a.config.mixed() && b.config.mixed();
+                String mismatchType = baselinePair ? "BASELINE_DISAGREEMENT"
+                        : mixedPair ? "MIXED_VS_MIXED_MISMATCH" : "MIXED_VS_SINGLE_MISMATCH";
                 verdict.comparisons.add(Map.of("left", a.config.name, "right", b.config.name, "equal", equal,
-                        "baselinePair", baselinePair));
+                        "baselinePair", baselinePair, "mismatchType", mismatchType));
                 if (!equal) {
                     verdict.differingPairs.add(new TreeSet<>(List.of(a.config.name, b.config.name)).toString());
-                    baseline |= baselinePair;
-                    mixed |= !baselinePair;
+                    verdict.mismatchTypes.add(mismatchType);
                 }
             }
         }
-        if (baseline) {
+        if (verdict.mismatchTypes.contains("BASELINE_DISAGREEMENT")) {
             verdict.status = "BASELINE_DISAGREEMENT";
-        } else if (mixed) {
+        } else if (verdict.mismatchTypes.contains("MIXED_VS_SINGLE_MISMATCH")) {
             verdict.status = "MIXED_VS_SINGLE_MISMATCH";
+        } else if (verdict.mismatchTypes.contains("MIXED_VS_MIXED_MISMATCH")) {
+            verdict.status = "MIXED_VS_MIXED_MISMATCH";
         } else if (runs.stream().anyMatch(r -> r.status.equals("EXECUTION_ERROR"))) {
             verdict.status = "EXECUTION_ERROR";
         } else if (runs.stream().anyMatch(r -> r.status.equals("INCONCLUSIVE"))) {
             verdict.status = "INCONCLUSIVE";
-        } else if (!completeConfigurations(runs) || !verdict.failures.isEmpty()) {
+        } else if (!verdict.allPathsValid) {
             verdict.status = "INVALID_CONFIGURATION";
         } else {
             verdict.status = "PASS";
