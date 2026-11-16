@@ -138,3 +138,31 @@ SpotBugs 报告 0 个 bug、0 个 error。
 完整 verify 成功（约 77 秒）：50 项测试、49 项通过、1 项真实集群测试预期跳过，
 0 失败、0 错误。打包、formatter、XML、Checkstyle、PMD、SpotBugs 和命名检查通过。
 本次未重跑真实集群，统计测试及 JDBC fixture 不代表真实 TiFlash 集成测试。
+
+## AI 数据准备协议与提示词回归（第一环节）
+
+新增 `DataPreparationProtocolTest` 22 项，验证：
+
+- 六份完整 JSON 按 observe → append_rows → stop 与对应状态包逐轮匹配，校验不修改输入。
+- 两份提示词可从打包资源读取，每次消息携带完整状态，不依赖会话记忆。
+- 缺失/未知字段、重复 JSON 键、非严格 JSON、类型错误及超长/过深输入被拒绝。
+- 任意执行 SQL、更新/删除、查询/Schema/引擎修改和 verdict 无操作字段，其他决策名称被拒绝。
+- 请求/用例/查询/版本不匹配、虚构证据、过期补行依据、未公布观测能力和重复请求被拒绝。
+- 冻结或已有差异时只能 stop；观测、行数、模型调用和时间预算限制有效。
+- 未知表列、生成列赋值、非法 NULL、类型不匹配、空行和重复表操作被拒绝。
+- 大整数/小数以字符串保存精度；SQL 外观文本仍是数据，二进制/布尔/NULL 分别表示。
+- 缺少验证能力必须说明未验证原因；部分成功和写入失败可保留为历史，停止不触发固定重试。
+
+验证命令：
+
+```bash
+mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+```
+
+72 项测试：71 项通过，1 项真实集群测试预期跳过，0 失败、0 错误。
+完整构建、formatter、XML、Checkstyle、PMD、SpotBugs 和命名检查通过；
+另确认两份提示词在构建的 JAR 中，文档相对路径有效。
+
+本次没有调用真实 DeepSeek、运行真实 TiDB/TiFlash 或执行任何补行。
+fixture 仅验证协议交互，不证明提示词效果、数据库约束满足或场景已在真实集群形成。

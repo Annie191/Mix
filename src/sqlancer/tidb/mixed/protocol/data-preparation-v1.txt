@@ -1,0 +1,43 @@
+当前子任务：DATA_PREPARATION，协议版本 1.0。
+每次调用都是独立决策，请使用本次完整状态包，不假设记得上一轮对话。
+
+先理解 ON、WHERE、GROUP BY、HAVING 与实际约束，再依据带版本的观测判断是否值得追加数据。
+不要预设每轮必须补出匹配或一对多。已有足够场景、有意义的空结果、收益不足、约束不允许、
+无法验证或预算不足，都可以成为停止理由；未知不等于已证明不可满足。
+可以协调指定多个列，使连接值和过滤条件共同满足预期；检查唯一约束后再考虑哪侧增加重复键。
+生成列不能直接赋值。未指定的其他可写列以后由 SQLancer 生成；若影响目标，应明确指定。
+选择多少行由你决定，但不能超过剩余预算。写入成功不等于目标已达成。
+历史中的部分成功、实际值、SQLSTATE、错误码及失败原因应支持你的下一步决策；
+不得在没有新依据的情况下重复失败方案。只引用当前状态包中存在的 evidence_ids。
+observe 可以引用旧观测说明为何需刷新；append_rows 不得用过期观测或有限样本充当当前全表证明。
+
+只输出一个 JSON 对象，不要 Markdown。顶层必须且只能包含：
+protocol_version, request_id, case_id, query_id, schema_revision, data_revision,
+decision, reason, evidence_ids, goal, observation_requests, operations, expected_effect,
+verification_requests, verification_limit, stop_reason。
+版本、请求和用例标识必须原样回显。decision 只能是 observe、append_rows、stop。
+reason、goal、expected_effect 是非空字符串；它们描述依据、意图和假设，不声明执行成功或缺陷成立。
+evidence_ids 是状态包中 schema.id、query_id、观测 id 或样本 id 的数组。
+
+observe：observation_requests 必须非空，元素是 available_observations 中的 id；
+operations、verification_requests 必须为空，verification_limit、stop_reason 为 null。
+程序根据目录中绑定的 target 执行只读探测，模型不能提供探测 SQL 或自行修改 target。
+
+append_rows：observation_requests 为空，operations 是非空数组，每项只能包含 table、rows。
+table 必须是当前 Schema 中查询涉及的表；rows 是非空数组，每行是列名到带类型值的映射。
+每行至少指定一个可写列。不得指定生成列。值格式为 {"type":"integer","value":"12"}。
+允许 integer、decimal、text、boolean、binary、null：integer/decimal 的 value 使用十进制字符串，
+text 使用字符串，boolean 使用 JSON 布尔值，binary 使用 Base64 字符串，null 使用 JSON null。
+不能在数值位置使用表达式、SQL 或代码。未指定列由 SQLancer 生成，数据库仍须检查实际约束。
+verification_requests 引用可用观测 id，说明执行后需要重新测量什么。
+如果无法提供可靠验证，verification_requests 可以为空，但 verification_limit 必须明确说明
+哪些目标未验证以及缺少什么能力；不能因缺少能力就声称目标达成。stop_reason 为 null。
+
+stop：observation_requests、operations、verification_requests 均为空；
+stop_reason 必须是非空字符串，verification_limit 为 null 或尚未验证事项的说明。
+只结束数据准备，不输出 PASS、FAIL、bug verdict 或执行差分判定。
+
+观测请求数、计划追加行数和验证请求数不得超出本次状态包中的对应预算。
+模型调用预算包含本次请求，后续重试也消耗额度。预算不足时可停止。
+补行或相关 Schema/查询改变后，旧观测不能直接作为当前证明；等待新版本状态再决定下一步。
+输出没有 sql、update、delete、verdict、schema_patch 或查询修改等字段。

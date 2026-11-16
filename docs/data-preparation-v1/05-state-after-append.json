@@ -1,0 +1,421 @@
+{
+  "protocol_version": "1.0",
+  "request_id": "req_3",
+  "case_id": "example_case",
+  "query_id": "query_1",
+  "schema_revision": 0,
+  "data_revision": 3,
+  "phase": "DATA_PREPARATION",
+  "frozen": false,
+  "discrepancy_found": false,
+  "query": {
+    "sql": "SELECT t0.k, t1.k FROM t0 JOIN t1 ON t0.k = t1.k WHERE t0.k > 10",
+    "joins": [
+      {
+        "id": "j0",
+        "type": "INNER",
+        "left_tables": [
+          "t0"
+        ],
+        "right_tables": [
+          "t1"
+        ],
+        "on": "t0.k = t1.k"
+      }
+    ],
+    "where": "t0.k > 10",
+    "group_by": [],
+    "having": null
+  },
+  "schema": {
+    "id": "schema_0",
+    "complete": true,
+    "tables": [
+      {
+        "name": "t0",
+        "metadata_complete": true,
+        "columns": [
+          {
+            "name": "k",
+            "sql_type": "int",
+            "value_kind": "integer",
+            "nullable": true,
+            "generated": false,
+            "generation_expression": null,
+            "auto_increment": false,
+            "default_expression": null
+          }
+        ],
+        "constraints": []
+      },
+      {
+        "name": "t1",
+        "metadata_complete": true,
+        "columns": [
+          {
+            "name": "k",
+            "sql_type": "int",
+            "value_kind": "integer",
+            "nullable": true,
+            "generated": false,
+            "generation_expression": null,
+            "auto_increment": false,
+            "default_expression": null
+          }
+        ],
+        "constraints": []
+      }
+    ]
+  },
+  "observations": [
+    {
+      "id": "obs_17",
+      "capability_id": "join_before",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_18",
+      "capability_id": "join_after",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_19",
+      "capability_id": "duplicate_after",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_31",
+      "capability_id": "join_after",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 3,
+      "status": "exact",
+      "value": {
+        "count": "2"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_32",
+      "capability_id": "duplicate_after",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 3,
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    }
+  ],
+  "samples": [
+    {
+      "id": "sample_t0_3",
+      "table": "t0",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 3,
+      "columns": [
+        "k"
+      ],
+      "rows": [
+        [
+          {
+            "type": "integer",
+            "value": "5"
+          }
+        ],
+        [
+          {
+            "type": "integer",
+            "value": "12"
+          }
+        ]
+      ],
+      "complete": false
+    },
+    {
+      "id": "sample_t1_3",
+      "table": "t1",
+      "query_id": "query_1",
+      "schema_revision": 0,
+      "data_revision": 3,
+      "columns": [
+        "k"
+      ],
+      "rows": [
+        [
+          {
+            "type": "integer",
+            "value": "5"
+          }
+        ],
+        [
+          {
+            "type": "integer",
+            "value": "12"
+          }
+        ],
+        [
+          {
+            "type": "integer",
+            "value": "12"
+          }
+        ]
+      ],
+      "complete": false
+    }
+  ],
+  "history": [
+    {
+      "decision_id": "req_1",
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "req_1",
+        "case_id": "example_case",
+        "query_id": "query_1",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "decision": "observe",
+        "reason": "样本只显示两侧均出现 5，不能据此证明全表匹配或过滤结果。",
+        "evidence_ids": [
+          "query_1",
+          "schema_0",
+          "sample_t0_0",
+          "sample_t1_0"
+        ],
+        "goal": "先确认原查询实际触发的匹配和过滤场景。",
+        "observation_requests": [
+          "join_before",
+          "join_after",
+          "duplicate_after"
+        ],
+        "operations": [],
+        "expected_effect": "获得完整匹配计数，而不是从有限样本推断。",
+        "verification_requests": [],
+        "verification_limit": null,
+        "stop_reason": null
+      },
+      "validation_status": "accepted",
+      "data_revision_before": 0,
+      "data_revision_after": 0,
+      "writes": [],
+      "observation_ids": [
+        "obs_17",
+        "obs_18",
+        "obs_19"
+      ],
+      "failure_reason": null
+    },
+    {
+      "decision_id": "req_2",
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "req_2",
+        "case_id": "example_case",
+        "query_id": "query_1",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "decision": "append_rows",
+        "reason": "obs_17=1、obs_18=0，现有连接匹配全部被 WHERE 过滤；schema_0 未列出禁止重复 k 的约束。",
+        "evidence_ids": [
+          "query_1",
+          "schema_0",
+          "obs_17",
+          "obs_18",
+          "obs_19"
+        ],
+        "goal": "补充过滤后的一对多匹配，同时保留原有随机行。",
+        "observation_requests": [],
+        "operations": [
+          {
+            "table": "t0",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            ]
+          },
+          {
+            "table": "t1",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            ]
+          }
+        ],
+        "expected_effect": "预期 k=12 满足 k>10，t0 的一行与 t1 的两行形成两对匹配；必须重新测量。",
+        "verification_requests": [
+          "join_after",
+          "duplicate_after"
+        ],
+        "verification_limit": null,
+        "stop_reason": null
+      },
+      "validation_status": "accepted",
+      "data_revision_before": 0,
+      "data_revision_after": 3,
+      "writes": [
+        {
+          "table": "t0",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "data_revision_after": 1,
+          "sqlstate": null,
+          "error_code": null,
+          "error": null
+        },
+        {
+          "table": "t1",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "data_revision_after": 2,
+          "sqlstate": null,
+          "error_code": null,
+          "error": null
+        },
+        {
+          "table": "t1",
+          "row_index": 1,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "data_revision_after": 3,
+          "sqlstate": null,
+          "error_code": null,
+          "error": null
+        }
+      ],
+      "observation_ids": [
+        "obs_31",
+        "obs_32"
+      ],
+      "failure_reason": null
+    }
+  ],
+  "remaining_budget": {
+    "model_calls": 1,
+    "probe_requests": 0,
+    "insert_rows": 3,
+    "time_ms": 40000
+  },
+  "available_observations": [
+    {
+      "id": "join_before",
+      "metric": "join_pairs_before_where",
+      "target": {
+        "join_id": "j0"
+      },
+      "description": "该 INNER JOIN 在原 ON 条件下、应用原 WHERE 前的匹配行对数，精确计数"
+    },
+    {
+      "id": "join_after",
+      "metric": "join_pairs_after_where",
+      "target": {
+        "join_id": "j0"
+      },
+      "description": "该 INNER JOIN 应用原 ON 和 WHERE 后的匹配行对数，精确计数"
+    },
+    {
+      "id": "duplicate_after",
+      "metric": "duplicate_keys_after_where",
+      "target": {
+        "join_id": "j0"
+      },
+      "description": "应用原 WHERE 后，有至少两对匹配的不同非 NULL 连接键数量，精确计数"
+    },
+    {
+      "id": "freq_t0",
+      "metric": "key_frequency",
+      "target": {
+        "table": "t0",
+        "columns": [
+          "k"
+        ]
+      },
+      "description": "t0.k 的完整键频率，包括 NULL"
+    },
+    {
+      "id": "freq_t1",
+      "metric": "key_frequency",
+      "target": {
+        "table": "t1",
+        "columns": [
+          "k"
+        ]
+      },
+      "description": "t1.k 的完整键频率，包括 NULL"
+    }
+  ]
+}

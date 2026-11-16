@@ -1,0 +1,27 @@
+{
+  "protocol_version": "1.0",
+  "request_id": "req_1",
+  "case_id": "example_case",
+  "query_id": "query_1",
+  "schema_revision": 0,
+  "data_revision": 0,
+  "decision": "observe",
+  "reason": "样本只显示两侧均出现 5，不能据此证明全表匹配或过滤结果。",
+  "evidence_ids": [
+    "query_1",
+    "schema_0",
+    "sample_t0_0",
+    "sample_t1_0"
+  ],
+  "goal": "先确认原查询实际触发的匹配和过滤场景。",
+  "observation_requests": [
+    "join_before",
+    "join_after",
+    "duplicate_after"
+  ],
+  "operations": [],
+  "expected_effect": "获得完整匹配计数，而不是从有限样本推断。",
+  "verification_requests": [],
+  "verification_limit": null,
+  "stop_reason": null
+}

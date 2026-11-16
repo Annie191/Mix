@@ -141,3 +141,31 @@ JOIN 左右侧按 SQL AST 统计，区分 INNER/LEFT/RIGHT 等类型和 NATURAL 
 新增 10 项回归测试，覆盖比例与 2∶2、JOIN 方向和类型、零计数桶、失败分流、
 多 JOIN/嵌套 JOIN、批次与累计快照、JSON 落盘及统计不影响随机抽样。
 49 项离线测试、完整构建和静态检查通过；本次未重跑真实集群。
+
+## 追加：AI 数据准备协议与提示词（第一环节）
+
+新增 [协议文档](data-preparation-protocol.md)、[总任务提示词](../src/sqlancer/tidb/mixed/protocol/overall-v1.txt)
+和 [数据准备提示词](../src/sqlancer/tidb/mixed/protocol/data-preparation-v1.txt)。
+模型可以决定是否补行、补哪些表列、值和行数，但决策仅限 `observe`、`append_rows`、`stop`。
+不提供执行 SQL、修改查询/Schema、更新/删除数据或宣布缺陷成立的操作入口。
+
+新增 [TiDBDataPreparationProtocol](../src/sqlancer/tidb/mixed/TiDBDataPreparationProtocol.java)，提供三个独立入口：
+
+```java
+state(stateJson);                 // 校验完整状态包
+messages(stateJson);              // 总提示词 + 子任务提示词 + 本轮完整状态
+decision(modelContentJson, state); // 校验结构、引用、版本、权限和预算
+```
+
+每次状态包含完整 SQL、实际约束、带版本的观测和样本、历史提案/失败及剩余预算。
+模型输出必须包含依据、目标、操作、预期和验证需求；预期不当作已验证事实。
+只允许请求状态包公布的观测能力；无法验证时明确记录原因。
+请求/查询/Schema/数据版本不匹配、过期补行依据、未知字段、生成列赋值及超预算计划均拒绝。
+补行值采用带类型表示，整数和小数用字符串保存精度；SQL 外观文本只能作为普通列值。
+
+[六份完整 JSON](data-preparation-protocol.md#完整交互示例) 展示：观测发现原匹配被 WHERE 过滤，
+模型决定补入 12，程序反馈三行写入及新版本计数，模型再停止。
+示例是人工 fixture，不是真实 DeepSeek 或集群实验；提示词随 JAR 打包。
+
+本环节尚未接入模型调用、元数据/观测采集、补行执行及反馈调度，不改变现有 Oracle 运行路径。
+新增 22 项协议回归测试；完整验证结果见 [验证记录](mixed-storage-validation.md#ai-数据准备协议与提示词回归第一环节)。

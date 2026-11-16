@@ -1,0 +1,56 @@
+{
+  "protocol_version": "1.0",
+  "request_id": "req_2",
+  "case_id": "example_case",
+  "query_id": "query_1",
+  "schema_revision": 0,
+  "data_revision": 0,
+  "decision": "append_rows",
+  "reason": "obs_17=1、obs_18=0，现有连接匹配全部被 WHERE 过滤；schema_0 未列出禁止重复 k 的约束。",
+  "evidence_ids": [
+    "query_1",
+    "schema_0",
+    "obs_17",
+    "obs_18",
+    "obs_19"
+  ],
+  "goal": "补充过滤后的一对多匹配，同时保留原有随机行。",
+  "observation_requests": [],
+  "operations": [
+    {
+      "table": "t0",
+      "rows": [
+        {
+          "k": {
+            "type": "integer",
+            "value": "12"
+          }
+        }
+      ]
+    },
+    {
+      "table": "t1",
+      "rows": [
+        {
+          "k": {
+            "type": "integer",
+            "value": "12"
+          }
+        },
+        {
+          "k": {
+            "type": "integer",
+            "value": "12"
+          }
+        }
+      ]
+    }
+  ],
+  "expected_effect": "预期 k=12 满足 k>10，t0 的一行与 t1 的两行形成两对匹配；必须重新测量。",
+  "verification_requests": [
+    "join_after",
+    "duplicate_after"
+  ],
+  "verification_limit": null,
+  "stop_reason": null
+}

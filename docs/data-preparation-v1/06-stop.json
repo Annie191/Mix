@@ -1,0 +1,22 @@
+{
+  "protocol_version": "1.0",
+  "request_id": "req_3",
+  "case_id": "example_case",
+  "query_id": "query_1",
+  "schema_revision": 0,
+  "data_revision": 3,
+  "decision": "stop",
+  "reason": "当前版本的 obs_31 显示两对过滤后匹配，obs_32 显示一个重复匹配键；不是仅根据写入成功作判断。",
+  "evidence_ids": [
+    "schema_0",
+    "obs_31",
+    "obs_32"
+  ],
+  "goal": "保留现有过滤后重复匹配及原随机数据。",
+  "observation_requests": [],
+  "operations": [],
+  "expected_effect": "结束数据准备，后续冻结快照并由 Oracle 比较各引擎路径。",
+  "verification_requests": [],
+  "verification_limit": null,
+  "stop_reason": "当前已观测到本轮选择的数据场景，不再为增加行数而追加；尚未进行差分判定。"
+}
