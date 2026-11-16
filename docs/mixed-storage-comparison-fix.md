@@ -200,3 +200,24 @@ observationEvidence、observationSnapshot 和 availableObservations。
 新增 24 项离线回归及 2 项真实 TiDB 验证；共 98 项测试，97 项通过、1 项原 TiFlash 集群测试预期跳过。
 完整构建和静态检查通过。真实探测验证使用目标提交的独立 unistore 实例，未宣称 TiFlash 差分验证通过；
 命令及可核对的计数结果见 [验证记录](mixed-storage-validation.md#实际元数据与只读观测回归第二环节)。
+
+## 追加：可控追加行执行器（第三环节）
+
+新增 [TiDBMixedAppendExecutor](../src/sqlancer/tidb/mixed/TiDBMixedAppendExecutor.java)，
+接受人工构造的 v1 append_rows JSON，暂不调用模型或自动调度补行。
+
+- TiDBInsertGenerator 新增独立普通 INSERT 模式，复用 SQLancer 常量补齐未指定列；
+  参数化写入，不生成 REPLACE、IGNORE 或 ON DUPLICATE KEY UPDATE，不写生成列，未指定自增列交给数据库。
+- 写前复核实际元数据、版本和会话。实例保存剩余行预算，每次尝试扣一行，失败也扣；
+  超预算计划整份拒绝，不能用新状态包补回预算或重放请求。
+- 整数/DECIMAL 使用字符串表示并经 BigInteger/BigDecimal 绑定；二进制、文本和 NULL 保留各自类型。
+  每行独立事务，核对写前/写后完整行多重集合及指定值，确认只追加一行后才提交。
+  Warning、舍入、约束错误或旧行变化均回滚该行，其他成功行保留。
+- 逐行记录指定值、补齐值、实际值、影响行数、版本及错误，区分成功、失败、未执行、提交结果不确定。
+  提交不确定时停止，要求重建，不自动重试；观测验证需求仍需后续环节执行。
+
+使用方式、反馈和边界见 [执行器说明](data-preparation-append-executor.md)。
+新增 18 项离线及 5 项真实 TiDB 测试；共 121 项测试，120 项通过、1 项原 TiFlash 测试预期跳过。
+完整构建及静态检查通过。
+真实验证使用目标提交的 unistore 实例，非分布式 TiFlash 验证；详细结果见
+[验证记录](mixed-storage-validation.md#可控追加行执行器回归第三环节)。

@@ -1,8 +1,9 @@
 # AI 数据准备协议与提示词 v1.0
 
 第一环节交付：协议、提示词、可执行的格式校验和完整交互示例。
-**当前尚未接入新的模型决策调用、补行执行或反馈调度。**
+**当前尚未接入新的模型决策调用或自动反馈调度。**
 第二环节已增加 [实际元数据与只读观测](data-preparation-observations.md)，并接入 Oracle 的初始数据填充后采集。
+第三环节已增加 [可控追加行执行器](data-preparation-append-executor.md)，使用人工 JSON 计划验证，尚未自动调度补行。
 示例中的约束、观测和写入反馈是说明协议的人工 fixture，不是真实集群实验结果。
 
 ## 目的与职责
@@ -85,7 +86,7 @@ JOIN 项包含 `id, type, left_tables, right_tables, on`；条件不存在时为
 
 缺少元数据时标注 complete=false，不能把“未知约束”当作“没有约束”。实际采集已在第二环节实现。
 主键/唯一索引还可带 key_parts，保存表达式及前缀长度；不能把它们当成全列唯一。
-当前代码检查元数据容器、列字段及可写性声明，不验证数据库是否确实满足这些声明，也不求解 CHECK。
+协议校验器检查元数据容器、列字段及可写性声明；追加执行器写入前重新核对实际元数据，数据库检查实际约束，不预先求解 CHECK。
 
 观测状态只能为 `exact`、`sampled`、`unknown`、`unsupported`、`error`。
 没有结果用 null 表示，不能用 0 伪装；例如精确计数的 value 可为 `{"count":"2"}`。
@@ -97,9 +98,11 @@ data_revision_after, writes, observation_ids, failure_reason`。
 decision 保存原提案；解析失败时为 null，失败原因包含在 failure_reason。
 validation_status 为 `accepted`、`rejected` 或 `parse_error`；校验通过不等于执行成功。
 writes 中每行包含 `table, row_index, status, affected_rows, specified_values, actual_values,
-data_revision_after, sqlstate, error_code, error`：status 为 `success` 或 `failed`，
+data_revision_after, sqlstate, error_code, error`：status 为 `success`、`failed`、`not_attempted` 或 `unknown`，
 实际值不可获取时为 null，失败不能伪装为已写入。指定值和实际值使用同一种带类型表示。
-这些历史字段作为反馈协议约定；本环节校验器仅检查 history 是对象数组，执行事实和错误采集留到后续环节。
+第三环节还返回 attempted_values、SQL 模板、剩余预算、审计事件和 requires_rebuild。
+提交不确定时 affected_rows、data_revision_after 为 null，停止补行并要求重建，不能当作普通失败重试。
+校验器仅检查 history 是对象数组；真实执行反馈及错误采集由追加执行器提供。
 
 ## 模型输出契约
 

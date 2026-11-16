@@ -12,6 +12,7 @@ TiDB 目标：`v9.0.0-beta.2.pre-1854-gb1d4142f99`，完整提交
 混合路径比较和确认逻辑的修复见 [简要改动说明](mixed-storage-comparison-fix.md)。
 AI 数据准备闭环的第一环节见 [协议与提示词 v1.0](data-preparation-protocol.md)；当前尚未接入运行调度。
 第二环节的 [实际元数据与只读观测](data-preparation-observations.md) 已接入初始填充后的事实采集，尚未执行 AI 补行。
+第三环节的 [可控追加行执行器](data-preparation-append-executor.md) 已通过人工 JSON 计划验证，尚未接入真实模型或自动补行调度。
 使用独立 SQLancer 基线是为了保留原工作目录的未提交改动，并使交付可重复构建。
 
 `TiDBMixedTarget` 校验 `TIDB_VERSION()` 的 Git Commit Hash，而不是仅相信发布名称。

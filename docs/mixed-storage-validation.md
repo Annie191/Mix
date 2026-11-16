@@ -213,3 +213,45 @@ python3 src/check_names.py
 1 项原 TiFlash 集群测试预期跳过，0 失败、0 错误。
 构建、formatter、XML、Checkstyle、PMD、SpotBugs 及命名检查通过。
 本次没有调用 DeepSeek、执行 AI 补行或重新运行 TiFlash 四路径差分集成测试。
+
+## 可控追加行执行器回归（第三环节）
+
+新增 23 项人工 JSON 计划测试：MixedAppendTest 18 项离线测试、MixedAppendIntegrationTest 5 项真实 TiDB 测试。
+离线测试实际执行 H2 的参数化 INSERT 和事务，仅模拟 TiDB 会话/元数据。
+
+- 普通 INSERT 模式重复生成 200 次，排除 REPLACE、IGNORE、UPDATE 及生成列。
+- 跨表计划、无主键表的重复行、SQLancer 补齐列、NULL、空文本和空二进制。
+- 超预算整单拒绝，失败消耗尝试预算；新状态包不能重置内部预算，过期版本及重复请求不能重放。
+- 写前复核真实生成列定义，拒绝伪造元数据、冻结状态、已有事务及历史快照。
+- Warning、静默舍入、旧行意外变化及完整读取上限导致回滚，不虚报成功。
+- 会话设置失败逐行返回 not_attempted；模拟 COMMIT 已生效但应答丢失，返回 unknown，
+  后续行停止且要求重建，不能把已提交的数据报告为失败未写入。
+
+真实测试使用目标 Git Commit `b1d4142f99` 的独立 unistore 临时实例，创建并清理独立数据库：
+
+```bash
+MS_APPEND_INTEGRATION=true MS_FACTS_INTEGRATION=true \
+  TIDB_HOST=127.0.0.1 TIDB_PORT=24900 TIDB_USER=root \
+  mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+```
+
+实际核对结果：
+
+| 输入/情形 | 结果 |
+|---|---|
+| BIGINT UNSIGNED 最大值 18446744073709551615 | 精确提交，生成列得到 18446744073709551616 |
+| DECIMAL(38,2) 的 123456789012345678901234567890.01 | 原值精确提交 |
+| 二进制 AP8=、含 SQL 外观/中文/反斜线文本 | 原值保留，文本不作为 SQL 执行 |
+| 依次追加 k=2、1、3，已有唯一键 k=1 | success、failed/1062、success；原行保留，版本 0→2，扣 3 行预算 |
+| DECIMAL(38,2) 输入 12.345；UNSIGNED 超界值 | 均失败，表行数及版本不变 |
+| 已启用 CHECK(n>0)，依次追加 n=-1 和合法行 | failed、success，仅合法行提交 |
+| 生成列赋值、超预算计划、调用方已有事务 | 写前拒绝；调用方事务仍能自行回滚 |
+
+测试临时启用 CHECK 后恢复原全局设置。人工计划及反馈通过同一 v1 协议入口执行，无模型网络调用；
+完整用法与反馈边界见 [执行器说明](data-preparation-append-executor.md)。
+
+共 121 项测试，120 项通过（113 项离线、7 项真实 TiDB），
+1 项原 TiFlash 集群测试预期跳过，0 失败、0 错误。
+完整构建、formatter、XML、Checkstyle、PMD、SpotBugs、命名检查及 git diff --check 通过。
+本次未接入真实模型或自动补行循环，也未重新运行 TiFlash 差分集成测试。

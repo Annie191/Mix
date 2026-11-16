@@ -1,7 +1,9 @@
 package sqlancer.tidb.gen;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -13,6 +15,7 @@ import sqlancer.tidb.TiDBExpressionGenerator;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBColumn;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
+import sqlancer.tidb.ast.TiDBConstant;
 import sqlancer.tidb.ast.TiDBExpression;
 import sqlancer.tidb.visitor.TiDBVisitor;
 
@@ -22,6 +25,67 @@ public class TiDBInsertGenerator {
     private final ExpectedErrors errors = new ExpectedErrors();
     private TiDBExpressionGenerator gen;
     private BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> valuePolicy = (c, v) -> v;
+
+    public static final class AppendRow {
+        public final String sql;
+        public final List<TiDBColumn> columns;
+        public final List<Object> values;
+
+        private AppendRow(String sql, List<TiDBColumn> columns, List<Object> values) {
+            this.sql = sql;
+            this.columns = List.copyOf(columns);
+            this.values = java.util.Collections.unmodifiableList(new ArrayList<>(values));
+        }
+    }
+
+    // A separate, one-row ordinary INSERT path: no REPLACE, IGNORE, UPDATE, modifiers, or SQL-valued inputs.
+    public static AppendRow appendRow(TiDBGlobalState state, TiDBTable table, Map<String, Object> specified) {
+        if (table.isView() || specified.isEmpty()) {
+            throw new IllegalArgumentException("append needs a base table and specified values");
+        }
+        for (String name : specified.keySet()) {
+            if (table.getColumns().stream().noneMatch(c -> c.getName().equals(name) && !c.isGenerated())) {
+                throw new IllegalArgumentException("unknown or generated append column: " + name);
+            }
+        }
+        TiDBExpressionGenerator generator = new TiDBExpressionGenerator(state);
+        List<TiDBColumn> columns = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        for (TiDBColumn column : table.getColumns()) {
+            if (column.isGenerated() || column.isAutoIncrement() && !specified.containsKey(column.getName())) {
+                continue;
+            }
+            columns.add(column);
+            values.add(specified.containsKey(column.getName()) ? specified.get(column.getName())
+                    : constantValue(generator.generateConstant(column.getType().getPrimitiveDataType())));
+        }
+        String names = columns.stream().map(c -> quote(c.getName())).collect(Collectors.joining(","));
+        return new AppendRow("INSERT INTO " + quote(table.getName()) + " (" + names + ") VALUES ("
+                + columns.stream().map(c -> "?").collect(Collectors.joining(",")) + ")", columns, values);
+    }
+
+    private static String quote(String identifier) {
+        return "`" + identifier.replace("`", "``") + "`";
+    }
+
+    private static Object constantValue(TiDBExpression expression) {
+        if (expression instanceof TiDBConstant.TiDBNullConstant) {
+            return null;
+        }
+        if (expression instanceof TiDBConstant.TiDBIntConstant) {
+            return ((TiDBConstant.TiDBIntConstant) expression).getValue();
+        }
+        if (expression instanceof TiDBConstant.TiDBDoubleConstant) {
+            return ((TiDBConstant.TiDBDoubleConstant) expression).getValue();
+        }
+        if (expression instanceof TiDBConstant.TiDBBooleanConstant) {
+            return ((TiDBConstant.TiDBBooleanConstant) expression).getValue();
+        }
+        if (expression instanceof TiDBConstant.TiDBTextConstant) {
+            return ((TiDBConstant.TiDBTextConstant) expression).getValue();
+        }
+        throw new IllegalArgumentException("append generator requires a constant value");
+    }
 
     public static SQLQueryAdapter getQuery(TiDBGlobalState state, TiDBTable table,
             BiFunction<TiDBColumn, TiDBExpression, TiDBExpression> policy) {
