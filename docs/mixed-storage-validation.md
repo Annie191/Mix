@@ -121,3 +121,20 @@ SpotBugs 报告 0 个 bug、0 个 error。
 执行同一完整 verify 命令成功（约 81 秒）：40 项测试、39 项通过、1 项真实集群测试预期跳过，
 0 失败、0 错误。打包、formatter、XML、Checkstyle、PMD 和 SpotBugs 全部通过。
 本次未重启真实集群或重新运行随机冒烟，JDBC fixture 不代表真实 TiFlash 集成测试。
+
+## 引擎比例与 JOIN 组合覆盖统计回归
+
+新增 `MixedCoverageTest` 9 项和 `MixedJdbcTest` 1 项，验证：
+
+- 四表全枚举时，TiFlash 表数 0/1/2/3/4 对应 1/4/6/4/1 条有效路径，包含全部六种 2∶2。
+- 固定 LEFT JOIN 的四种左右引擎组合各出现四次，JOIN 方向、类型和 NATURAL 子类型分别计数。
+- 无效计划、执行错误仅增加尝试和失败，不算有效覆盖；未观察到的比例/组合保留零计数。
+- 多个 JOIN 按节点计数，路径数保持一次；嵌套 JOIN 侧的混合引擎记为 mixed。
+- 逗号 FROM 不产生显式 JOIN 计数，另有 pathsWithoutExplicitJoin。
+- 本轮、累计和历史快照彼此独立，保存/读取 JSON 后计数完整。
+- JDBC fixture 验证主执行与替代配置执行各自保存统计，无效替代配置不会增加有效覆盖。
+- 相同随机种子下，增加统计前后抽样配置完全一致，判定不受统计影响。
+
+完整 verify 成功（约 77 秒）：50 项测试、49 项通过、1 项真实集群测试预期跳过，
+0 失败、0 错误。打包、formatter、XML、Checkstyle、PMD、SpotBugs 和命名检查通过。
+本次未重跑真实集群，统计测试及 JDBC fixture 不代表真实 TiFlash 集成测试。

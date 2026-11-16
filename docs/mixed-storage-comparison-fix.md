@@ -104,3 +104,40 @@ DATA_PREFLIGHT_MISMATCH、PREFLIGHT_FAILED；计数范围为同一 Oracle 实例
 验证新增 10 项回归测试：完整枚举与抽样、4/8/6 条路径的完整性及 JDBC 执行、
 预检一致后继续比较、预检不同后停止并单独计数、普通失败分流和证据落盘。
 39 项离线测试通过，完整 `mvn verify` 及静态检查通过；本次未重跑真实集群。
+
+## 追加：消除分配盲区与覆盖统计
+
+[eed1ae32](https://github.com/Annie191/Mix/commit/eed1ae32eace0b4a73dc08d381d242f703bc3e23)
+已消除旧 pivot 算法的永久盲区。四表完整枚举得到 16 种配置，其中 14 种为混合配置，
+包含全部 6 种 2∶2 分配；每轮固定两条基线，从 14 种混合配置中随机抽取 4 种。
+因此 2∶2 有被选中的概率，不再永远缺失，回归测试已验证完整组合及平衡分配可以被抽到。
+
+新增 [TiDBMixedCoverage](../src/sqlancer/tidb/mixed/TiDBMixedCoverage.java)，统计两类覆盖：
+
+| 维度 | 示例键 | 含义 |
+|---|---|---|
+| 引擎分配比例 | `tables=4;tikv=2;tiflash=2` | 四张表中两张读 TiKV、两张读 TiFlash |
+| JOIN 两侧引擎 | `tables=4;type=LEFT;left=tikv;right=tiflash` | 四表查询中，一个 LEFT JOIN 的左表读 TiKV、右表读 TiFlash |
+
+每个桶记录 `attempted`、`valid`、`failed` 及各执行状态次数。
+只有 `run.status=OK` 才计入有效覆盖：计划有效、结果完整读取，但不代表查询结果彼此一致。
+失败路径仅计入尝试和失败；已涉及表数的所有比例桶、已涉及 JOIN 类型的左右引擎组合桶预置零值，
+便于发现未尝试或尚无有效结果的组合。
+
+JOIN 左右侧按 SQL AST 统计，区分 INNER/LEFT/RIGHT 等类型和 NATURAL 子类型，保留方向，
+不把它解释为优化器的物理 JOIN 输入顺序。嵌套 JOIN 一侧涉及两种引擎时记为 `mixed`。
+一次路径按比例计 1 次，按显式 JOIN 节点分别计数；多个 JOIN 可贡献多次。
+逗号 FROM 的隐式连接单列为 `pathsWithoutExplicitJoin`，不虚构显式 JOIN 覆盖。
+
+证据保存位置：
+
+- `attempts[].coverage`：本轮主执行的统计；`alternativeCoverage`：替代配置执行的统计。
+- `case.json.coverage` 和 `coverage.json`：同一 Oracle 实例跨 check 的累计快照，换数据库后重新计数。
+
+统计在基础表预检通过后的主执行和替代配置执行中更新，预检、重复确认、WHERE 约简及独立重放不计入，
+避免重复复现放大覆盖率。累计快照不能直接相加；跨 case 汇总应累加各 attempt 的本轮统计。
+本次仅增加观测统计，保持 4/8/6 路径预算和随机抽样，不根据计数自动改变选择或差异判定。
+
+新增 10 项回归测试，覆盖比例与 2∶2、JOIN 方向和类型、零计数桶、失败分流、
+多 JOIN/嵌套 JOIN、批次与累计快照、JSON 落盘及统计不影响随机抽样。
+49 项离线测试、完整构建和静态检查通过；本次未重跑真实集群。

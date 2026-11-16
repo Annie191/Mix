@@ -32,6 +32,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
     private final Map<String, Long> history = new LinkedHashMap<>();
     private final Map<String, Long> preflightCounts = new LinkedHashMap<>(
             Map.of("PASS", 0L, "DATA_PREFLIGHT_MISMATCH", 0L, "PREFLIGHT_FAILED", 0L));
+    private final TiDBMixedCoverage coverage = new TiDBMixedCoverage();
 
     public TiDBAiMixedOracle(TiDBGlobalState state) {
         this.state = state;
@@ -81,6 +82,13 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             record.put("error", error.getMessage());
             return false;
         }
+    }
+
+    List<Run> executeWithCoverage(TiDBMixedSupport io, Candidate query, List<Config> configs,
+            Map<String, Object> record, String coverageKey) {
+        List<Run> runs = io.executeAll(query.sql, configs);
+        record.put(coverageKey, coverage.record(query.ast, runs));
+        return runs;
     }
 
     private List<Run> replay(TiDBMixedSupport io, Candidate query, List<String> dump, List<Config> configs)
@@ -213,11 +221,12 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     break; // Data equivalence is a prerequisite; do not execute the mixed query or another revision.
                 }
                 List<Config> configs = TiDBMixedSupport.configurations(names(query));
-                List<Run> runs = io.executeAll(query.sql, configs);
+                List<Run> runs = executeWithCoverage(io, query, configs, record, "coverage");
                 Outcome outcome = TiDBMixedSupport.compare(runs);
                 record.put("runs", runs);
                 record.put("outcome", outcome);
                 report.put("status", outcome.status);
+                report.put("coverage", coverage.snapshot());
                 history.merge(outcome.status, 1L, Long::sum);
                 TiDBMixedSupport.save(directory.resolve("case.json"), report); // Save before any confirmation/mutation.
                 if (outcome.mismatch()) {
@@ -237,7 +246,9 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                             record.put("alternativeStatus", "NO_NEW_ASSIGNMENT");
                             continue;
                         }
-                        List<Run> alternate = io.executeAll(query.sql, alternatives);
+                        List<Run> alternate = executeWithCoverage(io, query, alternatives, record,
+                                "alternativeCoverage");
+                        report.put("coverage", coverage.snapshot());
                         Outcome alternativeOutcome = TiDBMixedSupport.compare(alternate);
                         record.put("alternativeRuns", alternate);
                         record.put("alternativeOutcome", alternativeOutcome);
@@ -278,12 +289,14 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             }
             report.putIfAbsent("status", "GENERATION_REJECTED");
             report.put("preflightCounts", preflightCounts());
+            report.put("coverage", coverage.snapshot());
             TiDBMixedSupport.save(directory.resolve("case.json"), report);
             if (preflightMismatch) {
                 TiDBMixedSupport.save(directory.resolve("preflight-mismatch.json"), report);
             }
             TiDBMixedSupport.save(directory.resolve("history.json"), history);
             TiDBMixedSupport.save(directory.resolve("preflight-counts.json"), preflightCounts());
+            TiDBMixedSupport.save(directory.resolve("coverage.json"), coverage.snapshot());
         }
         if (mismatch) {
             throw new AssertionError("Mixed-storage discrepancy; inspect " + directory);

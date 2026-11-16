@@ -103,6 +103,23 @@ PASS、DATA_PREFLIGHT_MISMATCH、PREFLIGHT_FAILED；确认/约简重建中的预
 `case.json.preflightCounts` 保存同一计数快照，`history.json` 单列主轮预检差异状态。
 主轮预检不同的完整证据另存为 `preflight-mismatch.json`，可单独筛选；它与普通预检执行失败分开。
 
+## 覆盖统计
+
+`attempts[].coverage`、`alternativeCoverage` 分别记录主执行、替代配置执行的本轮统计；
+`case.json.coverage` 和独立 `coverage.json` 保存同一 Oracle 实例跨 check 的累计快照。
+按查询表数记录 TiKV/TiFlash 表数比例（如 `tables=4;tikv=2;tiflash=2`），
+按查询表数、JOIN 类型和左右引擎记录组合（如 `tables=4;type=LEFT;left=tikv;right=tiflash`）。
+
+桶包含 `attempted`、`valid`、`failed` 和 `statuses`。仅状态 OK 的路径算有效覆盖，
+即使其结果与其他有效路径不同；无效计划和执行失败只增加尝试、失败及对应状态计数。
+已涉及维度保留零计数桶，方便识别覆盖不足。JOIN 左右侧以 SQL AST 为准，
+每个显式 JOIN 节点计一次，嵌套一侧含两种引擎记为 `mixed`；逗号 FROM 单列
+`pathsWithoutExplicitJoin`，统计不代表物理 JOIN 算法覆盖。
+
+预检、确认、约简和独立重放不计入该统计。更换 Oracle 实例后累计重置；
+跨 case 汇总使用各 attempt 的本轮统计，不重复相加累计快照。
+采样仍保持随机，计数不改变配置选择、SQL 或判定。
+
 ## DeepSeek 建议（可选）
 
 ```bash

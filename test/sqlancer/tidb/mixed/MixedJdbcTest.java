@@ -32,6 +32,10 @@ import sqlancer.SQLConnection;
 import sqlancer.StateToReproduce;
 import sqlancer.tidb.TiDBOracleFactory;
 import sqlancer.tidb.TiDBProvider;
+import sqlancer.tidb.ast.TiDBColumnReference;
+import sqlancer.tidb.ast.TiDBJoin;
+import sqlancer.tidb.ast.TiDBSelect;
+import sqlancer.tidb.ast.TiDBTableReference;
 import sqlancer.tidb.mixed.TiDBMixedSupport.Config;
 import sqlancer.tidb.mixed.TiDBMixedSupport.Run;
 
@@ -190,6 +194,40 @@ class MixedJdbcTest {
             assertEquals(expected * (expected - 1) / 2, TiDBMixedSupport.compare(runs).comparisons.size());
             assertTrue(runs.stream().allMatch(r -> r.snapshot.equals(io.snapshot)));
         }
+    }
+
+    @Test
+    void executionCoverageKeepsPrimaryAndAlternativePlanOutcomesSeparate() throws Exception {
+        MixedUnitTest.FakeState state = new MixedUnitTest.FakeState();
+        List<sqlancer.tidb.TiDBSchema.TiDBTable> tables = TiDBMixedGeneration.baseTables(state).subList(0, 2);
+        TiDBSelect ast = new TiDBSelect();
+        ast.setFetchColumns(List.of(new TiDBColumnReference(tables.get(0).getColumns().get(0))));
+        ast.setFromList(List.of());
+        ast.setJoinList(List.of(TiDBJoin.createCrossJoin(new TiDBTableReference(tables.get(0)),
+                new TiDBTableReference(tables.get(1)), null)));
+        TiDBMixedGeneration.Candidate query = new TiDBMixedGeneration.Candidate(ast, tables, List.of());
+        Fixture fixture = new Fixture();
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        TiDBAiMixedOracle oracle = new TiDBAiMixedOracle(state);
+        List<Config> configs = TiDBMixedSupport.configurations(List.of("t0", "t1"));
+        Map<String, Object> record = new LinkedHashMap<>();
+        List<Run> primary = oracle.executeWithCoverage(io, query, configs, record, "coverage");
+        assertEquals("PASS", TiDBMixedSupport.compare(primary).status);
+        fixture.invalidPlan = true;
+        List<Run> alternative = oracle.executeWithCoverage(io, query, configs, record, "alternativeCoverage");
+        assertTrue(alternative.stream().allMatch(r -> r.status.equals("INVALID_CONFIGURATION")));
+        Path file = temporary.resolve("coverage-evidence.json");
+        TiDBMixedSupport.save(file, record);
+        com.google.gson.JsonObject saved = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+        assertEquals(4L, saved.getAsJsonObject("coverage").getAsJsonObject("paths").get("valid").getAsLong());
+        com.google.gson.JsonObject failed = saved.getAsJsonObject("alternativeCoverage");
+        assertEquals(4L, failed.getAsJsonObject("paths").get("attempted").getAsLong());
+        assertEquals(0L, failed.getAsJsonObject("paths").get("valid").getAsLong());
+        assertEquals(4L,
+                failed.getAsJsonObject("paths").getAsJsonObject("statuses").get("INVALID_CONFIGURATION").getAsLong());
+        assertEquals(0L, failed.getAsJsonObject("joins").getAsJsonObject("tables=2;type=CROSS;left=tikv;right=tiflash")
+                .get("valid").getAsLong());
     }
 
     @Test
