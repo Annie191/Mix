@@ -30,6 +30,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
     private final TiDBGlobalState state;
     private String lastQuery = "";
     private final Map<String, Long> history = new LinkedHashMap<>();
+    private final Map<String, Long> preflightCounts = new LinkedHashMap<>(
+            Map.of("PASS", 0L, "DATA_PREFLIGHT_MISMATCH", 0L, "PREFLIGHT_FAILED", 0L));
 
     public TiDBAiMixedOracle(TiDBGlobalState state) {
         this.state = state;
@@ -50,6 +52,37 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 .allMatch(actual -> actual.differingPairs.containsAll(expected.differingPairs));
     }
 
+    Map<String, Long> preflightCounts() {
+        return new LinkedHashMap<>(preflightCounts);
+    }
+
+    private void countedPreflight(TiDBMixedSupport io, List<TiDBTable> tables) {
+        try {
+            io.preflight(tables);
+            preflightCounts.merge("PASS", 1L, Long::sum);
+        } catch (Rejected error) {
+            String status = error.status.equals("DATA_PREFLIGHT_MISMATCH") ? error.status : "PREFLIGHT_FAILED";
+            preflightCounts.merge(status, 1L, Long::sum);
+            throw error;
+        }
+    }
+
+    boolean preflightReady(TiDBMixedSupport io, List<TiDBTable> tables, Map<String, Object> record) {
+        try {
+            countedPreflight(io, tables);
+            record.put("preflightStatus", "PASS");
+            return true;
+        } catch (Rejected error) {
+            record.put("preflightStatus", error.status);
+            if (!error.status.equals("DATA_PREFLIGHT_MISMATCH")) {
+                throw error;
+            }
+            record.put("status", error.status);
+            record.put("error", error.getMessage());
+            return false;
+        }
+    }
+
     private List<Run> replay(TiDBMixedSupport io, Candidate query, List<String> dump, List<Config> configs)
             throws Exception {
         io.reset();
@@ -62,7 +95,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         state.updateSchema();
         io.replicas(query.tables);
         io.beginSnapshot();
-        io.preflight(query.tables);
+        countedPreflight(io, query.tables);
         return io.executeAll(query.sql, configs);
     }
 
@@ -121,11 +154,13 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         report.put("events", io.events);
         report.put("ai", ai.audit);
         report.put("priorHistory", new LinkedHashMap<>(history));
+        report.put("preflightCounts", preflightCounts);
         List<Map<String, Object>> attempts = new ArrayList<>();
         report.put("attempts", attempts);
         boolean mismatch = false;
         boolean passed = false;
         boolean cleanupFailed = false;
+        boolean preflightMismatch = false;
         try {
             io.initialize();
             for (int revision = 0; revision < 3; revision++) {
@@ -171,7 +206,12 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 io.replicas(query.tables);
                 io.beginSnapshot();
                 record.put("snapshot", io.snapshot);
-                io.preflight(query.tables);
+                if (!preflightReady(io, query.tables, record)) {
+                    preflightMismatch = true;
+                    report.put("status", "DATA_PREFLIGHT_MISMATCH");
+                    history.merge("DATA_PREFLIGHT_MISMATCH", 1L, Long::sum);
+                    break; // Data equivalence is a prerequisite; do not execute the mixed query or another revision.
+                }
                 List<Config> configs = TiDBMixedSupport.configurations(names(query));
                 List<Run> runs = io.executeAll(query.sql, configs);
                 Outcome outcome = TiDBMixedSupport.compare(runs);
@@ -237,8 +277,13 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 cleanupFailed = true;
             }
             report.putIfAbsent("status", "GENERATION_REJECTED");
+            report.put("preflightCounts", preflightCounts());
             TiDBMixedSupport.save(directory.resolve("case.json"), report);
+            if (preflightMismatch) {
+                TiDBMixedSupport.save(directory.resolve("preflight-mismatch.json"), report);
+            }
             TiDBMixedSupport.save(directory.resolve("history.json"), history);
+            TiDBMixedSupport.save(directory.resolve("preflight-counts.json"), preflightCounts());
         }
         if (mismatch) {
             throw new AssertionError("Mixed-storage discrepancy; inspect " + directory);

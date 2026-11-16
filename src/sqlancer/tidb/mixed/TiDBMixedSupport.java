@@ -237,29 +237,40 @@ public final class TiDBMixedSupport {
         exec("SET SESSION tidb_isolation_read_engines='tikv,tiflash'");
     }
 
-    public static List<Config> configurations(List<String> tables) {
+    public static List<Config> enumerateConfigurations(List<String> tables) {
         if (tables.size() < 2 || new LinkedHashSet<>(tables).size() != tables.size()) {
             throw new IllegalArgumentException("mixed assignments require distinct tables, at least two");
         }
         List<Config> result = new ArrayList<>();
-        for (String engine : List.of("tikv", "tiflash")) {
-            Map<String, String> assignments = new LinkedHashMap<>();
-            tables.forEach(t -> assignments.put(t, engine));
-            result.add(new Config(assignments));
-        }
-        int pivot = (int) Randomly.getNotCachedInteger(0, tables.size());
-        for (boolean reverse : List.of(false, true)) {
-            Map<String, String> assignments = new LinkedHashMap<>();
-            for (int i = 0; i < tables.size(); i++) {
-                boolean flash = i == pivot;
-                if (reverse) {
-                    flash = !flash;
+        result.add(new Config(Map.of(tables.get(0), "tikv")));
+        result.add(new Config(Map.of(tables.get(0), "tiflash")));
+        for (int i = 1; i < tables.size(); i++) {
+            List<Config> expanded = new ArrayList<>();
+            for (Config prefix : result) {
+                for (String engine : List.of("tikv", "tiflash")) {
+                    Map<String, String> assignments = new LinkedHashMap<>(prefix.engines);
+                    assignments.put(tables.get(i), engine);
+                    expanded.add(new Config(assignments));
                 }
-                assignments.put(tables.get(i), flash ? "tiflash" : "tikv");
             }
-            result.add(new Config(assignments));
+            result = expanded;
         }
         return result;
+    }
+
+    public static List<Config> configurations(List<String> tables) {
+        List<Config> all = enumerateConfigurations(tables);
+        List<Config> selected = all.stream().filter(c -> !c.mixed()).collect(Collectors.toList());
+        List<Config> mixed = all.stream().filter(Config::mixed).collect(Collectors.toList());
+        int count = requiredConfigurationCount(tables.size());
+        while (selected.size() < count) {
+            selected.add(mixed.remove((int) Randomly.getNotCachedInteger(0, mixed.size())));
+        }
+        return selected;
+    }
+
+    private static int requiredConfigurationCount(int tableCount) {
+        return tableCount == 2 ? 4 : tableCount == 3 ? 8 : 6;
     }
 
     public static String configure(String base, Config config) {
@@ -454,12 +465,16 @@ public final class TiDBMixedSupport {
     }
 
     private static boolean completeConfigurations(List<Run> runs) {
-        if (runs.size() != 4 || runs.stream().filter(r -> r.config.mixed()).count() != 2
-                || runs.stream().map(r -> r.config.name).distinct().count() != 4) {
+        if (runs.isEmpty()) {
             return false;
         }
         Set<String> tables = runs.get(0).config.engines.keySet();
         if (tables.size() < 2 || runs.stream().anyMatch(r -> !r.config.engines.keySet().equals(tables))) {
+            return false;
+        }
+        int count = requiredConfigurationCount(tables.size());
+        if (runs.size() != count || runs.stream().filter(r -> r.config.mixed()).count() != count - 2
+                || runs.stream().map(r -> r.config.name).distinct().count() != count) {
             return false;
         }
         Set<String> baselines = runs.stream().filter(r -> !r.config.mixed())

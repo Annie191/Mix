@@ -52,11 +52,12 @@ SQLancer 自身的默认密码是 `sqlancer`，空密码必须显式传入。密
 2. 复用 SQLancer AST、表达式和 JOIN，按需补充整数连接列；只渲染一次并冻结 SQL。
 3. 复用 INSERT 生成器，通过可选回调应用 RANDOM、SHARED 或 NULL_HEAVY 数据偏好。
 4. 导出实际数据，全量采样 ANALYZE，建立并等待 TiFlash 副本，取得共同 TSO，执行单表双引擎预检。
-5. 随机执行 TiKV-only、TiFlash-only、两组互补混合分配。两表时覆盖全部四种分配。
+5. 完整枚举逐表分配：两表执行全部 4 种，三表执行全部 8 种；更多表随机选 6 种，
+   固定包含 TiKV-only、TiFlash-only，另选 4 种不同混合配置，执行顺序随机。
 6. 每条路径验证 EXPLAIN 和 EXPLAIN ANALYZE 的逐表引擎，然后比较完整结果多重集。
 
 修改 S/Q/D 会创建新 revision；仅改变引擎分配保留原 SQL、数据和 TSO。
-多表默认采样四条路径，不穷举全部分配。无 ORDER BY、LIMIT、别名、多查询块、UNION 或 CTE。
+当前 Schema 生成器仍最多创建 5 张表。无 ORDER BY、LIMIT、别名、多查询块、UNION 或 CTE。
 计划消除了表、PointGet 没有明确引擎或出现未知扫描格式时，保守拒绝配置。
 目标 TiDB 的默认 ANALYZE 会产生自动采样 Note 1105；这里显式使用 `WITH 1 SAMPLERATE`，
 使生成的小数据集全量采样，并继续严格检查所有 SQL Warning。
@@ -70,14 +71,15 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 结果包含 JDBC 列标签和类型信息，每次读取最多 10,000 行、16 MiB 字符表示预算；
 超限不比较截断结果。Connector/J 使用流式结果读取。
 
-比较所有状态为 `OK` 的路径对，包括两条混合路径之间的比较；四条有效路径共比较 6 对。
-`outcome.allPathsValid` 独立记录是否具有四种要求的不同配置且全部有效。
+比较所有状态为 `OK` 的路径对，包括混合路径之间的比较；4、8、6 条有效路径分别比较 6、28、15 对。
+`outcome.allPathsValid` 独立记录是否具有本轮要求的 4、8 或 6 种不同配置且全部有效，
+并检查相同表集合及两条不同的单引擎基线。更多表的 PASS 仅表示所选 6 种配置通过。
 `outcome.differingPairs` 和 `outcome.mismatchTypes` 保留所有已发现的差异对及分类，
 `failures` 保留失败路径；差异判定不要求 `allPathsValid=true`。
 
 | 状态 | 含义 |
 |---|---|
-| PASS | 两条独立单引擎基线和两条不同混合配置全部有效、结果一致 |
+| PASS | 本轮要求的全部配置有效且结果一致，包含两条独立单引擎基线 |
 | BASELINE_DISAGREEMENT | TiKV 与 TiFlash 单引擎基线不同 |
 | MIXED_VS_SINGLE_MISMATCH | 有效混合路径与有效单引擎路径不同 |
 | MIXED_VS_MIXED_MISMATCH | 两条有效混合路径不同，即使单引擎基线失败也报告 |
@@ -92,6 +94,14 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 MIXED_VS_MIXED_MISMATCH 的顺序选择，完整分类和配置对均保留。
 只有未发现差异且 `allPathsValid=true` 才为 PASS；未发现差异但路径不完整时保留失败分类。
 Oracle 仅将 PASS 计入 SQLancer 成功比较数；跳过的候选保存证据并抛出 `IgnoreMeException`。
+
+基础表预检一致后才执行上述比较。预检不同属于数据等价前提不成立：保存
+`DATA_PREFLIGHT_MISMATCH`，停止本次 `check()`，不重试下一 revision，不作为混合查询缺陷报告。
+每个 case 保存独立 `preflight-counts.json`，累计本 Oracle 实例的预检批次：
+PASS、DATA_PREFLIGHT_MISMATCH、PREFLIGHT_FAILED；确认/约简重建中的预检也计数。
+首次不同即结束该批次，因此差异数按批次计，不按表或结果行计。
+`case.json.preflightCounts` 保存同一计数快照，`history.json` 单列主轮预检差异状态。
+主轮预检不同的完整证据另存为 `preflight-mismatch.json`，可单独筛选；它与普通预检执行失败分开。
 
 ## DeepSeek 建议（可选）
 

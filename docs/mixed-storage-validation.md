@@ -100,3 +100,24 @@ mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
 本次完整 verify 成功（约 137 秒）：30 项测试、29 项通过、1 项真实集群测试预期跳过，
 0 失败、0 错误。打包、formatter、XML、Checkstyle、PMD 和 SpotBugs 全部通过，
 SpotBugs 报告 0 个 bug、0 个 error。
+
+## 基础表预检分流与配置枚举回归
+
+配置策略改为两表全部 4 种、三表全部 8 种、更多表完整枚举后随机选择 6 种，
+其中固定包含全 TiKV、全 TiFlash。基础表预检不同则停止本轮，独立保存证据及计数。
+改动细节见 [追加说明](mixed-storage-comparison-fix.md#追加基础表预检分流与配置覆盖)。
+
+新增 `MixedConfigurationTest` 7 项和 `MixedJdbcTest` 3 项：
+
+- 2 至 5 表完整枚举得到 4、8、16、32 种无重复组合。
+- 两表和三表全选；4、5 表抽取 6 种，保留两条单引擎基线及四条不同混合配置，
+  多种随机种子可选择不同集合，并覆盖两表/两表的平衡分配。
+- 正式比较的完整路径预算为 4、8、6，比较对数为 6、28、15；缺失、重复和失败不能 PASS。
+- 混合路径差异在基线失败时仍报告，确认逻辑适用于扩展配置集。
+- JDBC fixture 执行 3、4、5 表所选配置，验证计划、共同快照和实际比较对数。
+- 预检差异保留两个有效读取结果，首次发现即结束预检，返回停止信号，计数和 JSON 证据独立保留；
+  预检一致后可进入正式比较，普通 Warning 归入 PREFLIGHT_FAILED。
+
+执行同一完整 verify 命令成功（约 81 秒）：40 项测试、39 项通过、1 项真实集群测试预期跳过，
+0 失败、0 错误。打包、formatter、XML、Checkstyle、PMD 和 SpotBugs 全部通过。
+本次未重启真实集群或重新运行随机冒烟，JDBC fixture 不代表真实 TiFlash 集成测试。

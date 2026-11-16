@@ -15,6 +15,7 @@ import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -172,6 +173,86 @@ class MixedJdbcTest {
     }
 
     @Test
+    void expandedConfigurationsExecuteEverySelectedPathWithOneSnapshot() throws Exception {
+        for (int tableCount : List.of(3, 4, 5)) {
+            Fixture fixture = new Fixture();
+            fixture.tableCount = tableCount;
+            TiDBMixedSupport io = fixture.support();
+            io.beginSnapshot();
+            List<String> tables = java.util.stream.IntStream.range(0, tableCount).mapToObj(i -> "t" + i)
+                    .collect(Collectors.toList());
+            List<Run> runs = io.executeAll("SELECT t0.c FROM " + String.join(",", tables),
+                    TiDBMixedSupport.configurations(tables));
+            int expected = tableCount == 3 ? 8 : 6;
+            assertEquals(expected, runs.size());
+            assertEquals(expected, fixture.streams);
+            assertEquals("PASS", TiDBMixedSupport.compare(runs).status);
+            assertEquals(expected * (expected - 1) / 2, TiDBMixedSupport.compare(runs).comparisons.size());
+            assertTrue(runs.stream().allMatch(r -> r.snapshot.equals(io.snapshot)));
+        }
+    }
+
+    @Test
+    void preflightDisagreementStopsTheRoundAndHasSeparateCountersAndEvidence() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.preflightMismatch = true;
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        TiDBAiMixedOracle oracle = new TiDBAiMixedOracle(new MixedUnitTest.FakeState());
+        List<sqlancer.tidb.TiDBSchema.TiDBTable> tables = TiDBMixedGeneration.baseTables(new MixedUnitTest.FakeState())
+                .subList(0, 2);
+        Map<String, Object> record = new LinkedHashMap<>();
+        assertFalse(oracle.preflightReady(io, tables, record));
+        assertEquals("DATA_PREFLIGHT_MISMATCH", record.get("status"));
+        assertEquals("DATA_PREFLIGHT_MISMATCH", record.get("preflightStatus"));
+        assertEquals(Map.of("PASS", 0L, "DATA_PREFLIGHT_MISMATCH", 1L, "PREFLIGHT_FAILED", 0L),
+                oracle.preflightCounts());
+        assertEquals(2, fixture.streams); // Stop at the first differing table; no mixed query is executed.
+        assertFalse(fixture.queries.stream().anyMatch(q -> q.contains("TIKV[") && q.contains("TIFLASH[")));
+        Map<String, Object> event = io.events.stream().filter(e -> "PREFLIGHT".equals(e.get("stage"))).findFirst()
+                .orElseThrow();
+        Run kv = (Run) event.get("tikv");
+        Run flash = (Run) event.get("tiflash");
+        assertEquals("OK", kv.status);
+        assertEquals("OK", flash.status);
+        assertEquals(kv.snapshot, flash.snapshot);
+        assertFalse(kv.bag.equals(flash.bag));
+        Path file = temporary.resolve("preflight-mismatch.json");
+        TiDBMixedSupport.save(file,
+                Map.of("attempts", List.of(record), "events", io.events, "preflightCounts", oracle.preflightCounts()));
+        com.google.gson.JsonObject saved = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+        assertEquals(1L, saved.getAsJsonObject("preflightCounts").get("DATA_PREFLIGHT_MISMATCH").getAsLong());
+        assertFalse(saved.getAsJsonArray("attempts").get(0).getAsJsonObject().has("runs"));
+        assertFalse(oracle.preflightReady(io, tables, new LinkedHashMap<>()));
+        assertEquals(2L, oracle.preflightCounts().get("DATA_PREFLIGHT_MISMATCH"));
+        fixture.preflightMismatch = false;
+        assertTrue(oracle.preflightReady(io, tables, new LinkedHashMap<>()));
+        assertEquals(1L, oracle.preflightCounts().get("PASS"));
+        assertEquals(2L, oracle.preflightCounts().get("DATA_PREFLIGHT_MISMATCH"));
+    }
+
+    @Test
+    void matchingPreflightAllowsComparisonAndOrdinaryFailuresAreCountedSeparately() throws Exception {
+        Fixture fixture = new Fixture();
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        TiDBAiMixedOracle oracle = new TiDBAiMixedOracle(new MixedUnitTest.FakeState());
+        List<sqlancer.tidb.TiDBSchema.TiDBTable> tables = TiDBMixedGeneration.baseTables(new MixedUnitTest.FakeState())
+                .subList(0, 2);
+        Map<String, Object> record = new LinkedHashMap<>();
+        assertTrue(oracle.preflightReady(io, tables, record));
+        assertEquals("PASS", record.get("preflightStatus"));
+        List<Run> runs = io.executeAll("SELECT t0.c FROM t0,t1", TiDBMixedSupport.configurations(List.of("t0", "t1")));
+        assertEquals("PASS", TiDBMixedSupport.compare(runs).status);
+        fixture.warning = new SQLWarning("fixture warning", "01000", 1815);
+        TiDBMixedSupport.Rejected rejected = assertThrows(TiDBMixedSupport.Rejected.class,
+                () -> oracle.preflightReady(io, tables, new LinkedHashMap<>()));
+        assertEquals("PREFLIGHT_FAILED", rejected.status);
+        assertEquals(Map.of("PASS", 1L, "DATA_PREFLIGHT_MISMATCH", 0L, "PREFLIGHT_FAILED", 1L),
+                oracle.preflightCounts());
+    }
+
+    @Test
     void warningsErrorsAndResourceLimitsNeverBecomePasses() {
         Fixture fixture = new Fixture();
         Config config = new Config(Map.of("t0", "tikv", "t1", "tiflash"));
@@ -230,6 +311,8 @@ class MixedJdbcTest {
         final List<String> queries = new ArrayList<>();
         boolean invalidPlan;
         boolean mixedOnlyDisagreement;
+        boolean preflightMismatch;
+        int tableCount = 2;
         int streams;
         int rowCount = 2;
         int resultType = Types.INTEGER;
@@ -290,7 +373,11 @@ class MixedJdbcTest {
                 List<Object[]> scans = new ArrayList<>();
                 java.util.regex.Matcher flash = java.util.regex.Pattern.compile("TIFLASH\\[([^]]+)\\]").matcher(sql);
                 String flashTables = flash.find() ? flash.group(1) : "";
-                for (String table : List.of("t0", "t1")) {
+                for (int i = 0; i < tableCount; i++) {
+                    String table = "t" + i;
+                    if (!sql.contains("`" + table + "`")) {
+                        continue;
+                    }
                     String engine = flashTables.contains("`" + table + "`") ? "tiflash" : "tikv";
                     scans.add(new Object[] { "TableFullScan_1", "cop[" + engine + "]", "table:" + table });
                 }
@@ -300,7 +387,7 @@ class MixedJdbcTest {
                 return rows(new String[] { "id", "task", "access object" },
                         new int[] { Types.VARCHAR, Types.VARCHAR, Types.VARCHAR }, scans);
             }
-            int value = mixedOnlyDisagreement && sql.contains("TIFLASH[`t0`]") ? 2 : 1;
+            int value = (mixedOnlyDisagreement || preflightMismatch) && sql.contains("TIFLASH[`t0`]") ? 2 : 1;
             return rows(new String[] { "c" }, new int[] { resultType }, java.util.stream.IntStream.range(0, rowCount)
                     .mapToObj(i -> new Object[] { value }).collect(Collectors.toList()));
         }
