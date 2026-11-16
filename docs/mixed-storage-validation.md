@@ -166,3 +166,50 @@ python3 src/check_names.py
 
 本次没有调用真实 DeepSeek、运行真实 TiDB/TiFlash 或执行任何补行。
 fixture 仅验证协议交互，不证明提示词效果、数据库约束满足或场景已在真实集群形成。
+
+## 实际元数据与只读观测回归（第二环节）
+
+新增 24 项离线回归：`MixedMetadataTest` 7 项、`MixedObservationTest` 16 项，
+以及 `DataPreparationProtocolTest` 中 1 项实际空字符串/空白默认值回归。
+
+- 元数据：原始精确类型、默认值、生成表达式、生成列排除、占位列兼容；
+  联合唯一键顺序、前缀和表达式索引、CHECK 启用状态、采集失败及不完整约束声明。
+- 实际探测 SQL 在 H2 固定数据上执行，TiDB 会话语句使用 JDBC fixture：
+  LEFT/RIGHT JOIN、重复输入、NULL、WHERE、GROUP BY/HAVING、全局聚合空输入、精确频率与截断样本。
+- 预算不足、Warning 和执行错误不能伪装成 0；未支持的 JOIN/WHERE 范围明确标记；
+  复用/恢复快照及引擎设置、拒绝未知能力、优先测量查询事实、精确数值和二进制表示。
+- 空默认值用例先运行旧校验器，失败为 expected nonempty text；修正后保留实际空字符串。
+
+新增 `MixedFactsIntegrationTest` 2 项，在独立临时实例上真实执行：
+
+```bash
+MS_FACTS_INTEGRATION=true TIDB_HOST=127.0.0.1 TIDB_PORT=24900 TIDB_USER=root \
+  mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+```
+
+实例使用本机 `/home/lwm/tidb/bin/tidb-server-latest-lwm`，`TIDB_VERSION()` 校验 Git Commit
+为 `b1d4142f99`，存储为 unistore。测试创建并清理独立数据库，临时启用 CHECK 后恢复原全局设置。
+这证明该 TiDB 的实际元数据和 SQL 探测行为，不代表 TiKV/TiFlash 分布式集成测试。
+
+真实测试核对：生成列、BIGINT UNSIGNED、DECIMAL(38,2)、普通/空默认值、复合/前缀唯一键、
+启用与未启用 CHECK；实际状态包可以经 v1 校验并 JSON 保存/读取，null 字段保留。
+
+计数数据固定为 `t0.k=[1,1,NULL,2]`、`t1.k=[1,1,3]`：
+
+| 实际观测 | 结果 |
+|---|---:|
+| LEFT JOIN 匹配行对 | 4 |
+| 左侧 / 右侧未匹配输入行 | 2 / 1 |
+| LEFT JOIN 输出行（分组前） | 6 |
+| 左侧可重复匹配输入行 | 2 |
+| 至少有两对匹配的键组 | 1 |
+| GROUP BY t0.k 的组数 | 3 |
+| HAVING COUNT(*) > 1 后的组数 / 这些组的输入行数 | 1 / 4 |
+| WHERE FALSE 后、聚合前输入行数 | 0 |
+| 原 COUNT(*) 查询是否为空 | false |
+
+完整 verify：98 项测试，97 项通过（95 项离线、2 项真实 TiDB），
+1 项原 TiFlash 集群测试预期跳过，0 失败、0 错误。
+构建、formatter、XML、Checkstyle、PMD、SpotBugs 及命名检查通过。
+本次没有调用 DeepSeek、执行 AI 补行或重新运行 TiFlash 四路径差分集成测试。

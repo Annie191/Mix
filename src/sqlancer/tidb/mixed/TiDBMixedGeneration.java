@@ -79,9 +79,10 @@ public final class TiDBMixedGeneration {
         return state.getSchema().getDatabaseTables().stream().filter(t -> !t.isView()).collect(Collectors.toList());
     }
 
-    private static TiDBColumn integerColumn(TiDBTable table) {
+    static TiDBColumn integerColumn(TiDBTable table) {
         List<TiDBColumn> columns = table.getColumns().stream()
-                .filter(c -> c.getType().getPrimitiveDataType() == TiDBDataType.INT).collect(Collectors.toList());
+                .filter(c -> c.getType().getPrimitiveDataType() == TiDBDataType.INT && !c.isGenerated())
+                .collect(Collectors.toList());
         return columns.isEmpty() ? null : Randomly.fromList(columns);
     }
 

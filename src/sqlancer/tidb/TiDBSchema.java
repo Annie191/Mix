@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
@@ -161,13 +162,25 @@ public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
         private final boolean isPrimaryKey;
         private final boolean isNullable;
         private final boolean hasDefault;
+        private final String sqlType;
+        private final String defaultValue;
+        private final String extra;
 
         public TiDBColumn(String name, TiDBCompositeDataType columnType, boolean isPrimaryKey, boolean isNullable,
                 boolean hasDefault) {
+            this(name, columnType, isPrimaryKey, isNullable, hasDefault,
+                    columnType == null ? "UNKNOWN" : columnType.getPrimitiveDataType().name(), null, "");
+        }
+
+        public TiDBColumn(String name, TiDBCompositeDataType columnType, boolean isPrimaryKey, boolean isNullable,
+                boolean hasDefault, String sqlType, String defaultValue, String extra) {
             super(name, null, columnType);
             this.isPrimaryKey = isPrimaryKey;
             this.isNullable = isNullable;
             this.hasDefault = hasDefault;
+            this.sqlType = sqlType;
+            this.defaultValue = defaultValue;
+            this.extra = extra == null ? "" : extra;
         }
 
         @Override
@@ -181,6 +194,27 @@ public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
 
         public boolean hasDefault() {
             return hasDefault;
+        }
+
+        public String getSqlType() {
+            return sqlType;
+        }
+
+        public String getDefaultValue() {
+            return defaultValue;
+        }
+
+        public String getExtra() {
+            return extra;
+        }
+
+        public boolean isGenerated() {
+            String normalized = extra.toUpperCase(Locale.ROOT);
+            return normalized.contains("VIRTUAL GENERATED") || normalized.contains("STORED GENERATED");
+        }
+
+        public boolean isAutoIncrement() {
+            return extra.toLowerCase(Locale.ROOT).contains("auto_increment");
         }
 
     }
@@ -210,7 +244,8 @@ public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
     }
 
     private static TiDBCompositeDataType getColumnType(String typeString) {
-        String trimmedStringType = typeString.replace(" zerofill", "").replace(" unsigned", "");
+        String trimmedStringType = typeString.toLowerCase(Locale.ROOT).replace(" zerofill", "").replace(" unsigned",
+                "");
         if (trimmedStringType.contains("decimal")) {
             return new TiDBCompositeDataType(TiDBDataType.DECIMAL);
         }
@@ -223,6 +258,9 @@ public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
         }
         TiDBDataType primitiveType;
         int size = -1;
+        if (trimmedStringType.startsWith("mediumint")) {
+            return TiDBCompositeDataType.getInt(3);
+        }
         if (trimmedStringType.startsWith("bigint")) {
             primitiveType = TiDBDataType.INT;
             size = 8;
@@ -357,7 +395,7 @@ public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
                     boolean isPrimaryKey = rs.getString("Key").contains("PRI");
                     boolean hasDefault = rs.getString("Default") != null;
                     TiDBColumn c = new TiDBColumn(columnName, getColumnType(dataType), isPrimaryKey, isNullable,
-                            hasDefault);
+                            hasDefault, dataType, rs.getString("Default"), rs.getString("Extra"));
                     columns.add(c);
                 }
             }

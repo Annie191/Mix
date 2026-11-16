@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import com.google.gson.GsonBuilder;
 
 import sqlancer.Randomly;
+import sqlancer.SQLConnection;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
 
@@ -111,6 +112,10 @@ public final class TiDBMixedSupport {
 
     public TiDBMixedSupport(TiDBGlobalState state) {
         this.state = state;
+    }
+
+    SQLConnection connection() {
+        return state.getConnection();
     }
 
     public static String quoteIdentifier(String identifier) {
@@ -541,9 +546,8 @@ public final class TiDBMixedSupport {
         Files.createDirectories(target.getParent());
         Path temporary = Files.createTempFile(target.getParent(), ".mixed-", ".json.tmp");
         try {
-            Files.writeString(temporary,
-                    new GsonBuilder().setPrettyPrinting().enableComplexMapKeySerialization().create().toJson(value),
-                    StandardCharsets.UTF_8);
+            Files.writeString(temporary, new GsonBuilder().setPrettyPrinting().serializeNulls()
+                    .enableComplexMapKeySerialization().create().toJson(value), StandardCharsets.UTF_8);
             try {
                 Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
             } catch (AtomicMoveNotSupportedException e) {

@@ -169,3 +169,34 @@ decision(modelContentJson, state); // 校验结构、引用、版本、权限和
 
 本环节尚未接入模型调用、元数据/观测采集、补行执行及反馈调度，不改变现有 Oracle 运行路径。
 新增 22 项协议回归测试；完整验证结果见 [验证记录](mixed-storage-validation.md#ai-数据准备协议与提示词回归第一环节)。
+
+## 追加：实际元数据与只读观测（第二环节）
+
+新增 [TiDBMixedMetadata](../src/sqlancer/tidb/mixed/TiDBMixedMetadata.java)，读取实际列定义、
+默认值、生成表达式、有序主键/唯一索引组合及 CHECK，并保留完整 DDL。
+前缀长度和表达式索引另存 key_parts；CHECK 的启用状态与该版本 SHOW CREATE 核对。
+读取失败或语义未完整表示时标记 metadata_complete=false，不当作“无约束”。
+TiDBColumn 保留原始类型、默认值、Extra；引导连接列明确排除生成列。
+
+新增 [TiDBMixedObservations](../src/sqlancer/tidb/mixed/TiDBMixedObservations.java)：
+
+- 表行数、NULL 数、单列键频率和带类型样本。
+- 简单列等值 JOIN 的匹配行对、两侧未匹配输入、重复匹配及 WHERE 后统计。
+- 原 FROM/JOIN 在 WHERE 前后的输入行数、原查询是否为空、显式列 GROUP BY 的分组大小与 HAVING 前后摘要。
+
+匹配数使用 INNER JOIN / EXISTS 语义独立计算，**外连接输出行数不当作匹配数**；
+分组前输入、分组总数和 HAVING 后组数分别记录，**聚合结果行数不当作分组前行数**。
+复杂 JOIN、跨多表的局部 WHERE 统计及未支持的分组语义明确记为 unsupported，不返回伪造的 0。
+
+探测共用一个 TiKV 快照，结束后恢复会话；默认最多 64 次探测、每列表 64 行、10 秒探测预算。
+结果区分 exact / sampled / unsupported / unknown / error；审计保留 SQL、TSO、目标、版本及错误。
+statePacket() 将实际元数据与观测接回 v1 协议。JSON 落盘保留 null，避免遗漏必需字段。
+
+Oracle 在初始填充后保存 actualMetadata、metadataEvidence、observations、samples、
+observationEvidence、observationSnapshot 和 availableObservations。
+本环节仍未执行新的 AI 补行决策或反馈循环。
+详细语义、支持边界及核对方法见 [说明文档](data-preparation-observations.md)。
+
+新增 24 项离线回归及 2 项真实 TiDB 验证；共 98 项测试，97 项通过、1 项原 TiFlash 集群测试预期跳过。
+完整构建和静态检查通过。真实探测验证使用目标提交的独立 unistore 实例，未宣称 TiFlash 差分验证通过；
+命令及可核对的计数结果见 [验证记录](mixed-storage-validation.md#实际元数据与只读观测回归第二环节)。

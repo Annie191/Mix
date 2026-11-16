@@ -233,7 +233,9 @@ public final class TiDBDataPreparationProtocol {
                 bool(column.get("generated"));
                 bool(column.get("auto_increment"));
                 nullableText(column.get("generation_expression"));
-                nullableText(column.get("default_expression"));
+                if (!column.get("default_expression").isJsonNull()) {
+                    string(column.get("default_expression")); // Empty/whitespace defaults are actual catalog data.
+                }
             }
             array(table.get("constraints")); // Constraint acquisition/semantics belong to stage two.
         }

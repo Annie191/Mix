@@ -209,6 +209,25 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 Profile profile = dataAdvice.action == Action.SET_PROFILE ? dataAdvice.profile
                         : Randomly.fromOptions(Profile.values());
                 record.put("dataGeneration", TiDBMixedGeneration.fill(state, query, profile, io));
+                TiDBMixedMetadata actualMetadata = TiDBMixedMetadata.collect(io, state.getDatabaseName(), query.tables,
+                        revision);
+                record.put("actualMetadata", actualMetadata.schema);
+                record.put("metadataEvidence", actualMetadata.evidence);
+                TiDBMixedObservations facts = new TiDBMixedObservations(query, "query_" + revision, revision, 0);
+                try {
+                    facts.collect(io, facts.allIds(), new TiDBMixedObservations.Budget(64, 64, 10_000));
+                    record.put("observationStatus", "COLLECTED");
+                } catch (java.sql.SQLException | Rejected error) {
+                    record.put("observationStatus", "ERROR");
+                    record.put("observationError", error.toString());
+                    throw error; // An un-restored session cannot safely enter differential execution.
+                } finally {
+                    record.put("observations", facts.observations);
+                    record.put("samples", facts.samples);
+                    record.put("observationEvidence", facts.audit);
+                    record.put("availableObservations", facts.available());
+                    record.put("observationSnapshot", facts.snapshot);
+                }
                 List<String> dump = io.dump(query.tables);
                 record.put("restoreStatements", dump);
                 io.replicas(query.tables);

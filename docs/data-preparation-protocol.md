@@ -1,7 +1,8 @@
 # AI 数据准备协议与提示词 v1.0
 
 第一环节交付：协议、提示词、可执行的格式校验和完整交互示例。
-**当前尚未接入真实模型调用、观测采集、补行执行或反馈调度；现有 Oracle 运行行为保持不变。**
+**当前尚未接入新的模型决策调用、补行执行或反馈调度。**
+第二环节已增加 [实际元数据与只读观测](data-preparation-observations.md)，并接入 Oracle 的初始数据填充后采集。
 示例中的约束、观测和写入反馈是说明协议的人工 fixture，不是真实集群实验结果。
 
 ## 目的与职责
@@ -82,13 +83,14 @@ JOIN 项包含 `id, type, left_tables, right_tables, on`；条件不存在时为
 联合键的 columns 保留列顺序。不能完整表达的约束应保留说明并将 metadata_complete 标为 false，
 不能默默遗漏后仍声称元数据完整。
 
-缺少元数据时标注 complete=false，不能把“未知约束”当作“没有约束”。元数据的实际采集在第二环节实现。
+缺少元数据时标注 complete=false，不能把“未知约束”当作“没有约束”。实际采集已在第二环节实现。
+主键/唯一索引还可带 key_parts，保存表达式及前缀长度；不能把它们当成全列唯一。
 当前代码检查元数据容器、列字段及可写性声明，不验证数据库是否确实满足这些声明，也不求解 CHECK。
 
 观测状态只能为 `exact`、`sampled`、`unknown`、`unsupported`、`error`。
 没有结果用 null 表示，不能用 0 伪装；例如精确计数的 value 可为 `{"count":"2"}`。
 `available_observations` 的条目绑定具体目标，模型通过 ID 请求，例如 `join_after` 绑定 JOIN j0。
-模型不能提供任意查询或更改该 target。第二环节再实现这些能力，示例目录不是现有能力声明。
+模型不能提供任意查询或更改该 target。实际能力及 ID 见第二环节的 available()；本文人工示例的目录不代表当前实例必然支持。
 
 `history` 每项记录 `decision_id, decision, validation_status, data_revision_before,
 data_revision_after, writes, observation_ids, failure_reason`。

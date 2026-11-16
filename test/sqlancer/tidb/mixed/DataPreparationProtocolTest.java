@@ -384,4 +384,14 @@ class DataPreparationProtocolTest {
         String packet = state.toString();
         assertThrows(IllegalArgumentException.class, () -> TiDBDataPreparationProtocol.messages(packet));
     }
+
+    @Test
+    void emptyAndWhitespaceDefaultsRemainActualCatalogValues() throws Exception {
+        for (String value : List.of("", " ")) {
+            JsonObject state = state();
+            column(state).addProperty("default_expression", value);
+            assertEquals(value, column(TiDBDataPreparationProtocol.state(state.toString())).get("default_expression")
+                    .getAsString());
+        }
+    }
 }
