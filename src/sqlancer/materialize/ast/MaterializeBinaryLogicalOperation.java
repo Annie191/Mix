@@ -2,7 +2,6 @@ package sqlancer.materialize.ast;
 
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 import sqlancer.materialize.MaterializeSchema.MaterializeDataType;
 import sqlancer.materialize.ast.MaterializeBinaryLogicalOperation.BinaryLogicalOperator;
 

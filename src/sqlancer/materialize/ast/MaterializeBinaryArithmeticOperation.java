@@ -4,7 +4,6 @@ import java.util.function.BinaryOperator;
 
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 import sqlancer.materialize.MaterializeSchema.MaterializeDataType;
 import sqlancer.materialize.ast.MaterializeBinaryArithmeticOperation.MaterializeBinaryOperator;
 

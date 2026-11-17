@@ -348,7 +348,7 @@ public class YSQLProvider extends SQLProviderAdapter<YSQLGlobalState, YSQLOption
         }), //
         RESET_ROLE((g) -> new SQLQueryAdapter("RESET ROLE")), //
         COMMENT_ON(YSQLCommentGenerator::generate), //
-        RESET((g) -> new SQLQueryAdapter("RESET ALL") /*
+        RESET((g) -> new SQLQueryAdapter("RESET ALL")/*
                                                        * https://www.postgres.org/docs/devel/sql-reset.html TODO: also
                                                        * configuration parameter
                                                        */), //

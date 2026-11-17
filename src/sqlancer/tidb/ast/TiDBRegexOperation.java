@@ -2,7 +2,6 @@ package sqlancer.tidb.ast;
 
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 import sqlancer.tidb.ast.TiDBRegexOperation.TiDBRegexOperator;
 
 public class TiDBRegexOperation extends BinaryOperatorNode<TiDBExpression, TiDBRegexOperator>

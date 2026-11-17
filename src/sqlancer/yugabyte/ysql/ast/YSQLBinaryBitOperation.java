@@ -2,7 +2,6 @@ package sqlancer.yugabyte.ysql.ast;
 
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 import sqlancer.yugabyte.ysql.YSQLSchema.YSQLDataType;
 import sqlancer.yugabyte.ysql.ast.YSQLBinaryBitOperation.YSQLBinaryBitOperator;
 

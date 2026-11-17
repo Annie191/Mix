@@ -3,7 +3,6 @@ package sqlancer.cockroachdb.ast;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.ast.CockroachDBBinaryArithmeticOperation.CockroachDBBinaryArithmeticOperator;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 
 public class CockroachDBBinaryArithmeticOperation
         extends BinaryOperatorNode<CockroachDBExpression, CockroachDBBinaryArithmeticOperator>

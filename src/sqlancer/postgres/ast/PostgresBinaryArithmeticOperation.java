@@ -4,7 +4,6 @@ import java.util.function.BinaryOperator;
 
 import sqlancer.Randomly;
 import sqlancer.common.ast.BinaryOperatorNode;
-import sqlancer.common.ast.BinaryOperatorNode.Operator;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.ast.PostgresBinaryArithmeticOperation.PostgresBinaryOperator;
 

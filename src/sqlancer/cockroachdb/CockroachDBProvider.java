@@ -83,10 +83,9 @@ public class CockroachDBProvider extends SQLProviderAdapter<CockroachDBGlobalSta
             return new SQLQueryAdapter(sb.toString(), errors);
         }), //
         SCRUB((g) -> new SQLQueryAdapter(
-                "EXPERIMENTAL SCRUB table " + g.getSchema().getRandomTable(t -> !t.isView()).getName(),
-                // https://github.com/cockroachdb/cockroach/issues/46401
+                "EXPERIMENTAL SCRUB table " + g.getSchema().getRandomTable(t -> !t.isView()).getName(), // https://github.com/cockroachdb/cockroach/issues/46401
                 ExpectedErrors.from("scrub-fk: column \"t.rowid\" does not exist",
-                        "check-constraint: cannot access temporary tables of other sessions" /*
+                        "check-constraint: cannot access temporary tables of other sessions"/*
                                                                                               * https:// github. com/
                                                                                               * cockroachdb / cockroach
                                                                                               * /issues/ 47031
