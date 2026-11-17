@@ -88,7 +88,8 @@ public final class TiDBMixedPreparationBenchmark {
         plan.addProperty("reason", "Fixed-budget baseline: reuse SQLancer RANDOM/SHARED value policy");
         plan.addProperty("goal", "Evaluate data scenarios using independent exact measurements");
         plan.addProperty("expected_effect", "Unknown until measured; no nonempty-result requirement");
-        for (String key : List.of("evidence_ids", "observation_requests", "verification_requests")) {
+        for (String key : List.of("evidence_ids", "observation_requests", "verification_requests",
+                "structured_goals")) {
             plan.add(key, new JsonArray());
         }
         plan.add("operations", operations);
@@ -240,6 +241,8 @@ public final class TiDBMixedPreparationBenchmark {
             long revision = preparation.getAsJsonObject("final_state").get("data_revision").getAsLong();
             JsonObject finalState = measure(io, query, actual, revision, "paired_" + seed);
             report.add("final_state", finalState);
+            report.add("final_model_goal_evaluation",
+                    TiDBMixedPreparationGoals.evaluate(finalState, preparation.getAsJsonArray("model_goals"), false));
             JsonObject after = TiDBMixedDataCoverage.snapshot(finalState);
             report.add("data_coverage_after", after);
             report.add("data_coverage_change", TiDBMixedDataCoverage.difference(before, after));

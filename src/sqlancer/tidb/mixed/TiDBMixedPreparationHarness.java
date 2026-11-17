@@ -26,6 +26,7 @@ public final class TiDBMixedPreparationHarness {
     private final int sampleRows;
     private final int failureLimit;
     private final JsonArray rounds = new JsonArray();
+    private final JsonArray modelGoals = new JsonArray();
     private final JsonObject packet;
     private List<String> verificationFloor = List.of();
     private int batch;
@@ -134,12 +135,24 @@ public final class TiDBMixedPreparationHarness {
     private JsonArray verification(JsonObject plan) {
         java.util.Set<String> ids = new LinkedHashSet<>(verificationFloor);
         plan.getAsJsonArray("verification_requests").forEach(id -> ids.add(id.getAsString()));
+        // Accepted goals survive later stop/empty proposals; measure the whole ledger after each append.
+        combinedGoals(plan).forEach(goal -> ids.add(goal.getAsJsonObject().get("capability_id").getAsString()));
         if (ids.size() > budget("probe_requests")) {
             throw new IllegalArgumentException("verification floor exceeds remaining probe budget");
         }
         JsonArray requests = new JsonArray();
         ids.forEach(requests::add);
         return requests;
+    }
+
+    private JsonArray combinedGoals(JsonObject plan) {
+        JsonArray combined = modelGoals.deepCopy();
+        TiDBMixedPreparationGoals.validate(packet, plan.get("structured_goals")).forEach(goal -> {
+            if (!combined.contains(goal)) {
+                combined.add(goal.deepCopy());
+            }
+        });
+        return TiDBMixedPreparationGoals.validate(packet, combined);
     }
 
     private void budget(String key, long value) {
@@ -314,6 +327,7 @@ public final class TiDBMixedPreparationHarness {
                     received = true;
                     round.addProperty("raw_response", content);
                     plan = TiDBDataPreparationProtocol.decision(content, packet);
+                    combinedGoals(plan); // The live loop requires the new field, including [] for unmeasurable goals.
                     round.add("decision", plan.deepCopy());
                     round.add("model_expectation", plan.get("expected_effect"));
                     if (plan.get("decision").getAsString().equals("append_rows")) {
@@ -352,6 +366,14 @@ public final class TiDBMixedPreparationHarness {
                     plan = null;
                 }
                 budget("model_calls", callsBefore - 1);
+                if (plan != null) {
+                    JsonArray accepted = combinedGoals(plan);
+                    accepted.forEach(goal -> {
+                        if (!modelGoals.contains(goal)) {
+                            modelGoals.add(goal.deepCopy());
+                        }
+                    });
+                }
                 long responseTime = (System.nanoTime() - started + 999_999) / 1_000_000;
                 budget("time_ms", timeBefore - responseTime);
                 if (plan != null && budget("time_ms") > 0) {
@@ -384,6 +406,10 @@ public final class TiDBMixedPreparationHarness {
                         .forEach(entry -> observationIds.add(entry.getAsJsonObject().get("id")));
                 round.add("observation_ids", observationIds);
                 round.add("evaluation", evaluate(packet, uncertain ? List.of() : requirements));
+                round.add("model_goal_evaluation", TiDBMixedPreparationGoals.evaluate(packet,
+                        plan == null ? new JsonArray() : plan.getAsJsonArray("structured_goals"), uncertain));
+                round.add("cumulative_model_goal_evaluation",
+                        TiDBMixedPreparationGoals.evaluate(packet, modelGoals, uncertain));
                 round.addProperty("decision_id", packet.get("request_id").getAsString());
                 round.add("data_revision_after", uncertain ? JsonNull.INSTANCE : packet.get("data_revision"));
                 rounds.add(round);
@@ -413,6 +439,8 @@ public final class TiDBMixedPreparationHarness {
         result.add("rounds", rounds.deepCopy());
         result.add("final_state", uncertain ? JsonNull.INSTANCE : packet.deepCopy());
         result.add("evaluation", evaluate(packet, uncertain ? List.of() : requirements));
+        result.add("model_goals", modelGoals.deepCopy());
+        result.add("model_goal_evaluation", TiDBMixedPreparationGoals.evaluate(packet, modelGoals, uncertain));
         return result;
     }
 }

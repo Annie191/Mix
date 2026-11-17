@@ -50,8 +50,13 @@ MS_DATA_PREPARATION=DEEPSEEK MS_ARTIFACT_DIR=logs/mixed-live \
 该开关关闭旧的建议动作调用，以 RANDOM 生成初始数据，再执行新的协议补行。
 每个查询 revision 最多 3 次调用、6 次追加行尝试、96 次探测和 120 秒准备预算；原有最多 3 个 revision。
 结束后保存实际数据并沿用原快照、基础表预检、引擎计划校验、全部有效路径对比较及差异确认。
-Oracle 未提供机器可测的自由文本目标解析，因此目标评价保守记未验证，另存实测数据覆盖变化；
-benchmark 使用运行前明确的固定可测目标，不能把其成功率称为任意模型自然语言目标的成功率。
+Oracle 现在使用模型选择的 `structured_goals`，由程序校验、追加后自动测量并逐项评价，详见
+[结构化目标](data-preparation-structured-goals.md)。`model_goal_evaluation` 和
+`postPreparationModelGoalEvaluation` 保存闭环与最终独立复测结果。
+benchmark 原 `evaluation`、`final_goal_evaluation` 和对应成功率仍只表示预设断言；新增
+`model_goal_evaluation`、`final_model_goal_evaluation`、`verifiable_append_model_goal_rate` 与
+`final_case_model_goal_rate` 单独统计 AI 所选目标，不把固定断言当成模型全部承诺。
+模型目标的未验证项单列，最终成功率仍以所有尝试用例为分母；旧实验没有结构化目标，不能追补成功记录。
 
 当前支持 `MS_PREPARATION_ROWS=12` 配置所有表合计的追加尝试行数，默认 6，范围 0—1000。
 Oracle 和 benchmark 共用该配置；配对实验的 RANDOM/SHARED 也按同一总额分配行数，0 行时直接 stop。

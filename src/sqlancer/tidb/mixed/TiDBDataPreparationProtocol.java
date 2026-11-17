@@ -37,7 +37,7 @@ public final class TiDBDataPreparationProtocol {
         private static final long serialVersionUID = 1L;
         public final String code;
 
-        private ValidationException(String code, String message) {
+        ValidationException(String code, String message) {
             super(message);
             this.code = code;
         }
@@ -287,7 +287,12 @@ public final class TiDBDataPreparationProtocol {
         fields(budget, Set.of("model_calls", "probe_requests", "insert_rows", "time_ms"));
         budget.entrySet().forEach(entry -> integer(entry.getValue()));
         for (JsonObject capability : named(array(state.get("available_observations")), "id").values()) {
-            fields(capability, Set.of("id", "metric", "target", "description"));
+            Set<String> allowed = new HashSet<>(Set.of("id", "metric", "target", "description"));
+            if (capability.has("goal_fields")) {
+                allowed.add("goal_fields");
+                TiDBMixedPreparationGoals.validateFields(capability.get("goal_fields"));
+            }
+            fields(capability, allowed);
             text(capability.get("metric"));
             object(capability.get("target"));
             text(capability.get("description"));
@@ -325,7 +330,12 @@ public final class TiDBDataPreparationProtocol {
     public static JsonObject decision(String json, JsonObject input) {
         JsonObject state = state(input.toString()); // Revalidate even if the caller modified an earlier state object.
         JsonObject decision = parse(json, 32_000);
-        fields(decision, DECISION_FIELDS);
+        Set<String> allowed = new HashSet<>(DECISION_FIELDS);
+        if (decision.has("structured_goals")) {
+            allowed.add("structured_goals");
+            TiDBMixedPreparationGoals.validate(state, decision.get("structured_goals"));
+        }
+        fields(decision, allowed);
         for (String key : List.of("protocol_version", "request_id", "case_id", "query_id")) {
             require(text(decision.get(key)).equals(text(state.get(key))), "stale or mismatched identity: " + key);
         }

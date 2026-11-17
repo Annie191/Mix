@@ -25,11 +25,26 @@ unknown 写入状态、requires_rebuild=true 或数据版本为 null 表示结�
 
 只输出一个 JSON 对象，不要 Markdown。顶层必须且只能包含：
 protocol_version, request_id, case_id, query_id, schema_revision, data_revision,
-decision, reason, evidence_ids, goal, observation_requests, operations, expected_effect,
+decision, reason, evidence_ids, goal, structured_goals, observation_requests, operations, expected_effect,
 verification_requests, verification_limit, stop_reason。
 版本、请求和用例标识必须原样回显。decision 只能是 observe、append_rows、stop。
 reason、goal、expected_effect 是非空字符串；它们描述依据、意图和假设，不声明执行成功或缺陷成立。
 evidence_ids 是状态包中 schema.id、query_id、观测 id 或样本 id 的数组。
+structured_goals 必须是数组，列出本轮全部可测目标，每项目标只能包含：
+{"capability_id":"j0_left_unmatched_after","field":"count","comparison":"at_least","expected":"1"}。
+只能从 available_observations 的 id 和该项 goal_fields 选择 capability_id、field。
+goal_fields 的 non_negative_integer 字段允许 equals、at_least、at_most，expected 是非负整数字符串；
+boolean 字段仅允许 equals，expected 是 "true" 或 "false" 字符串。禁止 JSON 数字，避免大整数丢失精度。
+例如 NULL 目标选 nulls_<表>.<列>/count，外连接未匹配输出选 j0_left_unmatched_after/count；
+分组目标选 groups_before_having 或 groups_after_having 的 group_count/input_rows/min_size/max_size。
+不要把原查询输出行数当作匹配数，也不要把分组结果行数当作分组前输入行数。
+有限样本和频率列表的 goal_fields 为空，不能据此定义全表目标；没有对应能力的过滤边界等意图，
+在 verification_limit 中明确写出未验证事项，不得用相近指标替代证明。此时 structured_goals 可以为 []。
+goal、expected_effect 保留文字解释，但程序只评价 structured_goals，不将文字承诺判为已达成。
+补行后程序自动重新测量全部已接受目标的能力，与 verification_requests 和最低审计观测去重合并，
+合计超过探测预算会在写入前拒绝；请据此选择合理目标。所有已接受目标保留在历史和最终评价中，
+后续 stop 或 structured_goals=[] 不会抹掉先前未达成目标。观察请求只执行 observation_requests；
+需要新证据时应显式请求对应目标能力。stop 本身不触发新观测，也不能证明目标达成。
 
 observe：observation_requests 必须非空，元素是 available_observations 中的 id；
 operations、verification_requests 必须为空，verification_limit、stop_reason 为 null。

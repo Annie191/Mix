@@ -57,6 +57,10 @@ public final class TiDBMixedBenchmarkMetrics {
             }
             String outcome = round.getAsJsonObject("evaluation").get("outcome").getAsString();
             add(counts, "append_goals_" + outcome, 1);
+            if (round.has("model_goal_evaluation")) {
+                add(counts, "append_model_goals_"
+                        + round.getAsJsonObject("model_goal_evaluation").get("outcome").getAsString(), 1);
+            }
             if (success > 0 && round.has("data_coverage_change")) {
                 JsonObject change = round.getAsJsonObject("data_coverage_change");
                 if (!change.get("complete").getAsBoolean()) {
@@ -144,6 +148,10 @@ public final class TiDBMixedBenchmarkMetrics {
                     add(counts, "final_goals_"
                             + report.getAsJsonObject("final_goal_evaluation").get("outcome").getAsString(), 1);
                 }
+                if (report.has("final_model_goal_evaluation")) {
+                    add(counts, "final_model_goals_"
+                            + report.getAsJsonObject("final_model_goal_evaluation").get("outcome").getAsString(), 1);
+                }
                 boolean allPaths = report.has("engine_outcome")
                         && report.getAsJsonObject("engine_outcome").get("allPathsValid").getAsBoolean();
                 add(counts, "engine_all_paths_valid_cases", allPaths ? 1 : 0);
@@ -192,6 +200,11 @@ public final class TiDBMixedBenchmarkMetrics {
             result.add("verifiable_append_goal_rate", rate(counts.get("append_goals_achieved"),
                     counts.get("append_goals_achieved") + counts.get("append_goals_not_achieved")));
             result.add("final_case_goal_rate", rate(counts.get("final_goals_achieved"), counts.get("cases")));
+            long achieved = counts.getOrDefault("append_model_goals_achieved", 0L);
+            long notAchieved = counts.getOrDefault("append_model_goals_not_achieved", 0L);
+            result.add("verifiable_append_model_goal_rate", rate(achieved, achieved + notAchieved));
+            result.add("final_case_model_goal_rate",
+                    rate(counts.getOrDefault("final_model_goals_achieved", 0L), counts.get("cases")));
             summary.add(strategy, result);
         }
         return summary;

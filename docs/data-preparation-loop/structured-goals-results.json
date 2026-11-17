@@ -1,0 +1,254 @@
+{
+  "verification": "Scripted model responses; actual H2 INSERTs and read-only probes; TiDB metadata/session simulated. No real DeepSeek or TiDB/TiFlash run.",
+  "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+  "model_goals": [
+    {
+      "capability_id": "j0_pairs_after",
+      "field": "count",
+      "comparison": "at_least",
+      "expected": "2"
+    },
+    {
+      "capability_id": "j0_duplicate_after",
+      "field": "count",
+      "comparison": "equals",
+      "expected": "1"
+    },
+    {
+      "capability_id": "nulls_t1.k",
+      "field": "count",
+      "comparison": "at_least",
+      "expected": "1"
+    },
+    {
+      "capability_id": "j0_left_unmatched_after",
+      "field": "count",
+      "comparison": "at_least",
+      "expected": "1"
+    }
+  ],
+  "writes": [
+    {
+      "table": "t0",
+      "status": "success",
+      "affected_rows": 1
+    },
+    {
+      "table": "t1",
+      "status": "success",
+      "affected_rows": 1
+    },
+    {
+      "table": "t1",
+      "status": "success",
+      "affected_rows": 1
+    }
+  ],
+  "model_goal_evaluation_after_append": {
+    "scope": "structured_goals_only",
+    "outcome": "not_achieved",
+    "checks": [
+      {
+        "capability_id": "j0_pairs_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "2",
+        "actual": "2",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_0",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_pairs_after",
+            "status": "exact",
+            "value": {
+              "count": "2"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_duplicate_after",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_1",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_duplicate_after",
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "nulls_t1.k",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "0",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_2",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "nulls_t1.k",
+            "status": "exact",
+            "value": {
+              "count": "0"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "not_achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_left_unmatched_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "0",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_3",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_left_unmatched_after",
+            "status": "exact",
+            "value": {
+              "count": "0"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "not_achieved",
+        "reason": "current_exact_measurement"
+      }
+    ]
+  },
+  "fixed_assertions": {
+    "j0_pairs_after_at_least": "2",
+    "j0_duplicate_after_at_least": "1",
+    "outcome": "achieved"
+  },
+  "final_model_goal_evaluation_after_stop_with_empty_goals": {
+    "scope": "structured_goals_only",
+    "outcome": "not_achieved",
+    "checks": [
+      {
+        "capability_id": "j0_pairs_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "2",
+        "actual": "2",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_0",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_pairs_after",
+            "status": "exact",
+            "value": {
+              "count": "2"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_duplicate_after",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_1",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_duplicate_after",
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "nulls_t1.k",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "0",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_2",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "nulls_t1.k",
+            "status": "exact",
+            "value": {
+              "count": "0"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "not_achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_left_unmatched_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "0",
+        "evidence": [
+          {
+            "id": "batch_1_obs_3_3",
+            "query_id": "query_loop",
+            "schema_revision": 0,
+            "data_revision": 3,
+            "capability_id": "j0_left_unmatched_after",
+            "status": "exact",
+            "value": {
+              "count": "0"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "not_achieved",
+        "reason": "current_exact_measurement"
+      }
+    ]
+  },
+  "remaining_budget": {
+    "model_calls": 6,
+    "probe_requests": 36,
+    "insert_rows": 5,
+    "time_ms": 59975
+  }
+}

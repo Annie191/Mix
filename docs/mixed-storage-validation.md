@@ -418,3 +418,23 @@ mvn -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
 python3 src/check_names.py
 git diff --check
 ```
+
+## AI 结构化目标验证（2026-11-17）
+
+- 新增 7 项回归，实际执行 H2 INSERT/事务/只读探测，模型响应与 TiDB 会话/元数据由 fixture 模拟。
+- Oracle 相同的空固定 Requirement 用法，现在可验证模型所选的结构化目标；固定断言仍独立保存。
+- 匹配数 2、重复键 1 使固定断言通过；模型额外要求 NULL 和外连接未匹配输出至少各 1，实测均为 0，整体正确记为 not_achieved，stop 不清除失败目标。
+- 覆盖自动验证探测计费、超预算执行前拒绝及修订、非法字段/比较/类型、超过 64 位整数、旧版本/样本/错误/冲突证据、外连接与分组字段、提交不确定及空结果停止。
+- 160 项测试中 151 项通过、9 项真实集群测试按环境开关跳过；formatter/XML/Checkstyle/PMD/SpotBugs 完整检查通过，SpotBugs 0 bugs；命名和 git diff --check 通过。
+- 本轮没有调用真实 DeepSeek 或运行真实 TiDB/TiFlash，不改写第五环节真实实验数据，不声称真实模型覆盖率已改善。
+
+验证命令（Maven 3.9.11 / JDK 17，缓存依赖离线执行）：
+
+```bash
+/tmp/mix-retry-maven/bin/mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+git diff --check
+```
+
+协议与完整响应见 [结构化目标说明](data-preparation-structured-goals.md)，
+实际逐项反馈见 [回归记录](data-preparation-loop/structured-goals-results.json)。

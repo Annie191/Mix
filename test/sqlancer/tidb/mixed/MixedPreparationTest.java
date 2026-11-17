@@ -32,13 +32,14 @@ class MixedPreparationTest {
     private static final List<Requirement> DUPLICATES = List.of(Requirement.count("j0_pairs_after", 2, true),
             Requirement.count("j0_duplicate_after", 1, true));
 
-    private static JsonObject response(JsonObject packet, JsonObject script) {
+    static JsonObject response(JsonObject packet, JsonObject script) {
         JsonObject plan = new JsonObject();
         for (String key : List.of("protocol_version", "request_id", "case_id", "query_id", "schema_revision",
                 "data_revision")) {
             plan.add(key, packet.get(key));
         }
-        for (String key : List.of("observation_requests", "operations", "verification_requests", "evidence_ids")) {
+        for (String key : List.of("observation_requests", "operations", "verification_requests", "evidence_ids",
+                "structured_goals")) {
             plan.add(key, new JsonArray());
         }
         for (String key : List.of("verification_limit", "stop_reason")) {
@@ -52,7 +53,7 @@ class MixedPreparationTest {
         return plan;
     }
 
-    private static Candidate query(MixedAppendTest.Fixture fixture, boolean alwaysEmpty) {
+    static Candidate query(MixedAppendTest.Fixture fixture, boolean alwaysEmpty) {
         Candidate candidate = MixedObservationTest.candidate(fixture.tables, TiDBJoin.JoinType.INNER,
                 TiDBComparisonOperator.EQUALS, false);
         candidate.ast.setWhereClause(alwaysEmpty ? TiDBConstant.createBooleanConstant(false)
@@ -61,7 +62,7 @@ class MixedPreparationTest {
         return new Candidate(candidate.ast, fixture.tables, List.of());
     }
 
-    private static JsonObject packet(MixedAppendTest.Fixture fixture, Candidate candidate) {
+    static JsonObject packet(MixedAppendTest.Fixture fixture, Candidate candidate) {
         TiDBMixedObservations facts = new TiDBMixedObservations(candidate, "query_loop", 0, 0);
         JsonObject budget = MixedAppendTest
                 .json("{\"model_calls\":8,\"probe_requests\":40,\"insert_rows\":8,\"time_ms\":60000}");
@@ -201,7 +202,7 @@ class MixedPreparationTest {
         }
     }
 
-    private static JsonObject append(long key, boolean verify) {
+    static JsonObject append(long key, boolean verify) {
         return MixedAppendTest.json("{\"decision\":\"append_rows\",\"reason\":\"negative scripted assertion\","
                 + "\"goal\":\"duplicate coverage\",\"expected_effect\":\"I claim coverage already succeeded\","
                 + "\"operations\":" + MixedAppendTest.operations(MixedAppendTest.row(key))
@@ -209,7 +210,7 @@ class MixedPreparationTest {
                 + (verify ? "null" : "\"not measured\"") + "}");
     }
 
-    private static JsonObject stop() {
+    static JsonObject stop() {
         return MixedAppendTest.json("{\"decision\":\"stop\",\"reason\":\"finished\",\"goal\":\"preserve data\","
                 + "\"expected_effect\":\"no writes\",\"stop_reason\":\"finished\"}");
     }

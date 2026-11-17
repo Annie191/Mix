@@ -282,3 +282,23 @@ observationEvidence、observationSnapshot 和 availableObservations。
 未重跑真实 DeepSeek，不把模拟纠错成功当成真实模型成功率提升。
 对应记录见 [拒绝后修订实测](data-preparation-loop/rejection-recovery-results.json)。
 153 项测试中 144 项通过、9 项按环境开关跳过，完整构建及静态检查通过。
+
+## 追加：AI 结构化目标与生产验证（2026-11-17）
+
+修复“AI 提出目标，生产流程始终无法验证”的缺口：
+
+- 响应新增 `structured_goals`，由 AI 选择能力 ID、字段、比较方式和期望值；程序校验合法性，文字解释保留。
+  能力目录新增 `goal_fields`，支持精确计数、空结果和分组汇总。没有相应能力的边界意图仍记未验证，不用相近指标替代证明。
+- 补行后自动测量所有已接受目标，与显式验证请求、最低审计观测去重并统一扣预算；超预算先拒绝并反馈修订。
+- 每项目标记录 `expected → actual → evidence → achieved/not_achieved/unverified`。
+  只有当前 query/schema/data 版本的精确事实能证明达成；旧版本、有限样本、错误、缺测和提交不确定均不能证明。
+- Oracle 保存 `model_goal_evaluation` 和最终独立复测结果；Benchmark 的固定断言及其成功率继续保留，另加 AI 目标评价和指标，互不替代。
+- 已接受目标累计保留，后续 `stop` 或空目标数组不能删除未达成目标；缺少新字段的生产响应会被拒绝并反馈纠错。
+
+核心反例已实测：补行后匹配数=2、重复键=1，固定断言通过；但 NULL 数、外连接未匹配输出均实测为 0（模型目标均为至少 1），
+这两项目标未达成，AI 整体目标正确记为 `not_achieved`。停止后仍保留失败项。
+本轮使用模拟响应和实际 H2 写入/探测，未重跑真实 DeepSeek 或 TiDB/TiFlash，不更新旧实验成功率。
+协议、完整响应和字段语义见 [结构化目标说明](data-preparation-structured-goals.md)，
+逐项证据见 [回归实测记录](data-preparation-loop/structured-goals-results.json)。
+
+本轮共 160 项测试：151 项通过、9 项真实集群测试按环境开关跳过；格式、XML、Checkstyle、PMD、SpotBugs、命名及差异空白检查通过。

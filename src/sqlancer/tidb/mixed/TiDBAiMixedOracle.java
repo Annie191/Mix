@@ -239,6 +239,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
                     TiDBDeepSeekPreparationClient client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
                     record.put("preparationApiAudit", client.audit);
+                    // Fixed benchmark assertions are optional; AI goals come from each validated response.
                     TiDBMixedPreparationHarness preparationLoop = new TiDBMixedPreparationHarness(state, query, packet,
                             List.of(), 10_000, 64, 2);
                     preparationLoop.verificationFloor(TiDBMixedDataCoverage.measurementIds(facts));
@@ -254,6 +255,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                             packet.get("case_id").getAsString(), actualMetadata.schema, new JsonArray(), budget);
                     record.put("postPreparationObservations", after.observations);
                     record.put("postPreparationEvidence", after.audit);
+                    record.put("postPreparationModelGoalEvaluation", TiDBMixedPreparationGoals.evaluate(afterPacket,
+                            prepared.getAsJsonArray("model_goals"), false));
                     record.put("dataCoverageBefore", TiDBMixedDataCoverage.snapshot(packet));
                     record.put("dataCoverageAfter", TiDBMixedDataCoverage.snapshot(afterPacket));
                     record.put("dataCoverageChange", TiDBMixedDataCoverage.difference(

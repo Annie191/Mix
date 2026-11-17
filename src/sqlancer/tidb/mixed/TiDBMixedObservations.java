@@ -345,6 +345,7 @@ public final class TiDBMixedObservations {
                 capability.addProperty("metric", probe.metric);
                 capability.add("target", probe.target.deepCopy());
                 capability.addProperty("description", probe.description);
+                capability.add("goal_fields", TiDBMixedPreparationGoals.fields(probe.kind));
                 result.add(capability);
             }
         }

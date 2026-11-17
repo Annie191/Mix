@@ -1,6 +1,7 @@
 # AI 数据准备协议与提示词 v1.0
 
 第一环节交付：协议、提示词、可执行的格式校验和完整交互示例。
+当前已增加 [AI 结构化目标与程序验证](data-preparation-structured-goals.md)，生产闭环要求 structured_goals。
 当前运行入口和真实对照结果见 [第五环节](data-preparation-benchmark.md)。以下按交付顺序列出各阶段：
 第二环节已增加 [实际元数据与只读观测](data-preparation-observations.md)，并接入 Oracle 的初始数据填充后采集。
 第三环节增加 [可控追加行执行器](data-preparation-append-executor.md)，当时使用人工 JSON 计划验证。
@@ -146,6 +147,7 @@ data_revision_after, sqlstate, error_code, error`：status 为 `success`、`fail
   "reason":"obs_17 显示已有匹配，obs_18 显示原 WHERE 后无匹配。",
   "evidence_ids":["schema_0","obs_17","obs_18"],
   "goal":"补充过滤后的重复匹配场景。",
+  "structured_goals":[],
   "observation_requests":[],
   "operations":[
     {"table":"t0","rows":[{"k":{"type":"integer","value":"12"}}]},
@@ -157,6 +159,9 @@ data_revision_after, sqlstate, error_code, error`：status 为 `success`、`fail
   "stop_reason":null
 }
 ```
+
+上例沿用早期人工能力 ID，`structured_goals=[]` 不宣称目标已达成；当前实际能力的完整响应见 [结构化目标示例](data-preparation-structured-goals.md#完整响应示例)。
+底层校验器可回放原 v1.0 响应；生产闭环要求新增 structured_goals 字段并校验目标。
 
 `reason`、`goal`、`expected_effect` 均为非空字符串。`evidence_ids` 只能引用状态包中的
 query_id、schema.id、观测或样本 ID；不能凭空造证据。解释是否符合事实仍需后续验证。

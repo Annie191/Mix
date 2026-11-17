@@ -18,14 +18,15 @@ model_expectation → writes → actual_observations / actual_samples → evalua
 模型预期          → 写入结果 → 实际观测                         → 已达成／未达成／未验证
 ```
 
-- 目标由固定用例通过 Requirement 提供可核对断言；框架不从模型自然语言解释推断真伪，
-  不要求每个实验都补出相同场景，不自行修改目标。没有可测断言则为未验证。
+- 原六场景通过 Requirement 提供固定断言，仍保存在 evaluation。当前生产闭环另从模型
+  structured_goals 获取目标，保存在 model_goal_evaluation，见 [结构化目标](data-preparation-structured-goals.md)。
+  两种评价互相独立，不从自然语言推断真伪。没有结构化目标则为未验证。
 - `achieved`（已达成）：所有断言均有同 query_id、schema_revision、data_revision 的 exact 观测并满足。
 - `not_achieved`（未达成）：至少一项当前 exact 观测明确不满足；其他未测目标仍逐项标为未验证。
 - `unverified`（未验证）：没有明确反证，但缺少精确事实；sampled、unknown、unsupported、error 或旧版本不能证明达成。
 
 写入成功、模型声称达成、查询非空或模型 stop，都不会直接改变 evaluation。
-补行后丢弃旧观测/样本，按 verification_requests 重新采集；未请求验证时保持未验证。
+补行后丢弃旧观测/样本，合并 verification_requests、已接受结构化目标和最低审计观测，去重后重新采集并扣预算。
 观测批次使用独立 ID 并保留 SQL、模拟快照和版本，失败后也不能把新 ID 当成新事实。
 
 空结果不触发自动补行。固定用例可以将“保持为空”设为有意义目标，并精确核对它。
