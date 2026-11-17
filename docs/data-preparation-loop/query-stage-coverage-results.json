@@ -1,0 +1,980 @@
+{
+  "validation": "Scripted H2 data and real read-only probe SQL; no DeepSeek or TiDB/TiFlash run",
+  "query": {
+    "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+    "joins": [
+      {
+        "id": "j0",
+        "type": "INNER",
+        "left_tables": [
+          "t0"
+        ],
+        "right_tables": [
+          "t1"
+        ],
+        "on": "((t0.k)=(t1.k))"
+      }
+    ],
+    "where": "((t0.k)>(10))",
+    "group_by": [],
+    "having": null
+  },
+  "base_value_without_join": [
+    {
+      "id": "obs_0_11",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_below_before",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_12",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_below_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_13",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "base_where_boundary_at",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_14",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_at_before",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_15",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_at_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_17",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_above_before",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_18",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "where_boundary_above_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_21",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "j0_pairs_before",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_26",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "j0_pairs_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    }
+  ],
+  "base_and_query_coverage_without_join": {
+    "scope_version": 2,
+    "base_data": {
+      "present": [
+        "base_where_boundary_at",
+        "j0_left_unmatched",
+        "j0_pairs_before",
+        "nulls_present_t0.b",
+        "nulls_present_t0.n",
+        "nulls_present_t0.s",
+        "rows_t0",
+        "rows_t1"
+      ],
+      "measured": [
+        "base_where_boundary_above",
+        "base_where_boundary_at",
+        "base_where_boundary_below",
+        "j0_left_repeated",
+        "j0_left_unmatched",
+        "j0_pairs_before",
+        "j0_right_repeated",
+        "j0_right_unmatched",
+        "nulls_present_t0.b",
+        "nulls_present_t0.g",
+        "nulls_present_t0.k",
+        "nulls_present_t0.n",
+        "nulls_present_t0.s",
+        "nulls_present_t1.k",
+        "rows_t0",
+        "rows_t1"
+      ],
+      "expected": [
+        "base_where_boundary_above",
+        "base_where_boundary_at",
+        "base_where_boundary_below",
+        "j0_left_repeated",
+        "j0_left_unmatched",
+        "j0_pairs_before",
+        "j0_right_repeated",
+        "j0_right_unmatched",
+        "nulls_present_t0.b",
+        "nulls_present_t0.g",
+        "nulls_present_t0.k",
+        "nulls_present_t0.n",
+        "nulls_present_t0.s",
+        "nulls_present_t1.k",
+        "rows_t0",
+        "rows_t1"
+      ],
+      "unverified": []
+    },
+    "query_stages": {
+      "present": [
+        "empty_with_input",
+        "j0_filtered_matches",
+        "where_predicate_false"
+      ],
+      "measured": [
+        "empty_with_input",
+        "j0_duplicate_after",
+        "j0_filtered_matches",
+        "j0_left_unmatched_after",
+        "j0_pairs_after",
+        "j0_right_unmatched_after",
+        "where_boundary_above_after",
+        "where_boundary_above_before",
+        "where_boundary_at_after",
+        "where_boundary_at_before",
+        "where_boundary_below_after",
+        "where_boundary_below_before",
+        "where_input_nulls_t0.k",
+        "where_input_nulls_t1.k",
+        "where_output_nulls_t0.k",
+        "where_output_nulls_t1.k",
+        "where_predicate_false",
+        "where_predicate_true",
+        "where_predicate_unknown"
+      ],
+      "expected": [
+        "empty_with_input",
+        "j0_duplicate_after",
+        "j0_filtered_matches",
+        "j0_left_unmatched_after",
+        "j0_pairs_after",
+        "j0_right_unmatched_after",
+        "where_boundary_above_after",
+        "where_boundary_above_before",
+        "where_boundary_at_after",
+        "where_boundary_at_before",
+        "where_boundary_below_after",
+        "where_boundary_below_before",
+        "where_input_nulls_t0.k",
+        "where_input_nulls_t1.k",
+        "where_output_nulls_t0.k",
+        "where_output_nulls_t1.k",
+        "where_predicate_false",
+        "where_predicate_true",
+        "where_predicate_unknown"
+      ],
+      "unverified": []
+    },
+    "present": [
+      "empty_with_input",
+      "j0_filtered_matches",
+      "where_predicate_false"
+    ],
+    "measured": [
+      "empty_with_input",
+      "j0_duplicate_after",
+      "j0_filtered_matches",
+      "j0_left_unmatched_after",
+      "j0_pairs_after",
+      "j0_right_unmatched_after",
+      "where_boundary_above_after",
+      "where_boundary_above_before",
+      "where_boundary_at_after",
+      "where_boundary_at_before",
+      "where_boundary_below_after",
+      "where_boundary_below_before",
+      "where_input_nulls_t0.k",
+      "where_input_nulls_t1.k",
+      "where_output_nulls_t0.k",
+      "where_output_nulls_t1.k",
+      "where_predicate_false",
+      "where_predicate_true",
+      "where_predicate_unknown"
+    ],
+    "expected": [
+      "empty_with_input",
+      "j0_duplicate_after",
+      "j0_filtered_matches",
+      "j0_left_unmatched_after",
+      "j0_pairs_after",
+      "j0_right_unmatched_after",
+      "where_boundary_above_after",
+      "where_boundary_above_before",
+      "where_boundary_at_after",
+      "where_boundary_at_before",
+      "where_boundary_below_after",
+      "where_boundary_below_before",
+      "where_input_nulls_t0.k",
+      "where_input_nulls_t1.k",
+      "where_output_nulls_t0.k",
+      "where_output_nulls_t1.k",
+      "where_predicate_false",
+      "where_predicate_true",
+      "where_predicate_unknown"
+    ],
+    "unverified": [],
+    "unsupported": [
+      {
+        "id": "obs_0_30",
+        "query_id": "query_stages",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "group_sizes",
+        "status": "unsupported",
+        "value": null,
+        "error": "Unsupported/unverified: requires explicit column GROUP BY (implicit aggregate is not inferred)"
+      },
+      {
+        "id": "obs_0_31",
+        "query_id": "query_stages",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "groups_before_having",
+        "status": "unsupported",
+        "value": null,
+        "error": "Unsupported/unverified: requires explicit column GROUP BY (implicit aggregate is not inferred)"
+      },
+      {
+        "id": "obs_0_32",
+        "query_id": "query_stages",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "groups_after_having",
+        "status": "unsupported",
+        "value": null,
+        "error": "Unsupported/unverified: requires explicit column GROUP BY (implicit aggregate is not inferred); surviving groups and their input rows, before projection"
+      }
+    ],
+    "query_empty": true
+  },
+  "boundary_with_join": [
+    {
+      "id": "obs_1_11",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_below_before",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_12",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_below_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_13",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "base_where_boundary_at",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_14",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_at_before",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_15",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_at_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_17",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_above_before",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_18",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "where_boundary_above_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_21",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "j0_pairs_before",
+      "status": "exact",
+      "value": {
+        "count": "2"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_1_26",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 1,
+      "capability_id": "j0_pairs_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    }
+  ],
+  "coverage_change_when_join_is_completed": {
+    "added": [
+      "where_boundary_at_before"
+    ],
+    "lost": [],
+    "unverified": [],
+    "complete": true,
+    "base_data": {
+      "added": [],
+      "lost": [],
+      "unverified": [],
+      "complete": true
+    },
+    "query_stages": {
+      "added": [
+        "where_boundary_at_before"
+      ],
+      "lost": [],
+      "unverified": [],
+      "complete": true
+    },
+    "scope_version": 2
+  },
+  "adjacent_values": [
+    {
+      "id": "obs_2_11",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_below_before",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_12",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_below_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_13",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "base_where_boundary_at",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_14",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_at_before",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_15",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_at_after",
+      "status": "exact",
+      "value": {
+        "count": "0"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_17",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_above_before",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_18",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "where_boundary_above_after",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_21",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "j0_pairs_before",
+      "status": "exact",
+      "value": {
+        "count": "4"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_2_26",
+      "query_id": "query_stages",
+      "schema_revision": 0,
+      "data_revision": 2,
+      "capability_id": "j0_pairs_after",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    }
+  ],
+  "closed_loop": {
+    "source": "Scripted responses with actual H2 INSERTs and probes; metadata/session simulated",
+    "rounds": [
+      {
+        "decision": {
+          "protocol_version": "1.0",
+          "request_id": "stages_round_0",
+          "case_id": "coverage",
+          "query_id": "query_stages",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "observation_requests": [],
+          "operations": [
+            {
+              "table": "t0",
+              "rows": [
+                {
+                  "k": {
+                    "type": "integer",
+                    "value": "10"
+                  },
+                  "n": {
+                    "type": "decimal",
+                    "value": "12.34"
+                  },
+                  "s": {
+                    "type": "text",
+                    "value": "kept"
+                  },
+                  "b": {
+                    "type": "binary",
+                    "value": "AP8="
+                  }
+                }
+              ]
+            }
+          ],
+          "verification_requests": [],
+          "evidence_ids": [
+            "schema_0",
+            "obs_0_0",
+            "obs_0_1",
+            "obs_0_2",
+            "obs_0_3",
+            "obs_0_4",
+            "obs_0_5",
+            "obs_0_6",
+            "obs_0_7",
+            "obs_0_8",
+            "obs_0_9",
+            "obs_0_10",
+            "obs_0_11",
+            "obs_0_12",
+            "obs_0_13",
+            "obs_0_14",
+            "obs_0_15",
+            "obs_0_16",
+            "obs_0_17",
+            "obs_0_18",
+            "obs_0_19",
+            "obs_0_20",
+            "obs_0_21",
+            "obs_0_22",
+            "obs_0_23",
+            "obs_0_24",
+            "obs_0_25",
+            "obs_0_26",
+            "obs_0_27",
+            "obs_0_28",
+            "obs_0_29",
+            "obs_0_30",
+            "obs_0_31",
+            "obs_0_32",
+            "obs_0_33",
+            "obs_0_34",
+            "obs_0_35",
+            "obs_0_36",
+            "obs_0_37",
+            "obs_0_38",
+            "obs_0_40",
+            "obs_0_42",
+            "obs_0_43",
+            "obs_0_44",
+            "obs_0_45",
+            "obs_0_46",
+            "obs_0_47",
+            "obs_0_48"
+          ],
+          "structured_goals": [
+            {
+              "capability_id": "where_boundary_at_before",
+              "field": "count",
+              "comparison": "at_least",
+              "expected": "1"
+            }
+          ],
+          "verification_limit": "not measured",
+          "stop_reason": null,
+          "decision": "append_rows",
+          "reason": "negative scripted assertion",
+          "goal": "duplicate coverage",
+          "expected_effect": "I claim coverage already succeeded"
+        },
+        "writes": [
+          {
+            "table": "t0",
+            "status": "success",
+            "affected_rows": 1
+          }
+        ],
+        "model_goal_evaluation": {
+          "scope": "structured_goals_only",
+          "outcome": "not_achieved",
+          "checks": [
+            {
+              "capability_id": "where_boundary_at_before",
+              "field": "count",
+              "comparison": "at_least",
+              "expected": "1",
+              "actual": "0",
+              "evidence": [
+                {
+                  "id": "batch_1_obs_1_31",
+                  "query_id": "query_stages",
+                  "schema_revision": 0,
+                  "data_revision": 1,
+                  "capability_id": "where_boundary_at_before",
+                  "status": "exact",
+                  "value": {
+                    "count": "0"
+                  },
+                  "error": null
+                }
+              ],
+              "outcome": "not_achieved",
+              "reason": "current_exact_measurement"
+            }
+          ]
+        },
+        "data_coverage_change": {
+          "added": [],
+          "lost": [],
+          "unverified": [],
+          "complete": true,
+          "base_data": {
+            "added": [
+              "base_where_boundary_at"
+            ],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "query_stages": {
+            "added": [],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "scope_version": 2
+        }
+      },
+      {
+        "decision": {
+          "protocol_version": "1.0",
+          "request_id": "stages_round_1",
+          "case_id": "coverage",
+          "query_id": "query_stages",
+          "schema_revision": 0,
+          "data_revision": 1,
+          "observation_requests": [],
+          "operations": [
+            {
+              "table": "t1",
+              "rows": [
+                {
+                  "k": {
+                    "type": "integer",
+                    "value": "10"
+                  }
+                }
+              ]
+            }
+          ],
+          "verification_requests": [],
+          "evidence_ids": [
+            "schema_0",
+            "batch_1_obs_1_0",
+            "batch_1_obs_1_1",
+            "batch_1_obs_1_2",
+            "batch_1_obs_1_3",
+            "batch_1_obs_1_4",
+            "batch_1_obs_1_5",
+            "batch_1_obs_1_6",
+            "batch_1_obs_1_7",
+            "batch_1_obs_1_8",
+            "batch_1_obs_1_9",
+            "batch_1_obs_1_10",
+            "batch_1_obs_1_11",
+            "batch_1_obs_1_12",
+            "batch_1_obs_1_13",
+            "batch_1_obs_1_14",
+            "batch_1_obs_1_15",
+            "batch_1_obs_1_16",
+            "batch_1_obs_1_17",
+            "batch_1_obs_1_18",
+            "batch_1_obs_1_19",
+            "batch_1_obs_1_20",
+            "batch_1_obs_1_21",
+            "batch_1_obs_1_22",
+            "batch_1_obs_1_23",
+            "batch_1_obs_1_24",
+            "batch_1_obs_1_25",
+            "batch_1_obs_1_26",
+            "batch_1_obs_1_27",
+            "batch_1_obs_1_28",
+            "batch_1_obs_1_29",
+            "batch_1_obs_1_30",
+            "batch_1_obs_1_31",
+            "batch_1_obs_1_32",
+            "batch_1_obs_1_33",
+            "batch_1_obs_1_34",
+            "batch_1_obs_1_35"
+          ],
+          "structured_goals": [
+            {
+              "capability_id": "where_boundary_at_before",
+              "field": "count",
+              "comparison": "at_least",
+              "expected": "1"
+            }
+          ],
+          "verification_limit": "not measured",
+          "stop_reason": null,
+          "decision": "append_rows",
+          "reason": "negative scripted assertion",
+          "goal": "duplicate coverage",
+          "expected_effect": "I claim coverage already succeeded"
+        },
+        "writes": [
+          {
+            "table": "t1",
+            "status": "success",
+            "affected_rows": 1
+          }
+        ],
+        "model_goal_evaluation": {
+          "scope": "structured_goals_only",
+          "outcome": "achieved",
+          "checks": [
+            {
+              "capability_id": "where_boundary_at_before",
+              "field": "count",
+              "comparison": "at_least",
+              "expected": "1",
+              "actual": "1",
+              "evidence": [
+                {
+                  "id": "batch_2_obs_2_31",
+                  "query_id": "query_stages",
+                  "schema_revision": 0,
+                  "data_revision": 2,
+                  "capability_id": "where_boundary_at_before",
+                  "status": "exact",
+                  "value": {
+                    "count": "1"
+                  },
+                  "error": null
+                }
+              ],
+              "outcome": "achieved",
+              "reason": "current_exact_measurement"
+            }
+          ]
+        },
+        "data_coverage_change": {
+          "added": [
+            "empty_with_input",
+            "j0_filtered_matches",
+            "where_boundary_at_before",
+            "where_predicate_false"
+          ],
+          "lost": [],
+          "unverified": [],
+          "complete": true,
+          "base_data": {
+            "added": [
+              "j0_pairs_before",
+              "rows_t1"
+            ],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "query_stages": {
+            "added": [
+              "empty_with_input",
+              "j0_filtered_matches",
+              "where_boundary_at_before",
+              "where_predicate_false"
+            ],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "scope_version": 2
+        }
+      },
+      {
+        "decision": {
+          "protocol_version": "1.0",
+          "request_id": "stages_round_2",
+          "case_id": "coverage",
+          "query_id": "query_stages",
+          "schema_revision": 0,
+          "data_revision": 2,
+          "observation_requests": [],
+          "operations": [],
+          "verification_requests": [],
+          "evidence_ids": [
+            "schema_0",
+            "batch_2_obs_2_0",
+            "batch_2_obs_2_1",
+            "batch_2_obs_2_2",
+            "batch_2_obs_2_3",
+            "batch_2_obs_2_4",
+            "batch_2_obs_2_5",
+            "batch_2_obs_2_6",
+            "batch_2_obs_2_7",
+            "batch_2_obs_2_8",
+            "batch_2_obs_2_9",
+            "batch_2_obs_2_10",
+            "batch_2_obs_2_11",
+            "batch_2_obs_2_12",
+            "batch_2_obs_2_13",
+            "batch_2_obs_2_14",
+            "batch_2_obs_2_15",
+            "batch_2_obs_2_16",
+            "batch_2_obs_2_17",
+            "batch_2_obs_2_18",
+            "batch_2_obs_2_19",
+            "batch_2_obs_2_20",
+            "batch_2_obs_2_21",
+            "batch_2_obs_2_22",
+            "batch_2_obs_2_23",
+            "batch_2_obs_2_24",
+            "batch_2_obs_2_25",
+            "batch_2_obs_2_26",
+            "batch_2_obs_2_27",
+            "batch_2_obs_2_28",
+            "batch_2_obs_2_29",
+            "batch_2_obs_2_30",
+            "batch_2_obs_2_31",
+            "batch_2_obs_2_32",
+            "batch_2_obs_2_33",
+            "batch_2_obs_2_34",
+            "batch_2_obs_2_35"
+          ],
+          "structured_goals": [],
+          "verification_limit": null,
+          "stop_reason": "finished",
+          "decision": "stop",
+          "reason": "finished",
+          "goal": "preserve data",
+          "expected_effect": "no writes"
+        },
+        "writes": [],
+        "model_goal_evaluation": {
+          "scope": "structured_goals_only",
+          "outcome": "unverified",
+          "checks": []
+        },
+        "data_coverage_change": {
+          "added": [],
+          "lost": [],
+          "unverified": [],
+          "complete": true,
+          "base_data": {
+            "added": [],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "query_stages": {
+            "added": [],
+            "lost": [],
+            "unverified": [],
+            "complete": true
+          },
+          "scope_version": 2
+        }
+      }
+    ],
+    "final_model_goal_evaluation": {
+      "scope": "structured_goals_only",
+      "outcome": "achieved",
+      "checks": [
+        {
+          "capability_id": "where_boundary_at_before",
+          "field": "count",
+          "comparison": "at_least",
+          "expected": "1",
+          "actual": "1",
+          "evidence": [
+            {
+              "id": "batch_2_obs_2_31",
+              "query_id": "query_stages",
+              "schema_revision": 0,
+              "data_revision": 2,
+              "capability_id": "where_boundary_at_before",
+              "status": "exact",
+              "value": {
+                "count": "1"
+              },
+              "error": null
+            }
+          ],
+          "outcome": "achieved",
+          "reason": "current_exact_measurement"
+        }
+      ]
+    }
+  }
+}

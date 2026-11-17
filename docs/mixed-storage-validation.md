@@ -438,3 +438,22 @@ git diff --check
 
 协议与完整响应见 [结构化目标说明](data-preparation-structured-goals.md)，
 实际逐项反馈见 [回归记录](data-preparation-loop/structured-goals-results.json)。
+
+## 查询阶段覆盖回归（2026-11-17）
+
+- 新增 10 项回归，覆盖孤立边界、普通/边界过滤、边界两侧、INNER JOIN 排除 NULL、外连接补 NULL 被保留/过滤、真实聚合参数 NULL、三表后续 JOIN 阻断、AND/反写/不支持 OR、缺测、旧版本、两类指标及历史口径隔离。
+- 边界闭环：第一轮 t0 单独新增 k=10，写入成功、基础事实新增 1，查询阶段新增 0，模型目标 not_achieved；第二轮追加 t1.k=10，精确测量 where_boundary_at_before=1，目标 achieved。查询仍为空，未强制追求非空。
+- 全部 170 项测试中 161 项通过、9 项真实集群测试按开关跳过；完整 Maven verify 成功，formatter/XML/Checkstyle/PMD/SpotBugs 通过，SpotBugs 0 bugs。
+- 命名、git diff --check、JSON 与本地文档链接检查通过。
+- 使用实际 H2 INSERT、事务和只读探测，模型响应与 TiDB 会话/元数据为 fixture；没有新增真实 DeepSeek 或 TiDB/TiFlash 运行。旧真实对照指标保持原样。
+
+验证命令（Maven 3.9.11 / JDK 17）：
+
+```bash
+/tmp/mix-retry-maven/bin/mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+git diff --check
+```
+
+能力及限制见 [查询阶段覆盖说明](data-preparation-query-stage-coverage.md)，
+逐项精确事实及闭环记录见 [实测证据](data-preparation-loop/query-stage-coverage-results.json)。

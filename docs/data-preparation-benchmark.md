@@ -104,8 +104,12 @@ RANDOM/SHARED **复用现有 fill() 的值策略**，SHARED 仍是五个 [0,100)
 | 时间 | 准备耗时与总耗时分别汇总；副本初始化/等待会影响总耗时，不能当成策略开销差异 |
 | 调用成本 | 实际 prompt/cache-hit/cache-miss/completion token × 记录的单价；缺失用量保持未知 |
 
-数据场景桶包括 JOIN 匹配、两侧未匹配、两侧重复匹配、WHERE 后重复键、过滤掉的匹配、
-各列 NULL、GROUP BY 的多组/多行组、输入非空但查询为空。
+当前 `scope_version=2` 将基础数据存在性和查询阶段覆盖分开报告，详见
+[阶段覆盖](data-preparation-query-stage-coverage.md)。表中 NULL、边界值和局部 ON 关系统计保存在 `base_data`；
+`query_stages` 单独统计 WHERE 前后边界与 NULL、谓词三值、实际外连接未匹配输出、聚合参数 NULL、分组场景等。
+顶层场景字段仅映射 query_stages；base_data 变化不能贡献查询场景分数。
+汇总中的两个同名范围分别保存新增/丢失桶、完整/未验证变化及缺少范围的报告数；
+query_stages.new_effective_scene_hits 另要求引擎路径全部有效。旧未分范围的指标不能直接当作新版阶段覆盖，也不改写旧真实实验。
 “查询非空”只作为诊断值，不能单独贡献新增场景或证明目标。
 计数为种子×场景桶的出现次数，同时保存去重桶名；不把 2 对变成 20 对算作 18 个新增场景。
 

@@ -30,7 +30,8 @@
 最多累计 64 个不同目标；大整数使用字符串和 BigInteger 比较，不经过浮点数。
 程序重新构造并核对能力目录，模型不能添加能力或输出执行 SQL。
 
-过滤前后差异可以分别声明已有计数目标；“某个特定值恰好覆盖过滤边界”没有专用能力时仍不可验证，必须在 `verification_limit` 写明。
+新增 [查询阶段能力](data-preparation-query-stage-coverage.md) 可直接用于结构化目标：整数比较边界分别验证到达 WHERE 输入和通过完整 WHERE，
+NULL 分别验证查询输入、WHERE 输出、聚合参数值。其他没有专用能力的过滤边界仍不可验证，必须在 `verification_limit` 写明。
 精确 NULL 计数也不能自动证明 NULL 经 JOIN/WHERE 后仍存在。不能用近似指标替代缺失能力。
 
 ## 完整响应示例

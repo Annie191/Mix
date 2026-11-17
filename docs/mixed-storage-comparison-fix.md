@@ -302,3 +302,23 @@ observationEvidence、observationSnapshot 和 availableObservations。
 逐项证据见 [回归实测记录](data-preparation-loop/structured-goals-results.json)。
 
 本轮共 160 项测试：151 项通过、9 项真实集群测试按环境开关跳过；格式、XML、Checkstyle、PMD、SpotBugs、命名及差异空白检查通过。
+
+## 追加：基础数据与查询阶段覆盖分离（2026-11-17）
+
+修复“表里有值就算查询覆盖”的统计缺口：
+
+- `scope_version=2` 分别报告 `base_data` 与 `query_stages`。表内 NULL、边界值、局部 JOIN 事实仍保留，但不再直接贡献查询阶段分数。
+- 增加整数边界值及相邻值在原 FROM/JOIN 输出、完整 WHERE 后的精确计数。seed 3 同形反例中，仅有 `t0.k=10` 时 WHERE 边界输入为 0；补齐 `t1.k=10` 后才变为 1。
+- 新增 WHERE 输入/输出 NULL、完整谓词 TRUE/FALSE/UNKNOWN、聚合参数实际 NULL、分组输入 NULL；不从源列 NULL 推断表达式结果。
+- 已采集的 `left_unmatched_after`、`right_unmatched_after` 纳入查询阶段覆盖；被 WHERE 去掉的外连接输出不计分。普通过滤仍与具体边界分开记录。
+- 新能力可作为 AI 结构化目标，由现有闭环自动重新观测；所有探测继续扣预算。写入成功和模型解释不能证明阶段目标达成。
+- 基础数据与查询阶段分别统计新增/丢失、缺测和收益。两轮都没测到的能力也不能冒充“完整且无收益”。旧未分范围指标单列 `legacy_unscoped_scene_hits`，不计入新版查询阶段分数。
+
+实测闭环第一轮只补左表，基础数据新增但边界目标未达成；第二轮补齐右表，目标经实测达成。
+另覆盖三表局部匹配被后续 JOIN 阻断、聚合参数 NULL 与输入列 NULL 相反、外连接输出被过滤等反例。
+上述为逻辑关系阶段证据，物理执行路径仍由原引擎覆盖单独核验；不支持的谓词边界明确保留未验证。
+本轮使用模拟响应和实际 H2 SQL，没有重跑真实 DeepSeek 或 TiDB/TiFlash，不改写旧实验覆盖率。
+能力、边界及报告结构见 [查询阶段覆盖说明](data-preparation-query-stage-coverage.md)，
+逐项证据见 [实测记录](data-preparation-loop/query-stage-coverage-results.json)。
+
+本轮新增 10 项回归；共 170 项测试中 161 项通过、9 项真实集群测试按开关跳过。完整构建、formatter/XML/Checkstyle/PMD/SpotBugs、命名和差异空白检查通过。

@@ -209,6 +209,8 @@ public final class TiDBMixedObservations {
                 "Whether the frozen original SELECT emits any row, including aggregation and HAVING", candidate.sql,
                 "empty", null);
         groups(after);
+        TiDBMixedQueryStages.plan(candidate.ast, before, (id, description, relation) -> count(id, "query_stage_count",
+                "query_id", queryId, description, relation));
     }
 
     private int joins(TiDBExpression expression, int next) {

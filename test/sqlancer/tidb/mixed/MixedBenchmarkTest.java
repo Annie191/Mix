@@ -208,7 +208,8 @@ class MixedBenchmarkTest {
         assertEquals(1, metrics.getAsJsonObject("plan_execution_rate").get("denominator").getAsInt());
         assertEquals(0, metrics.getAsJsonObject("plan_execution_rate").get("numerator").getAsInt());
         assertEquals(1, metrics.get("responses_rejected").getAsInt());
-        assertEquals(1, metrics.get("new_observed_scene_hits").getAsInt());
+        assertEquals(0, metrics.get("new_observed_scene_hits").getAsInt());
+        assertEquals(1, metrics.get("legacy_unscoped_scene_hits").getAsInt());
         assertEquals(0, metrics.get("new_effective_scene_hits").getAsInt());
     }
 

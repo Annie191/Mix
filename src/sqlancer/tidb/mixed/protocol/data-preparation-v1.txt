@@ -40,6 +40,15 @@ boolean 字段仅允许 equals，expected 是 "true" 或 "false" 字符串。禁
 不要把原查询输出行数当作匹配数，也不要把分组结果行数当作分组前输入行数。
 有限样本和频率列表的 goal_fields 为空，不能据此定义全表目标；没有对应能力的过滤边界等意图，
 在 verification_limit 中明确写出未验证事项，不得用相近指标替代证明。此时 structured_goals 可以为 []。
+数据存在和查询阶段覆盖分别报告：base_data 的表内 NULL、边界值、局部 ON 匹配不能代替 query_stages 的证据。
+where_input_nulls_* / where_output_nulls_* 分别统计原 FROM/JOIN 的 NULL 输出和完整 WHERE 后的 NULL；
+where_predicate_unknown 是完整 WHERE 的 UNKNOWN 结果；aggregate_arg<N>_nulls 才是实际聚合参数表达式的 NULL 输入。
+目录中的 where_boundary_{below,at,above}_before/after 分别测量整数边界值 -1/0/+1 到达原 WHERE 输入、通过完整 WHERE 的数量。
+例如 INNER JOIN 中仅补左表 k=10、右表不匹配，不能证明 WHERE k>10 触达边界。
+要证明边界被排除，应同时要求 where_boundary_at_before>=1 和 where_boundary_at_after=0；仅 after=0 不足以证明触达。
+AND 中的边界有 _l/_r 路径编号，before 不证明其他 AND 子句通过，after 必须通过完整 WHERE。
+OR/NOT、非整数等目录未支持的边界仍未验证；不能将 filtered_matches 当作命中具体边界。
+这些证据描述逻辑关系阶段，不证明优化器实际求值顺序或物理引擎路径。
 goal、expected_effect 保留文字解释，但程序只评价 structured_goals，不将文字承诺判为已达成。
 补行后程序自动重新测量全部已接受目标的能力，与 verification_requests 和最低审计观测去重合并，
 合计超过探测预算会在写入前拒绝；请据此选择合理目标。所有已接受目标保留在历史和最终评价中，

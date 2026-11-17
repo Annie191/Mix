@@ -63,10 +63,15 @@ public final class TiDBMixedBenchmarkMetrics {
             }
             if (success > 0 && round.has("data_coverage_change")) {
                 JsonObject change = round.getAsJsonObject("data_coverage_change");
-                if (!change.get("complete").getAsBoolean()) {
+                if (!change.has("query_stages")
+                        || !change.getAsJsonObject("query_stages").get("complete").getAsBoolean()) {
                     add(counts, "rows_gain_unverified", success);
-                } else if (change.getAsJsonArray("added").isEmpty()) {
+                } else if (change.getAsJsonObject("query_stages").getAsJsonArray("added").isEmpty()) {
                     add(counts, "rows_without_new_scene", success);
+                    if (change.has("base_data")
+                            && !change.getAsJsonObject("base_data").getAsJsonArray("added").isEmpty()) {
+                        add(counts, "base_data_only_append_rounds", 1);
+                    }
                 } else {
                     add(counts, "productive_append_rounds", 1);
                 }
@@ -112,6 +117,53 @@ public final class TiDBMixedBenchmarkMetrics {
         }
     }
 
+    private static JsonObject scopedCoverage(JsonArray reports, String strategy, String scope) {
+        JsonObject result = new JsonObject();
+        long added = 0;
+        long lost = 0;
+        long effective = 0;
+        long complete = 0;
+        long unverified = 0;
+        long missing = 0;
+        java.util.Set<String> buckets = new TreeSet<>();
+        for (JsonElement entry : reports) {
+            JsonObject report = entry.getAsJsonObject();
+            if (!strategy.equals(report.get("strategy").getAsString())) {
+                continue;
+            }
+            JsonObject change = report.has("data_coverage_change") ? report.getAsJsonObject("data_coverage_change")
+                    : new JsonObject();
+            if (!change.has(scope)) {
+                missing++;
+                continue; // Historical unscoped coverage cannot be upgraded into stage coverage.
+            }
+            JsonObject scoped = change.getAsJsonObject(scope);
+            int hits = scoped.getAsJsonArray("added").size();
+            added += hits;
+            lost += scoped.getAsJsonArray("lost").size();
+            if (scoped.get("complete").getAsBoolean()) {
+                complete++;
+            } else {
+                unverified++;
+            }
+            scoped.getAsJsonArray("added").forEach(bucket -> buckets.add(bucket.getAsString()));
+            if (scope.equals("query_stages") && report.has("engine_outcome")
+                    && report.getAsJsonObject("engine_outcome").get("allPathsValid").getAsBoolean()) {
+                effective += hits;
+            }
+        }
+        result.addProperty("new_hits", added);
+        result.addProperty("lost_hits", lost);
+        result.addProperty("complete_changes", complete);
+        result.addProperty("unverified_changes", unverified);
+        result.addProperty("missing_scoped_reports", missing);
+        result.add("new_buckets", new com.google.gson.Gson().toJsonTree(buckets));
+        if (scope.equals("query_stages")) {
+            result.addProperty("new_effective_scene_hits", effective);
+        }
+        return result;
+    }
+
     public static JsonObject summarize(JsonArray reports) {
         JsonObject summary = new JsonObject();
         for (String strategy : java.util.List.of("RANDOM", "SHARED", "AI")) {
@@ -124,7 +176,8 @@ public final class TiDBMixedBenchmarkMetrics {
                     "final_goals_achieved", "final_goals_not_achieved", "final_goals_unverified",
                     "new_observed_scene_hits", "new_effective_scene_hits", "lost_scene_hits", "engine_paths_attempted",
                     "engine_paths_valid", "engine_all_paths_valid_cases", "api_calls", "prompt_tokens",
-                    "completion_tokens", "preparation_elapsed_ms", "total_elapsed_ms")) {
+                    "completion_tokens", "preparation_elapsed_ms", "total_elapsed_ms", "legacy_unscoped_scene_hits",
+                    "base_data_only_append_rounds")) {
                 counts.put(key, 0L);
             }
             BigDecimal cost = BigDecimal.ZERO;
@@ -169,10 +222,16 @@ public final class TiDBMixedBenchmarkMetrics {
                 }
                 if (report.has("data_coverage_change")) {
                     JsonObject change = report.getAsJsonObject("data_coverage_change");
-                    add(counts, "new_observed_scene_hits", change.getAsJsonArray("added").size());
-                    add(counts, "new_effective_scene_hits", allPaths ? change.getAsJsonArray("added").size() : 0);
-                    add(counts, "lost_scene_hits", change.getAsJsonArray("lost").size());
-                    change.getAsJsonArray("added").forEach(b -> buckets.add(b.getAsString()));
+                    if (change.has("query_stages")) {
+                        JsonObject queryStages = change.getAsJsonObject("query_stages");
+                        add(counts, "new_observed_scene_hits", queryStages.getAsJsonArray("added").size());
+                        add(counts, "new_effective_scene_hits",
+                                allPaths ? queryStages.getAsJsonArray("added").size() : 0);
+                        add(counts, "lost_scene_hits", queryStages.getAsJsonArray("lost").size());
+                        queryStages.getAsJsonArray("added").forEach(b -> buckets.add(b.getAsString()));
+                    } else {
+                        add(counts, "legacy_unscoped_scene_hits", change.getAsJsonArray("added").size());
+                    }
                 }
                 for (JsonElement entry : report.getAsJsonArray("api_audit")) {
                     JsonObject api = entry.getAsJsonObject();
@@ -190,7 +249,10 @@ public final class TiDBMixedBenchmarkMetrics {
                 }
             }
             JsonObject result = new com.google.gson.Gson().toJsonTree(counts).getAsJsonObject();
+            result.addProperty("coverage_scope_version", 2);
             result.add("new_scene_buckets", new com.google.gson.Gson().toJsonTree(buckets));
+            result.add("base_data", scopedCoverage(reports, strategy, "base_data"));
+            result.add("query_stages", scopedCoverage(reports, strategy, "query_stages"));
             result.add("engine_ratio_buckets", engineRatios);
             result.add("engine_join_buckets", engineJoins);
             result.addProperty("known_estimated_usd", cost);

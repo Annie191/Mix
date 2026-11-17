@@ -67,6 +67,13 @@ JOIN 的 WHERE 后统计仅在该 JOIN 就是整个两表 FROM 时支持，避�
 例如 `SELECT COUNT(*) ... WHERE FALSE` 可以输出一行，但聚合前输入行数是 0。
 LEFT JOIN 输出 6 行也可以只有 4 对真正匹配。两个值分别保存，不相互代替。
 
+## 查询阶段能力补充
+
+当前已增加 [基础数据与查询阶段覆盖](data-preparation-query-stage-coverage.md)：
+整数过滤边界分别计数基础表、原 FROM/JOIN 输出和完整 WHERE 输出；
+NULL 分别测量查询输入/输出、WHERE 三值结果、聚合参数及分组输入。
+表中的值或局部 ON 匹配不直接算整条查询的覆盖。程序生成 SQL 并沿用下述快照、状态与预算。
+
 ## 状态、快照与预算
 
 每条观测包含 `id, capability_id, query_id, schema_revision, data_revision, status, value, error`。
