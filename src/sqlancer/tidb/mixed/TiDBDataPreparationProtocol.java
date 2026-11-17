@@ -33,6 +33,16 @@ public final class TiDBDataPreparationProtocol {
             "operations", "expected_effect", "verification_requests", "verification_limit", "stop_reason");
     private static final Set<String> VALUE_KINDS = Set.of("integer", "decimal", "text", "boolean", "binary", "null");
 
+    public static final class ValidationException extends IllegalArgumentException {
+        private static final long serialVersionUID = 1L;
+        public final String code;
+
+        private ValidationException(String code, String message) {
+            super(message);
+            this.code = code;
+        }
+    }
+
     private TiDBDataPreparationProtocol() {
     }
 
@@ -80,7 +90,9 @@ public final class TiDBDataPreparationProtocol {
     }
 
     private static void fields(JsonObject obj, Set<String> expected) {
-        require(obj.keySet().equals(expected), "missing or unexpected fields: " + obj.keySet());
+        if (!obj.keySet().equals(expected)) {
+            throw new ValidationException("INVALID_FIELDS", "missing or unexpected fields: " + obj.keySet());
+        }
     }
 
     private static void nullableText(JsonElement value) {
@@ -304,7 +316,10 @@ public final class TiDBDataPreparationProtocol {
 
     private static void requests(JsonElement entries, Set<String> capabilities, long budget) {
         Set<String> ids = strings(entries);
-        require(ids.size() <= budget && capabilities.containsAll(ids), "unknown or over-budget observation requests");
+        if (ids.size() > budget || !capabilities.containsAll(ids)) {
+            throw new ValidationException("INVALID_OBSERVATION_REQUESTS",
+                    "unknown or over-budget observation requests; allowed IDs: " + capabilities + "; limit: " + budget);
+        }
     }
 
     public static JsonObject decision(String json, JsonObject input) {
@@ -329,7 +344,9 @@ public final class TiDBDataPreparationProtocol {
         evidence.add(text(object(state.get("schema")).get("id")));
         named(array(state.get("observations")), "id").keySet().forEach(evidence::add);
         named(array(state.get("samples")), "id").keySet().forEach(evidence::add);
-        require(evidence.containsAll(strings(decision.get("evidence_ids"))), "invented evidence identifier");
+        if (!evidence.containsAll(strings(decision.get("evidence_ids")))) {
+            throw new ValidationException("UNKNOWN_EVIDENCE_ID", "invented evidence identifier");
+        }
         Set<String> capabilities = named(array(state.get("available_observations")), "id").keySet();
         JsonObject budget = object(state.get("remaining_budget"));
         requests(decision.get("observation_requests"), capabilities, integer(budget.get("probe_requests")));
@@ -394,7 +411,10 @@ public final class TiDBDataPreparationProtocol {
                     require(type.equals("null") ? bool(column.get("nullable"))
                             : type.equals(text(column.get("value_kind"))), "column/value kind mismatch");
                 }
-                require(++count <= rowBudget, "append exceeds remaining row budget");
+                if (++count > rowBudget) {
+                    throw new ValidationException("APPEND_ROW_BUDGET_EXCEEDED",
+                            "append exceeds remaining row budget; total across all tables must be <= " + rowBudget);
+                }
             }
         }
     }

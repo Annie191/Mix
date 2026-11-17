@@ -96,8 +96,8 @@ JOIN 项包含 `id, type, left_tables, right_tables, on`；条件不存在时为
 模型不能提供任意查询或更改该 target。实际能力及 ID 见第二环节的 available()；本文人工示例的目录不代表当前实例必然支持。
 
 `history` 每项记录 `decision_id, decision, validation_status, data_revision_before,
-data_revision_after, writes, observation_ids, failure_reason`。
-decision 保存原提案；解析失败时为 null，失败原因包含在 failure_reason。
+data_revision_after, writes, observation_ids, failure_reason, validation_feedback`。
+decision 保存通过校验的提案；被拒绝时为 null，原始响应仍保留在 raw_response，失败原因包含在 failure_reason。
 validation_status 为 `accepted`、`rejected` 或 `parse_error`；校验通过不等于执行成功。
 writes 中每行包含 `table, row_index, status, affected_rows, specified_values, actual_values,
 data_revision_after, sqlstate, error_code, error`：status 为 `success`、`failed`、`not_attempted` 或 `unknown`，
@@ -105,6 +105,30 @@ data_revision_after, sqlstate, error_code, error`：status 为 `success`、`fail
 第三环节还返回 attempted_values、SQL 模板、剩余预算、审计事件和 requires_rebuild。
 提交不确定时 affected_rows、data_revision_after 为 null，停止补行并要求重建，不能当作普通失败重试。
 校验器仅检查 history 是对象数组；真实执行反馈及错误采集由追加执行器提供。
+
+可恢复的计划校验错误不再立即结束循环。`history[].validation_feedback` 保存：
+
+```json
+{
+  "stage": "plan_validation",
+  "code": "APPEND_ROW_BUDGET_EXCEEDED",
+  "message": "append exceeds remaining row budget; total across all tables must be <= 6",
+  "recoverable": true,
+  "retry_allowed": true,
+  "request_id": "prepare_round_0",
+  "data_revision": 0,
+  "execution_started": false,
+  "attempted_rows": 0,
+  "remaining_budget": {"model_calls": 2, "probe_requests": 96, "insert_rows": 6, "time_ms": 118000},
+  "correction": "Use the latest state and remaining budget to submit a new observe, smaller/different append_rows, or stop; rejected operations were not executed"
+}
+```
+
+这是结构示例，time_ms 按实耗扣除。
+字段错误、未知观测/证据 ID、格式错误、标识/版本回显错误和超预算可在剩余调用/时间内重新规划。
+所有表的行数合计受 insert_rows 限制；拒绝发生在执行前，不消耗行/探测预算或修改数据版本，但该次调用和耗时照扣。
+下一次请求使用新 request_id、当前版本及完整拒绝历史；没有预算则终止，不自动增加额度。
+传输错误、重复已失败行的提案、冻结、已发现差异、提交不确定和执行上下文异常不进入这条纠错路径。
 
 ## 模型输出契约
 

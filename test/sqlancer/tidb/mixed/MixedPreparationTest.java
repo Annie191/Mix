@@ -209,6 +209,280 @@ class MixedPreparationTest {
                 + (verify ? "null" : "\"not measured\"") + "}");
     }
 
+    private static JsonObject stop() {
+        return MixedAppendTest.json("{\"decision\":\"stop\",\"reason\":\"finished\",\"goal\":\"preserve data\","
+                + "\"expected_effect\":\"no writes\",\"stop_reason\":\"finished\"}");
+    }
+
+    @Test
+    void rejectedSevenAndEightRowPlansCanBeRevisedWithinTheSameSixRowBudget() throws Exception {
+        JsonArray scripts = JsonParser
+                .parseString(Files.readString(Path.of("docs/data-preparation-loop/filtered_shared.json")))
+                .getAsJsonArray();
+        for (int proposedRows : List.of(7, 8)) {
+            try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+                Candidate query = query(fixture, false);
+                JsonObject packet = packet(fixture, query);
+                packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+                packet.getAsJsonArray("observations").add(MixedAppendTest
+                        .json("{\"id\":\"existing_rows\",\"capability_id\":\"rows_t0\",\"query_id\":\"query_loop\","
+                                + "\"schema_revision\":0,\"data_revision\":0,\"status\":\"exact\",\"value\":{\"count\":\"1\"},\"error\":null}"));
+                AtomicInteger calls = new AtomicInteger();
+                JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64,
+                        2).run(messages -> {
+                            JsonObject current = JsonParser.parseString(messages.get(2).get("content"))
+                                    .getAsJsonObject();
+                            int index = calls.getAndIncrement();
+                            if (index == 0) {
+                                JsonObject script = append(12, true);
+                                JsonArray rows = script.getAsJsonArray("operations").get(0).getAsJsonObject()
+                                        .getAsJsonArray("rows");
+                                for (int i = 1; i < proposedRows; i++) {
+                                    rows.add(MixedAppendTest.json(MixedAppendTest.row(12 + i)));
+                                }
+                                return response(current, script).toString();
+                            }
+                            if (index == 1) {
+                                JsonObject feedback = current.getAsJsonArray("history").get(0).getAsJsonObject()
+                                        .getAsJsonObject("validation_feedback");
+                                assertEquals("APPEND_ROW_BUDGET_EXCEEDED", feedback.get("code").getAsString());
+                                assertTrue(feedback.get("recoverable").getAsBoolean());
+                                assertTrue(feedback.get("retry_allowed").getAsBoolean());
+                                assertFalse(feedback.get("execution_started").getAsBoolean());
+                                assertEquals(0, feedback.get("attempted_rows").getAsInt());
+                                assertEquals(0, current.get("data_revision").getAsInt());
+                                assertEquals(packet.get("observations"), current.get("observations"));
+                                assertEquals(6,
+                                        current.getAsJsonObject("remaining_budget").get("insert_rows").getAsInt());
+                                assertEquals(2,
+                                        current.getAsJsonObject("remaining_budget").get("model_calls").getAsInt());
+                                return response(current, scripts.get(1).getAsJsonObject()).toString();
+                            }
+                            return response(current, stop()).toString();
+                        });
+                assertEquals(3, calls.get());
+                assertEquals("model_stop", result.get("termination").getAsString());
+                assertTrue(round(result, 0).getAsJsonArray("writes").isEmpty());
+                assertEquals(3, round(result, 1).getAsJsonArray("writes").size());
+                assertEquals("2", count(round(result, 1), "j0_pairs_after"));
+                assertEquals("achieved", outcome(result));
+                JsonObject remaining = result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget");
+                assertEquals(0, remaining.get("model_calls").getAsInt());
+                assertEquals(3, remaining.get("insert_rows").getAsInt());
+                assertEquals(3, result.getAsJsonObject("final_state").get("data_revision").getAsInt());
+                TiDBMixedSupport.save(Path.of("target/mixed-preparation", "rejected_" + proposedRows + "_rows.json"),
+                        result);
+            }
+        }
+    }
+
+    @Test
+    void badFieldsObservationIdsEvidenceAndVersionsCanBeCorrected() throws Exception {
+        for (String error : List.of("field", "missing_field", "observation", "evidence", "request", "version",
+                "json")) {
+            try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+                Candidate query = query(fixture, false);
+                JsonObject packet = packet(fixture, query);
+                packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+                AtomicInteger calls = new AtomicInteger();
+                JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64,
+                        2).run(messages -> {
+                            JsonObject current = JsonParser.parseString(messages.get(2).get("content"))
+                                    .getAsJsonObject();
+                            int index = calls.getAndIncrement();
+                            if (index == 0) {
+                                JsonObject bad = response(current, append(12, true));
+                                switch (error) {
+                                case "field":
+                                    bad.addProperty("unexpected", true);
+                                    break;
+                                case "missing_field":
+                                    bad.remove("expected_effect");
+                                    break;
+                                case "observation":
+                                    bad.getAsJsonArray("verification_requests").add("invented_probe");
+                                    break;
+                                case "evidence":
+                                    bad.getAsJsonArray("evidence_ids").add("invented_fact");
+                                    break;
+                                case "request":
+                                    bad.addProperty("request_id", "stale_request");
+                                    break;
+                                case "version":
+                                    bad.addProperty("data_revision", 99);
+                                    break;
+                                default:
+                                    return "{broken json";
+                                }
+                                return bad.toString();
+                            }
+                            if (index == 1) {
+                                JsonObject previous = current.getAsJsonArray("history").get(0).getAsJsonObject();
+                                assertTrue(previous.getAsJsonObject("validation_feedback").get("retry_allowed")
+                                        .getAsBoolean());
+                                assertEquals(0, current.get("data_revision").getAsInt());
+                                assertEquals(packet.get("observations"), current.get("observations"));
+                                return response(current, append(12, true)).toString();
+                            }
+                            return response(current, stop()).toString();
+                        });
+                assertEquals(3, calls.get(), error);
+                assertEquals("rejected", round(result, 0).get("validation_status").getAsString());
+                assertEquals("accepted", round(result, 1).get("validation_status").getAsString());
+                assertEquals(1, result.getAsJsonObject("final_state").get("data_revision").getAsInt());
+                assertEquals("model_stop", result.get("termination").getAsString());
+            }
+        }
+    }
+
+    @Test
+    void repeatedInvalidPlansConsumeCallsAndTimeButNoRowOrProbeBudget() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            Candidate query = query(fixture, false);
+            JsonObject packet = packet(fixture, query);
+            packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+            AtomicInteger calls = new AtomicInteger();
+            JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64, 2)
+                    .run(messages -> {
+                        calls.incrementAndGet();
+                        return "{}";
+                    });
+            assertEquals(3, calls.get());
+            assertEquals("budget_exhausted", result.get("termination").getAsString());
+            JsonObject remaining = result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget");
+            assertEquals(0, remaining.get("model_calls").getAsInt());
+            assertEquals(6, remaining.get("insert_rows").getAsInt());
+            assertEquals(96, remaining.get("probe_requests").getAsInt());
+            assertTrue(remaining.get("time_ms").getAsLong() < 120_000);
+            assertFalse(round(result, 2).getAsJsonObject("validation_feedback").get("retry_allowed").getAsBoolean());
+            assertTrue(result.getAsJsonArray("rounds").asList().stream()
+                    .allMatch(turn -> turn.getAsJsonObject().getAsJsonArray("writes").isEmpty()));
+        }
+    }
+
+    @Test
+    void transportFailureStopsImmediatelyWithoutLeakingItsMessageOrRetrying() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            Candidate query = query(fixture, false);
+            AtomicInteger calls = new AtomicInteger();
+            JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet(fixture, query),
+                    DUPLICATES, 100, 64, 2).run(messages -> {
+                        calls.incrementAndGet();
+                        throw new java.io.IOException("sensitive transport detail");
+                    });
+            assertEquals(1, calls.get());
+            assertEquals("response_rejected", result.get("termination").getAsString());
+            assertEquals("MODEL_REQUEST_FAILED",
+                    round(result, 0).getAsJsonObject("validation_feedback").get("code").getAsString());
+            assertFalse(round(result, 0).getAsJsonObject("validation_feedback").get("recoverable").getAsBoolean());
+            assertFalse(result.toString().contains("sensitive transport detail"));
+        }
+    }
+
+    @Test
+    void expiredTimeBudgetPreventsAnotherModelCallAfterARecoverableRejection() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            Candidate query = query(fixture, false);
+            JsonObject packet = packet(fixture, query);
+            packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+            packet.getAsJsonObject("remaining_budget").addProperty("time_ms", 1);
+            AtomicInteger calls = new AtomicInteger();
+            JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64, 2)
+                    .run(messages -> {
+                        calls.incrementAndGet();
+                        Thread.sleep(20);
+                        return "{}";
+                    });
+            assertEquals(1, calls.get());
+            assertEquals("budget_exhausted", result.get("termination").getAsString());
+            assertTrue(round(result, 0).getAsJsonObject("validation_feedback").get("recoverable").getAsBoolean());
+            assertFalse(round(result, 0).getAsJsonObject("validation_feedback").get("retry_allowed").getAsBoolean());
+            assertEquals(0, result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget").get("time_ms")
+                    .getAsInt());
+        }
+    }
+
+    @Test
+    void modelCanChooseObservationThenStopAfterARejectedPlan() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            Candidate query = query(fixture, false);
+            JsonObject packet = packet(fixture, query);
+            packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+            AtomicInteger calls = new AtomicInteger();
+            JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64, 2)
+                    .run(messages -> {
+                        JsonObject current = JsonParser.parseString(messages.get(2).get("content")).getAsJsonObject();
+                        int index = calls.getAndIncrement();
+                        if (index == 0) {
+                            return "{}";
+                        }
+                        if (index == 1) {
+                            return response(current,
+                                    MixedAppendTest.json("{\"decision\":\"observe\",\"reason\":\"check first\","
+                                            + "\"goal\":\"measure\",\"expected_effect\":\"unknown\",\"observation_requests\":[\"j0_pairs_after\"]}"))
+                                                    .toString();
+                        }
+                        return response(current, stop()).toString();
+                    });
+            assertEquals(3, calls.get());
+            assertEquals("model_stop", result.get("termination").getAsString());
+            assertEquals("0", count(round(result, 1), "j0_pairs_after"));
+            assertEquals(0, result.getAsJsonObject("final_state").get("data_revision").getAsInt());
+            assertTrue(result.getAsJsonArray("rounds").asList().stream()
+                    .allMatch(turn -> turn.getAsJsonObject().getAsJsonArray("writes").isEmpty()));
+        }
+    }
+
+    @Test
+    void frozenDataAndDiscoveredDiscrepancyDoNotCallTheModel() throws Exception {
+        for (String field : List.of("frozen", "discrepancy_found")) {
+            try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+                Candidate query = query(fixture, false);
+                JsonObject packet = packet(fixture, query);
+                packet.addProperty(field, true);
+                JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, packet, DUPLICATES, 100, 64,
+                        2).run(messages -> {
+                            throw new AssertionError("closed preparation must not request a model response");
+                        });
+                assertEquals("preparation_closed", result.get("termination").getAsString());
+                assertTrue(result.getAsJsonArray("rounds").isEmpty());
+            }
+        }
+    }
+
+    @Test
+    void verificationFloorRejectionCanBeRepairedBeforeAnyWrite() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            Candidate query = query(fixture, false);
+            JsonObject packet = packet(fixture, query);
+            packet.add("remaining_budget", TiDBMixedPreparationHarness.preparationBudget(6));
+            packet.getAsJsonObject("remaining_budget").addProperty("probe_requests", 1);
+            TiDBMixedPreparationHarness harness = new TiDBMixedPreparationHarness(fixture.state, query, packet,
+                    DUPLICATES, 100, 64, 2);
+            harness.verificationFloor(List.of("rows_t0"));
+            AtomicInteger calls = new AtomicInteger();
+            JsonObject result = harness.run(messages -> {
+                JsonObject current = JsonParser.parseString(messages.get(2).get("content")).getAsJsonObject();
+                int index = calls.getAndIncrement();
+                if (index == 2) {
+                    return response(current, stop()).toString();
+                }
+                JsonObject plan = response(current, append(12, true));
+                if (index == 1) {
+                    plan.getAsJsonArray("verification_requests").set(0, new com.google.gson.JsonPrimitive("rows_t0"));
+                    assertEquals(0, current.get("data_revision").getAsInt());
+                    assertEquals(1, current.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
+                }
+                return plan.toString();
+            });
+            assertEquals(3, calls.get());
+            assertTrue(round(result, 0).getAsJsonArray("writes").isEmpty());
+            assertTrue(round(result, 0).get("failure_reason").getAsString().contains("verification floor"));
+            assertEquals(1, round(result, 1).getAsJsonArray("writes").size());
+            assertEquals("unverified", outcome(result));
+        }
+    }
+
     @Test
     void successfulWriteAndConfidentModelExplanationCannotProveCoverage() throws Exception {
         for (boolean verify : List.of(false, true)) {

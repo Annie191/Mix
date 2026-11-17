@@ -74,9 +74,7 @@ public final class TiDBMixedPreparationBenchmark {
     }
 
     static JsonObject packet(TiDBMixedObservations facts, JsonObject schema, String caseId) {
-        JsonObject budget = JsonParser
-                .parseString("{\"model_calls\":3,\"probe_requests\":96,\"insert_rows\":6,\"time_ms\":120000}")
-                .getAsJsonObject();
+        JsonObject budget = TiDBMixedPreparationHarness.preparationBudget();
         return facts.statePacket("prepare", caseId, schema, new JsonArray(), budget);
     }
 
@@ -114,7 +112,8 @@ public final class TiDBMixedPreparationBenchmark {
         return value;
     }
 
-    static JsonArray baseline(TiDBGlobalState state, Candidate query, Profile profile) {
+    static JsonArray baseline(TiDBGlobalState state, Candidate query, Profile profile, long rowBudget) {
+        TiDBMixedPreparationHarness.preparationBudget(rowBudget);
         List<TiDBExpression> pool = new ArrayList<>();
         for (int i = 0; i < 5; i++) {
             pool.add(TiDBConstant.createIntConstant(state.getRandomly().getInteger(0, 100)));
@@ -123,11 +122,16 @@ public final class TiDBMixedPreparationBenchmark {
                 pool);
         TiDBExpressionGenerator generator = new TiDBExpressionGenerator(state);
         JsonArray operations = new JsonArray();
-        for (TiDBTable table : query.tables) {
+        for (int tableIndex = 0; tableIndex < query.tables.size(); tableIndex++) {
+            TiDBTable table = query.tables.get(tableIndex);
+            long tableRows = rowBudget / query.tables.size() + (tableIndex < rowBudget % query.tables.size() ? 1 : 0);
+            if (tableRows == 0) {
+                continue;
+            }
             JsonObject operation = new JsonObject();
             operation.addProperty("table", table.getName());
             JsonArray rows = new JsonArray();
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < tableRows; i++) {
                 JsonObject row = new JsonObject();
                 for (TiDBColumn column : table.getColumns()) {
                     row.add(column.getName(), cell(
@@ -218,11 +222,12 @@ public final class TiDBMixedPreparationBenchmark {
                 client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
                 preparation = harness.run(client);
             } else {
-                JsonArray rows = baseline(state, query, Profile.valueOf(arm));
+                JsonArray rows = baseline(state, query, Profile.valueOf(arm),
+                        initial.getAsJsonObject("remaining_budget").get("insert_rows").getAsLong());
                 AtomicBoolean first = new AtomicBoolean(true);
                 preparation = harness.run(messages -> {
                     JsonObject current = JsonParser.parseString(messages.get(2).get("content")).getAsJsonObject();
-                    boolean append = first.getAndSet(false);
+                    boolean append = first.getAndSet(false) && !rows.isEmpty();
                     return decision(current, append ? "append_rows" : "stop", append ? rows : new JsonArray())
                             .toString();
                 });
@@ -303,6 +308,7 @@ public final class TiDBMixedPreparationBenchmark {
         for (String seed : args[1].split(",")) {
             Long.parseLong(seed);
         }
+        TiDBMixedPreparationHarness.preparationBudget(); // Validate row configuration before creating any database.
         JsonArray reports = new JsonArray();
         try (Connection connection = DriverManager.getConnection(
                 "jdbc:mysql://" + System.getenv().getOrDefault("TIDB_HOST", TiDBOptions.DEFAULT_HOST) + ":"

@@ -7,6 +7,12 @@
 可以协调指定多个列，使连接值和过滤条件共同满足预期；检查唯一约束后再考虑哪侧增加重复键。
 生成列不能直接赋值。未指定的其他可写列以后由 SQLancer 生成；若影响目标，应明确指定。
 选择多少行由你决定，但不能超过剩余预算。写入成功不等于目标已达成。
+insert_rows 是所有表合计的剩余尝试行数，不是每张表各有一份；提交前先累加所有 operations.rows 的长度。
+history 中 validation_feedback 表示计划被程序拒绝，execution_started=false 表示该计划没有执行。
+recoverable=true 且 retry_allowed=true 时，应根据 code、message 和本次 remaining_budget 修订计划：
+超行数预算时减少目标/行数或重新分配到各表；字段或观测 ID 错误时严格使用本次协议和可用 ID。
+不得只改 reason 或请求 ID 后原样重交；可以改为 observe 或 stop。纠错也占用模型调用和时间预算。
+不要自行补回预算，不把被拒绝的计划当成已写入，不输出之前请求的旧版本/标识。
 历史中的部分成功、实际值、SQLSTATE、错误码及失败原因应支持你的下一步决策；
 不得在没有新依据的情况下重复失败方案。只引用当前状态包中存在的 evidence_ids。
 新的请求 ID、新的观测 ID 或改写 reason 本身不是重试依据；唯一键冲突后应改变相关表/键/值、请求有用观测或 stop。

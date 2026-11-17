@@ -339,7 +339,7 @@ TiDB Git Commit 为 `b1d4142f99a606aa3cd1ada6ee0caebaa84226dc`，对应目标
 | 1 LEFT JOIN | 未达成 | 未达成 | 达成 |
 | 2 t0 唯一键 | 未达成 | 未达成 | 未达成；8 行提案超预算，整单拒绝 |
 | 3 已有重复匹配和 NULL | 达成 | 达成 | 达成；仍选择补行，增加其他场景 |
-| 4 GROUP BY | 未达成 | 未达成 | 未达成；8 行提案超预算，整单拒绝 |
+| 4 GROUP BY | 未达成 | 未达成 | 未达成；7 行提案超预算，整单拒绝 |
 | 5 WHERE FALSE | 达成 | 达成 | 达成；直接 stop，未补行 |
 
 一般用例目标为 WHERE 后至少 2 对匹配、至少 1 个重复匹配键；种子 5 为保持空查询及 0 对匹配。
@@ -386,3 +386,35 @@ git diff --check
 仅 1/4 路径有效，最终 INCONCLUSIVE，未宣称差分 PASS 或发现缺陷。
 这部分费用 USD 0.004989918 单独保存，不计入正式六种子对照。
 入口修复前后证据均在压缩记录中；manifest 分别记录正式配对和修复后 Oracle 的固定 JAR 哈希。
+
+## 计划拒绝反馈回归（2026-11-17）
+
+新增 9 项离线回归：7/8 行提案超过 6 行预算后修订、字段/观测/证据 ID/标识/版本/格式纠错、
+最低审计观测超额后修订、可选择 observe 后 stop、调用/时间耗尽，以及传输错误/冻结/已发现差异时立即停止。
+原有未知提交结果和重复失败行提案终止测试继续通过。
+
+两份超额用例的真实 H2 执行结果为：
+
+```text
+7 行或 8 行提案 → 写前拒绝（0 次写入，行预算仍 6，调用剩 2）
+→ 模拟模型读到结构化拒绝反馈，改为 t0 补 1 行、t1 补 2 行
+→ 3 行提交成功 → 实测 WHERE 后 2 对匹配、1 个重复键 → stop
+```
+
+另核对 0/1/6/7/12 行配置：RANDOM/SHARED 的所有表合计行数与同一个配置一致，零行不生成空 INSERT。
+精简逐轮证据见 [记录](data-preparation-loop/rejection-recovery-results.json)，完整测试输出位于 target/mixed-preparation。
+没有调用真实模型、没有重跑 TiDB/TiFlash 或改写前一日的真实实验指标。
+
+本轮 153 项测试，144 项通过、9 项真实集群测试按开关跳过，0 失败、0 错误。
+完整 verify、formatter、XML、Checkstyle、PMD、SpotBugs、命名及 diff 检查通过。
+
+当前远程构建依赖已升级，使用 JDK 17 与 Maven 3.9.11 验证。
+配套清理新 ECJ 检出的 20 处旧多余 import，固定仓库原格式配置，并处理 5 处新格式化器的注释空白差异；
+保留已升级的依赖版本，不改变其他数据库的运行逻辑。xml-maven-plugin 1.4.0 要求 Maven 至少 3.9。
+新 ECJ/formatter 的 class 文件版本为 61，CI 构建 JDK 同步改为 17；项目编译目标仍为 Java 11。
+
+```bash
+mvn -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+git diff --check
+```

@@ -121,14 +121,35 @@ class MixedBenchmarkTest {
                     TiDBDeepSeekAdvisor.Profile.SHARED)) {
                 state.setRandomly(new Randomly(42));
                 TiDBMixedGeneration.Candidate first = TiDBMixedPreparationBenchmark.candidate(tables, 42);
-                JsonArray left = TiDBMixedPreparationBenchmark.baseline(fixture.state, first, profile);
+                JsonArray left = TiDBMixedPreparationBenchmark.baseline(fixture.state, first, profile, 6);
                 state.setRandomly(new Randomly(42));
                 TiDBMixedGeneration.Candidate second = TiDBMixedPreparationBenchmark.candidate(tables, 42);
                 assertEquals(first.sql, second.sql);
-                assertEquals(left, TiDBMixedPreparationBenchmark.baseline(fixture.state, second, profile));
+                assertEquals(left, TiDBMixedPreparationBenchmark.baseline(fixture.state, second, profile, 6));
                 assertEquals(6,
                         left.asList().stream().mapToInt(o -> o.getAsJsonObject().getAsJsonArray("rows").size()).sum());
             }
+        }
+    }
+
+    @Test
+    void configurableRowsAreSharedAcrossTablesAndBaselineStrategies() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            TiDBMixedGeneration.Candidate query = TiDBMixedPreparationBenchmark
+                    .candidate(List.of(MixedObservationTest.table("t0"), MixedObservationTest.table("t1")), 0);
+            for (int rows : List.of(0, 1, 6, 7, 12)) {
+                assertEquals(rows, TiDBMixedPreparationHarness.preparationBudget(rows).get("insert_rows").getAsInt());
+                for (TiDBDeepSeekAdvisor.Profile profile : List.of(TiDBDeepSeekAdvisor.Profile.RANDOM,
+                        TiDBDeepSeekAdvisor.Profile.SHARED)) {
+                    JsonArray operations = TiDBMixedPreparationBenchmark.baseline(fixture.state, query, profile, rows);
+                    assertEquals(rows, operations.asList().stream()
+                            .mapToInt(operation -> operation.getAsJsonObject().getAsJsonArray("rows").size()).sum());
+                    assertTrue(operations.asList().stream()
+                            .allMatch(operation -> !operation.getAsJsonObject().getAsJsonArray("rows").isEmpty()));
+                }
+            }
+            assertThrows(IllegalArgumentException.class, () -> TiDBMixedPreparationHarness.preparationBudget(-1));
+            assertThrows(IllegalArgumentException.class, () -> TiDBMixedPreparationHarness.preparationBudget(1001));
         }
     }
 

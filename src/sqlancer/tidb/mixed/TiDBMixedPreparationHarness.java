@@ -38,6 +38,30 @@ public final class TiDBMixedPreparationHarness {
         String respond(List<Map<String, String>> messages) throws Exception;
     }
 
+    private static final class RepeatedFailedRow extends IllegalArgumentException {
+        private static final long serialVersionUID = 1L;
+
+        private RepeatedFailedRow() {
+            super("repeated failed row: change the plan; prose is not new evidence");
+        }
+    }
+
+    public static JsonObject preparationBudget() {
+        return preparationBudget(Long.parseLong(System.getenv().getOrDefault("MS_PREPARATION_ROWS", "6")));
+    }
+
+    static JsonObject preparationBudget(long rows) {
+        if (rows < 0 || rows > 1000) {
+            throw new IllegalArgumentException("MS_PREPARATION_ROWS must be between 0 and 1000");
+        }
+        JsonObject budget = new JsonObject();
+        budget.addProperty("model_calls", 3);
+        budget.addProperty("probe_requests", 96);
+        budget.addProperty("insert_rows", rows);
+        budget.addProperty("time_ms", 120_000);
+        return budget;
+    }
+
     /** Test-owned, measurable assertions. Natural language goals are deliberately not parsed. */
     public static final class Requirement {
         private final String capability;
@@ -168,8 +192,7 @@ public final class TiDBMixedPreparationHarness {
             JsonObject object = operation.getAsJsonObject();
             for (JsonElement row : object.getAsJsonArray("rows")) {
                 if (failedRows.contains(rowKey(object.get("table").getAsString(), row.getAsJsonObject()))) {
-                    throw new IllegalArgumentException(
-                            "repeated failed row: change the plan; prose is not new evidence");
+                    throw new RepeatedFailedRow();
                 }
             }
         }
@@ -264,6 +287,10 @@ public final class TiDBMixedPreparationHarness {
         String requestPrefix = packet.get("request_id").getAsString();
         try {
             while (budget("model_calls") > 0 && budget("time_ms") > 0) {
+                if (packet.get("frozen").getAsBoolean() || packet.get("discrepancy_found").getAsBoolean()) {
+                    termination = "preparation_closed";
+                    break;
+                }
                 packet.addProperty("request_id", requestPrefix + "_round_" + rounds.size());
                 JsonObject round = new JsonObject();
                 round.add("state_before", packet.deepCopy());
@@ -271,14 +298,20 @@ public final class TiDBMixedPreparationHarness {
                 round.add("model_expectation", JsonNull.INSTANCE);
                 round.add("decision", JsonNull.INSTANCE);
                 round.add("failure_reason", JsonNull.INSTANCE);
+                round.add("validation_feedback", JsonNull.INSTANCE);
                 round.add("data_revision_before", packet.get("data_revision"));
                 JsonObject coverageBefore = TiDBMixedDataCoverage.snapshot(packet);
                 long started = System.nanoTime();
                 long timeBefore = budget("time_ms");
                 long callsBefore = budget("model_calls");
+                // Invalid program state is fatal; only a received proposal can be revised by the model.
+                List<Map<String, String>> messages = TiDBDataPreparationProtocol.messages(packet.toString());
                 JsonObject plan;
+                boolean received = false;
+                boolean recoverable = false;
                 try {
-                    String content = responder.respond(TiDBDataPreparationProtocol.messages(packet.toString()));
+                    String content = responder.respond(messages);
+                    received = true;
                     round.addProperty("raw_response", content);
                     plan = TiDBDataPreparationProtocol.decision(content, packet);
                     round.add("decision", plan.deepCopy());
@@ -288,9 +321,34 @@ public final class TiDBMixedPreparationHarness {
                         verification(plan);
                     }
                     round.addProperty("validation_status", "accepted");
-                } catch (IllegalArgumentException invalid) {
+                } catch (Exception invalid) {
+                    if (invalid instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                    }
+                    recoverable = received && invalid instanceof IllegalArgumentException
+                            && !(invalid instanceof RepeatedFailedRow);
                     round.addProperty("validation_status", "rejected");
-                    round.addProperty("failure_reason", invalid.toString());
+                    String message = received ? invalid.toString()
+                            : "Model request failed: " + invalid.getClass().getSimpleName();
+                    round.addProperty("failure_reason", message);
+                    JsonObject feedback = new JsonObject();
+                    feedback.addProperty("stage", received ? "plan_validation" : "model_request");
+                    feedback.addProperty("code",
+                            invalid instanceof TiDBDataPreparationProtocol.ValidationException
+                                    ? ((TiDBDataPreparationProtocol.ValidationException) invalid).code
+                                    : invalid instanceof RepeatedFailedRow ? "REPEATED_FAILED_ROW"
+                                            : received ? "INVALID_PLAN" : "MODEL_REQUEST_FAILED");
+                    feedback.addProperty("message",
+                            received && invalid.getMessage() != null ? invalid.getMessage() : message);
+                    feedback.addProperty("recoverable", recoverable);
+                    feedback.addProperty("request_id", packet.get("request_id").getAsString());
+                    feedback.add("data_revision", packet.get("data_revision"));
+                    feedback.addProperty("execution_started", false);
+                    feedback.addProperty("attempted_rows", 0);
+                    feedback.addProperty("correction", "Use the latest state and remaining budget to submit a new "
+                            + "observe, smaller/different append_rows, or stop; rejected operations were not executed");
+                    round.add("validation_feedback", feedback);
+                    round.add("decision", JsonNull.INSTANCE);
                     plan = null;
                 }
                 budget("model_calls", callsBefore - 1);
@@ -309,6 +367,12 @@ public final class TiDBMixedPreparationHarness {
                 }
                 long elapsed = (System.nanoTime() - started + 999_999) / 1_000_000;
                 budget("time_ms", Math.min(budget("time_ms"), Math.max(0, timeBefore - elapsed)));
+                if (!round.get("validation_feedback").isJsonNull()) {
+                    JsonObject feedback = round.getAsJsonObject("validation_feedback");
+                    feedback.add("remaining_budget", packet.getAsJsonObject("remaining_budget").deepCopy());
+                    feedback.addProperty("retry_allowed",
+                            recoverable && budget("model_calls") > 0 && budget("time_ms") > 0);
+                }
                 round.add("actual_observations", packet.get("observations").deepCopy());
                 round.add("actual_samples", packet.get("samples").deepCopy());
                 JsonObject coverageAfter = TiDBMixedDataCoverage.snapshot(packet);
@@ -326,9 +390,15 @@ public final class TiDBMixedPreparationHarness {
                 JsonObject history = round.deepCopy();
                 history.remove("state_before"); // Avoid recursive growth of history packets.
                 packet.getAsJsonArray("history").add(history);
-                if (plan == null || uncertain || plan.get("decision").getAsString().equals("stop")
-                        || failedRounds >= failureLimit) {
-                    termination = plan == null ? "response_rejected" : uncertain ? "requires_rebuild"
+                if (plan == null) {
+                    if (recoverable) {
+                        continue;
+                    }
+                    termination = "response_rejected";
+                    break;
+                }
+                if (uncertain || plan.get("decision").getAsString().equals("stop") || failedRounds >= failureLimit) {
+                    termination = uncertain ? "requires_rebuild"
                             : plan.get("decision").getAsString().equals("stop") ? "model_stop" : "no_progress_limit";
                     break;
                 }

@@ -1,0 +1,226 @@
+{
+  "simulation": true,
+  "backend": "H2; TiDB session and metadata simulated",
+  "model_calls": "scripted responses, no network API",
+  "test": "MixedPreparationTest.rejectedSevenAndEightRowPlansCanBeRevisedWithinTheSameSixRowBudget",
+  "cases": [
+    {
+      "first_proposal_rows": 7,
+      "initial_row_budget": 6,
+      "steps": [
+        {
+          "decision": "append_rows",
+          "validation_status": "rejected",
+          "validation_feedback": {
+            "stage": "plan_validation",
+            "code": "APPEND_ROW_BUDGET_EXCEEDED",
+            "message": "append exceeds remaining row budget; total across all tables must be <= 6",
+            "recoverable": true,
+            "request_id": "mock_round_0",
+            "data_revision": 0,
+            "execution_started": false,
+            "attempted_rows": 0,
+            "correction": "Use the latest state and remaining budget to submit a new observe, smaller/different append_rows, or stop; rejected operations were not executed",
+            "remaining_budget": {
+              "model_calls": 2,
+              "probe_requests": 96,
+              "insert_rows": 6,
+              "time_ms": 119997
+            },
+            "retry_allowed": true
+          },
+          "proposed_rows": 7,
+          "writes": [],
+          "measured_counts": {
+            "rows_t0": "1"
+          },
+          "evaluation": "unverified"
+        },
+        {
+          "decision": "append_rows",
+          "validation_status": "accepted",
+          "validation_feedback": null,
+          "proposed_rows": 3,
+          "writes": [
+            {
+              "table": "t0",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              }
+            },
+            {
+              "table": "t1",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            },
+            {
+              "table": "t1",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            }
+          ],
+          "measured_counts": {
+            "j0_pairs_after": "2",
+            "j0_duplicate_after": "1"
+          },
+          "evaluation": "achieved"
+        },
+        {
+          "decision": "stop",
+          "validation_status": "accepted",
+          "validation_feedback": null,
+          "proposed_rows": 0,
+          "writes": [],
+          "measured_counts": {
+            "j0_pairs_after": "2",
+            "j0_duplicate_after": "1"
+          },
+          "evaluation": "achieved"
+        }
+      ],
+      "termination": "model_stop",
+      "final_budget": {
+        "model_calls": 0,
+        "probe_requests": 93,
+        "insert_rows": 3,
+        "time_ms": 119955
+      },
+      "final_evaluation": "achieved"
+    },
+    {
+      "first_proposal_rows": 8,
+      "initial_row_budget": 6,
+      "steps": [
+        {
+          "decision": "append_rows",
+          "validation_status": "rejected",
+          "validation_feedback": {
+            "stage": "plan_validation",
+            "code": "APPEND_ROW_BUDGET_EXCEEDED",
+            "message": "append exceeds remaining row budget; total across all tables must be <= 6",
+            "recoverable": true,
+            "request_id": "mock_round_0",
+            "data_revision": 0,
+            "execution_started": false,
+            "attempted_rows": 0,
+            "correction": "Use the latest state and remaining budget to submit a new observe, smaller/different append_rows, or stop; rejected operations were not executed",
+            "remaining_budget": {
+              "model_calls": 2,
+              "probe_requests": 96,
+              "insert_rows": 6,
+              "time_ms": 119997
+            },
+            "retry_allowed": true
+          },
+          "proposed_rows": 8,
+          "writes": [],
+          "measured_counts": {
+            "rows_t0": "1"
+          },
+          "evaluation": "unverified"
+        },
+        {
+          "decision": "append_rows",
+          "validation_status": "accepted",
+          "validation_feedback": null,
+          "proposed_rows": 3,
+          "writes": [
+            {
+              "table": "t0",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              }
+            },
+            {
+              "table": "t1",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            },
+            {
+              "table": "t1",
+              "status": "success",
+              "specified_values": {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            }
+          ],
+          "measured_counts": {
+            "j0_pairs_after": "2",
+            "j0_duplicate_after": "1"
+          },
+          "evaluation": "achieved"
+        },
+        {
+          "decision": "stop",
+          "validation_status": "accepted",
+          "validation_feedback": null,
+          "proposed_rows": 0,
+          "writes": [],
+          "measured_counts": {
+            "j0_pairs_after": "2",
+            "j0_duplicate_after": "1"
+          },
+          "evaluation": "achieved"
+        }
+      ],
+      "termination": "model_stop",
+      "final_budget": {
+        "model_calls": 0,
+        "probe_requests": 93,
+        "insert_rows": 3,
+        "time_ms": 119971
+      },
+      "final_evaluation": "achieved"
+    }
+  ]
+}

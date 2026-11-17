@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import sqlancer.IgnoreMeException;
 import sqlancer.Randomly;
@@ -235,10 +234,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     record.put("observationSnapshot", facts.snapshot);
                 }
                 if (closedLoop) {
-                    JsonObject budget = JsonParser
-                            .parseString(
-                                    "{\"model_calls\":3,\"probe_requests\":96,\"insert_rows\":6,\"time_ms\":120000}")
-                            .getAsJsonObject();
+                    JsonObject budget = TiDBMixedPreparationHarness.preparationBudget();
                     JsonObject packet = facts.statePacket("prepare_" + revision,
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
                     TiDBDeepSeekPreparationClient client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
