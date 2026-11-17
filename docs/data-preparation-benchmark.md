@@ -85,6 +85,12 @@ Oracle 和 benchmark 共用该配置；配对实验的 RANDOM/SHARED 也按同�
 模型最多 3 次真实请求，基线无 API 请求；默认 6 行时，两组固定基线一轮各表补 3 行，然后停止。
 实际消耗允许不同，报告展示实际行数、探测、时间和费用，不要求人为烧完预算。
 
+AI 客户端初始化/调用失败时，preparation.termination=model_unavailable，model_failure 保存脱敏阶段及原因；
+冻结已有数据，继续独立后测及引擎差分。COMPLETED 仅表示用例流程完成，不表示 AI 可用或补行成功；
+分析 AI 效果时须同时核对 termination、API 审计、实际写入和目标评价。无凭据时 API 请求数为 0。
+提交结果不确定仍停止并要求重建；此类用例不能进入后测或引擎比较。
+
+
 RANDOM/SHARED **复用现有 fill() 的值策略**，SHARED 仍是五个 [0,100) 整数的共享池、
 约一半的引导连接列取共享值；其他值由 SQLancer 常量生成器产生。
 为控制只追加语义及相同行预算，三组统一使用普通 INSERT，未运行旧生成器的 REPLACE/IGNORE/UPDATE 变体。

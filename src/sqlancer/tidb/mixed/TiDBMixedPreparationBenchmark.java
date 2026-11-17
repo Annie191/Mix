@@ -196,7 +196,6 @@ public final class TiDBMixedPreparationBenchmark {
         report.addProperty("engines_requested", engines);
         long started = System.nanoTime();
         Path file = output.resolve("seed_" + seed + "_" + arm + ".json");
-        TiDBDeepSeekPreparationClient client = null;
         try {
             io.exec("USE " + TiDBMixedSupport.quoteIdentifier(database));
             io.initialize();
@@ -233,8 +232,8 @@ public final class TiDBMixedPreparationBenchmark {
                     TiDBMixedDataCoverage.measurementIds(new TiDBMixedObservations(query, "paired_query", 0, 0)));
             JsonObject preparation;
             if (arm.equals("AI")) {
-                client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
-                preparation = harness.run(client);
+                report.add("api_audit", harness.apiAudit);
+                preparation = harness.runWithClient(() -> TiDBDeepSeekPreparationClient.fromEnvironment(3));
             } else {
                 JsonArray rows = baseline(state, query, Profile.valueOf(arm),
                         initial.getAsJsonObject("remaining_budget").get("insert_rows").getAsLong());
@@ -248,9 +247,7 @@ public final class TiDBMixedPreparationBenchmark {
             }
             report.addProperty("preparation_elapsed_ms", (System.nanoTime() - preparationStarted) / 1_000_000);
             report.add("preparation", preparation);
-            if (preparation.get("requires_rebuild").getAsBoolean()) {
-                throw new IllegalStateException("uncertain append outcome");
-            }
+            TiDBAiMixedOracle.requireUsablePreparation(preparation);
             long revision = preparation.getAsJsonObject("final_state").get("data_revision").getAsLong();
             JsonObject finalState = measure(io, query, actual, revision, "paired_" + seed,
                     preparation.getAsJsonArray("model_goals"));
@@ -289,7 +286,9 @@ public final class TiDBMixedPreparationBenchmark {
         } finally {
             report.add("environment", new Gson().toJsonTree(io.environment));
             report.add("events", new Gson().toJsonTree(io.events));
-            report.add("api_audit", client == null ? new JsonArray() : client.audit.deepCopy());
+            if (!report.has("api_audit")) {
+                report.add("api_audit", new JsonArray());
+            }
             report.addProperty("elapsed_ms", (System.nanoTime() - started) / 1_000_000);
             try {
                 io.reset();

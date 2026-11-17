@@ -478,3 +478,22 @@ git diff --check
 
 协议、范围与完整 observe 响应见 [主动观测说明](data-preparation-active-observation.md)，
 实际 SQL、绑定值、逐行写入和逐轮观测见 [实测记录](data-preparation-loop/active-observation-results.json)。
+
+## 模型不可用时继续差分（2026-11-17）
+
+- 新增 MixedModelAvailabilityTest 的 6 项回归：缺失/空凭据保留初始事实和样本且不扣调用额度；凭据文件不可读/配置错误脱敏；HTTP/传输错误不重试；已有提交后的调用故障保留实际行、版本和当前证据；提交回执丢失被门禁拒绝；数据库观测异常继续外抛并保留 API 审计。
+- MixedJdbcTest 新增流程回归：通过 Oracle 生产准备入口分别注入初始化/调用故障，确认准备结果已记录，随后导出、获取快照、通过基础表预检，执行全部 4 条路径并完成 6 对比较。
+- 上述写入/查询使用实际 H2；DeepSeek 传输、TiDB 专有会话/元数据以及引擎执行接口为 fixture。此处的四路径 PASS 仅证明控制流程可继续，不证明真实 TiKV/TiFlash 的执行结果。
+- 未调用真实 DeepSeek，未运行真实 TiDB/TiFlash；旧真实实验记录和指标保持原样。
+
+验证命令（Maven 3.9.11 / JDK 17）：
+
+```bash
+/tmp/mix-retry-maven/bin/mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' formatter:format verify
+python3 src/check_names.py
+git diff --check
+```
+
+状态和失败边界见 [闭环终止说明](data-preparation-loop.md#模型不可用与数据不可用)。
+
+本轮新增 7 项回归；共 190 项测试中 181 项通过、9 项真实集群测试按开关跳过。完整 Maven verify、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -26,16 +27,23 @@ public final class TiDBMixedPreparationHarness {
     private final int failureLimit;
     private final JsonArray rounds = new JsonArray();
     private final JsonArray modelGoals = new JsonArray();
+    public final JsonArray apiAudit = new JsonArray();
     private final JsonObject packet;
     private List<String> verificationFloor = List.of();
     private int batch;
     private int failedRounds;
     private boolean used;
     private boolean uncertain;
+    private JsonObject modelFailure;
 
     @FunctionalInterface
     public interface Responder {
         String respond(List<Map<String, String>> messages) throws Exception;
+    }
+
+    @FunctionalInterface
+    public interface ClientFactory {
+        TiDBDeepSeekPreparationClient create() throws Exception;
     }
 
     private static final class RepeatedFailedRow extends IllegalArgumentException {
@@ -311,6 +319,61 @@ public final class TiDBMixedPreparationHarness {
         return result;
     }
 
+    private static JsonObject modelFailure(String stage, Exception error) {
+        JsonObject failure = new JsonObject();
+        failure.addProperty("stage", stage);
+        failure.addProperty("code",
+                error instanceof TiDBDeepSeekPreparationClient.InitializationException
+                        ? ((TiDBDeepSeekPreparationClient.InitializationException) error).code
+                        : stage.equals("initialization") ? "MODEL_INITIALIZATION_FAILED" : "MODEL_REQUEST_FAILED");
+        failure.addProperty("error_class", error.getClass().getSimpleName());
+        // Transport/configuration messages and causes can contain credentials; never persist them.
+        return failure;
+    }
+
+    /**
+     * Only model initialization is caught here; database/executor failures must still escape.
+     *
+     * @param factory
+     *            creates the real model client without modifying database state
+     *
+     * @return the frozen preparation result, including model availability and API audit
+     */
+    public JsonObject runWithClient(ClientFactory factory) throws Exception {
+        if (used) {
+            throw new IllegalStateException("a preparation experiment runs once");
+        }
+        long started = System.nanoTime();
+        TiDBDeepSeekPreparationClient client;
+        try {
+            client = Objects.requireNonNull(factory.create());
+        } catch (Exception unavailable) {
+            if (unavailable instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            used = true;
+            modelFailure = modelFailure("initialization", unavailable);
+            budget("time_ms", budget("time_ms") - (System.nanoTime() - started + 999_999) / 1_000_000);
+            freeze();
+            JsonObject result = result("model_unavailable");
+            result.add("api_audit", new JsonArray());
+            return result;
+        }
+        budget("time_ms", budget("time_ms") - (System.nanoTime() - started + 999_999) / 1_000_000);
+        try {
+            JsonObject result = run(client);
+            result.add("api_audit", client.audit.deepCopy());
+            return result;
+        } finally {
+            apiAudit.addAll(client.audit.deepCopy());
+        }
+    }
+
+    private void freeze() {
+        executor.freeze();
+        packet.addProperty("frozen", true);
+    }
+
     public JsonObject run(Responder responder) throws Exception {
         if (used) {
             throw new IllegalStateException("a preparation experiment runs once");
@@ -361,7 +424,10 @@ public final class TiDBMixedPreparationHarness {
                     }
                     recoverable = received && invalid instanceof IllegalArgumentException
                             && !(invalid instanceof RepeatedFailedRow);
-                    round.addProperty("validation_status", "rejected");
+                    round.addProperty("validation_status", received ? "rejected" : "not_received");
+                    if (!received) {
+                        modelFailure = modelFailure("request", invalid);
+                    }
                     String message = received ? invalid.toString()
                             : "Model request failed: " + invalid.getClass().getSimpleName();
                     round.addProperty("failure_reason", message);
@@ -440,7 +506,7 @@ public final class TiDBMixedPreparationHarness {
                     if (recoverable) {
                         continue;
                     }
-                    termination = "response_rejected";
+                    termination = received ? "response_rejected" : "model_unavailable";
                     break;
                 }
                 if (uncertain || plan.get("decision").getAsString().equals("stop") || failedRounds >= failureLimit) {
@@ -450,10 +516,14 @@ public final class TiDBMixedPreparationHarness {
                 }
             }
         } finally {
-            executor.freeze();
-            packet.addProperty("frozen", true);
+            freeze();
         }
+        return result(termination);
+    }
+
+    private JsonObject result(String termination) {
         JsonObject result = new JsonObject();
+        result.add("model_failure", modelFailure == null ? JsonNull.INSTANCE : modelFailure.deepCopy());
         result.addProperty("termination", termination);
         result.addProperty("requires_rebuild", uncertain);
         result.add("rounds", rounds.deepCopy());

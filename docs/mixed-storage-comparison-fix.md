@@ -343,3 +343,20 @@ observationEvidence、observationSnapshot 和 availableObservations。
 逐轮事实见 [实测记录](data-preparation-loop/active-observation-results.json)。
 
 本轮共 183 项测试：174 项通过、9 项真实集群测试按开关跳过；完整构建、formatter/XML/Checkstyle/PMD/SpotBugs、命名、JSON、本地文档链接及差异空白检查通过。
+
+
+## 追加：模型不可用时继续差分（2026-11-17）
+
+修复“缺少凭据导致整个用例跳过”的流程缺陷：
+
+- 客户端初始化纳入准备阶段。缺少凭据、凭据文件不可读、配置错误或模型调用失败，均记录 `termination=model_unavailable` 及脱敏原因，冻结补行，用已有数据继续导出、等待副本、共同快照、基础表预检和差分比较。
+- `model_failure.stage` 区分 `initialization` / `request`；错误码区分缺少凭据、凭据不可读、配置无效和调用失败。不保存密钥、原始异常消息或失败 HTTP 响应正文。
+- 初始化失败不消耗调用/行/探测额度，只扣耗时；实际调用失败扣本次调用和耗时，不自动重试。此前成功提交的数据、版本和有效证据继续保留，不自动套用固定补行规则。
+- 写入提交状态不确定仍为 `requires_rebuild=true`、`final_state=null`；先保存准备证据，再以 `PREPARATION_UNCERTAIN` 阻止后续测量及差分。数据库执行/会话恢复异常不被包装成模型不可用。
+- Oracle 和 Benchmark 使用相同处理边界。模型可用性与最终差分结果分别记录；继续测试不代表 AI 准备成功，也不直接代表差分 PASS。
+
+回归覆盖无凭据/空凭据、不可读文件、无效配置、HTTP/传输故障、成功写入后的后续调用故障、提交回执丢失及数据库观测异常。
+JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照、预检及四条路径的六对比较；提交不确定则不能继续。
+测试使用实际 H2 读写和模拟模型/引擎接口，未调用真实 DeepSeek 或运行真实 TiDB/TiFlash。
+
+本轮新增 7 项回归；共 190 项测试中 181 项通过、9 项真实集群测试按开关跳过。完整 Maven verify、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。

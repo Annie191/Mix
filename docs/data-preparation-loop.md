@@ -76,9 +76,25 @@ evaluation 是数据准备实验目标状态，不是差分 PASS/FAIL 或缺陷�
 
 另外设置连续无成功写入的 append 轮数上限，本组用例为 2；不同失败提案也不能无限循环。
 各轮扣模型调用、探测请求、实际尝试行数和耗时；部分成功按执行器事实反馈。
-模型 stop、预算耗尽、响应拒绝、连续无进展、提交不确定均会结束实验。
+模型 stop、预算耗尽、响应拒绝、模型不可用、连续无进展、提交不确定均会结束准备。
 提交不确定时不再观测/重试，evaluation=unverified，final_state=null，要求重建。
-结束后冻结执行器；不自动进入差分比较。
+结束后冻结执行器；独立 harness 本身不执行引擎差分。生产 Oracle 会在数据可用时继续原有差分流程。
+
+### 模型不可用与数据不可用
+
+`runWithClient()` 将客户端初始化纳入准备阶段：初始化/调用失败返回 `termination=model_unavailable`、
+`requires_rebuild=false` 和冻结的 `final_state`。`model_failure` 记录阶段（initialization/request）、错误码和异常类，
+不记录原始异常消息、凭据路径或 HTTP 错误正文。缺少凭据、文件不可读、配置无效分别为
+MISSING_CREDENTIALS、CREDENTIALS_UNREADABLE、INVALID_CLIENT_CONFIGURATION；调用失败为 MODEL_REQUEST_FAILED。
+初始化失败不消耗模型调用额度；调用失败扣一次额度，两者都扣实际耗时，不自动重试或代填数据。
+已有提交、数据版本和当前证据保留。Oracle 和 Benchmark 继续独立测量、导出、共同快照、基础表预检和差分；
+最终是否 PASS 仍由这些实际检查判断，模型不可用不改写为 AI 准备成功。
+
+提交/会话结果不确定时仍返回 requires_rebuild=true、final_state=null，保存证据后停止使用该数据；
+Oracle/Benchmark 的共同门禁抛 PREPARATION_UNCERTAIN，不能走继续差分分支。
+数据库执行或观测恢复异常继续向外抛出，不能当作模型故障吞掉。
+回归见 [MixedModelAvailabilityTest](../test/sqlancer/tidb/mixed/MixedModelAvailabilityTest.java) 和
+[MixedJdbcTest](../test/sqlancer/tidb/mixed/MixedJdbcTest.java)。
 
 ## 复现与记录
 

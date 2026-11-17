@@ -45,13 +45,39 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
         this.outputPrice = outputPrice;
     }
 
+    static final class InitializationException extends IllegalArgumentException {
+        private static final long serialVersionUID = 1L;
+        final String code;
+
+        InitializationException(String code) {
+            super(code);
+            this.code = code;
+        }
+    }
+
     public static TiDBDeepSeekPreparationClient fromEnvironment(int calls) throws IOException {
-        String raw = System.getenv("DEEPSEEK_API_KEY");
-        if ((raw == null || raw.isBlank()) && System.getenv("DEEPSEEK_API_KEY_FILE") != null) {
-            raw = Files.readString(Path.of(System.getenv("DEEPSEEK_API_KEY_FILE"))).trim();
+        return fromEnvironment(calls, System.getenv());
+    }
+
+    static TiDBDeepSeekPreparationClient fromEnvironment(int calls, Map<String, String> environment) {
+        try {
+            return configured(calls, environment);
+        } catch (IOException unreadable) {
+            throw new InitializationException("CREDENTIALS_UNREADABLE");
+        } catch (RuntimeException invalid) {
+            throw new InitializationException(invalid instanceof InitializationException
+                    ? ((InitializationException) invalid).code : "INVALID_CLIENT_CONFIGURATION");
+        }
+    }
+
+    private static TiDBDeepSeekPreparationClient configured(int calls, Map<String, String> environment)
+            throws IOException {
+        String raw = environment.get("DEEPSEEK_API_KEY");
+        if ((raw == null || raw.isBlank()) && environment.get("DEEPSEEK_API_KEY_FILE") != null) {
+            raw = Files.readString(Path.of(environment.get("DEEPSEEK_API_KEY_FILE"))).trim();
         }
         if (raw == null || raw.isBlank()) {
-            throw new IllegalArgumentException("DEEPSEEK_API_KEY or DEEPSEEK_API_KEY_FILE is required; no AI fallback");
+            throw new InitializationException("MISSING_CREDENTIALS");
         }
         String key = raw;
         HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
@@ -68,13 +94,14 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
             return new TiDBDeepSeekAdvisor.Reply(response.statusCode(), response.body());
         };
         return new TiDBDeepSeekPreparationClient(transport,
-                System.getenv().getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls, 3000,
-                price("DEEPSEEK_HIT_USD_PER_M", "0.003"), price("DEEPSEEK_MISS_USD_PER_M", "0.15"),
-                price("DEEPSEEK_OUTPUT_USD_PER_M", "0.60"));
+                environment.getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls, 3000,
+                price(environment, "DEEPSEEK_HIT_USD_PER_M", "0.003"),
+                price(environment, "DEEPSEEK_MISS_USD_PER_M", "0.15"),
+                price(environment, "DEEPSEEK_OUTPUT_USD_PER_M", "0.60"));
     }
 
-    private static BigDecimal price(String key, String fallback) {
-        return new BigDecimal(System.getenv().getOrDefault(key, fallback));
+    private static BigDecimal price(Map<String, String> environment, String key, String fallback) {
+        return new BigDecimal(environment.getOrDefault(key, fallback));
     }
 
     public static BigDecimal cost(JsonObject usage, BigDecimal hitPrice, BigDecimal missPrice, BigDecimal outputPrice) {

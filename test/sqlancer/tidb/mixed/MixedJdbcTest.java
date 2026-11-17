@@ -231,6 +231,46 @@ class MixedJdbcTest {
     }
 
     @Test
+    void unavailableModelStillReachesExportSnapshotPreflightAndAllDifferentialPaths() throws Exception {
+        for (boolean initializationFailure : List.of(false, true)) {
+            try (MixedAppendTest.Fixture data = new MixedAppendTest.Fixture()) {
+                TiDBMixedGeneration.Candidate query = MixedPreparationTest.query(data, false);
+                TiDBMixedPreparationHarness harness = new TiDBMixedPreparationHarness(data.state, query,
+                        MixedPreparationTest.packet(data, query), List.of(), 100, 64, 2);
+                Map<String, Object> record = new LinkedHashMap<>();
+                TiDBAiMixedOracle.prepareData(harness, () -> {
+                    if (initializationFailure) {
+                        return TiDBDeepSeekPreparationClient.fromEnvironment(3, Map.of());
+                    }
+                    return new TiDBDeepSeekPreparationClient(body -> {
+                        throw new java.io.IOException("injected model outage");
+                    }, "fixture", 3, 100, java.math.BigDecimal.ZERO, java.math.BigDecimal.ZERO,
+                            java.math.BigDecimal.ZERO);
+                }, record);
+                // JDBC fixtures verify the engine workflow; they do not simulate physical TiFlash storage.
+                Fixture fixture = new Fixture();
+                TiDBMixedSupport io = fixture.support();
+                record.put("restoreStatements", io.dump(query.tables));
+                io.beginSnapshot();
+                TiDBAiMixedOracle oracle = new TiDBAiMixedOracle(data.state);
+                assertTrue(oracle.preflightReady(io, query.tables, record));
+                List<Run> runs = oracle.executeWithCoverage(io, query,
+                        TiDBMixedSupport.configurations(List.of("t0", "t1")), record, "coverage");
+                assertEquals(4, runs.size());
+                TiDBMixedSupport.Outcome outcome = TiDBMixedSupport.compare(runs);
+                assertEquals("PASS", outcome.status);
+                assertEquals(6, outcome.comparisons.size());
+                assertFalse(((List<?>) record.get("restoreStatements")).isEmpty());
+                assertEquals("123456789", io.snapshot);
+                assertEquals("1", data.scalar("SELECT COUNT(*) FROM t0"));
+                assertEquals("0", data.scalar("SELECT COUNT(*) FROM t1"));
+                TiDBMixedSupport.save(temporary.resolve("unavailable-model-" + initializationFailure + ".json"),
+                        record);
+            }
+        }
+    }
+
+    @Test
     void preflightDisagreementStopsTheRoundAndHasSeparateCountersAndEvidence() throws Exception {
         Fixture fixture = new Fixture();
         fixture.preflightMismatch = true;
@@ -399,6 +439,14 @@ class MixedJdbcTest {
             queries.add(sql);
             if (queryError != null) {
                 throw queryError;
+            }
+            if (sql.startsWith("SHOW CREATE TABLE")) {
+                return rows(new String[] { "create table" }, new int[] { Types.VARCHAR },
+                        List.<Object[]> of(new Object[] { "CREATE TABLE fixture(c INT)" }));
+            }
+            if (sql.startsWith("SHOW FULL COLUMNS")) {
+                return rows(new String[] { "field", "extra" }, new int[] { Types.VARCHAR, Types.VARCHAR },
+                        List.<Object[]> of(new Object[] { "c", "" }));
             }
             if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
                 return rows(new String[] { "tso" }, new int[] { Types.VARCHAR },

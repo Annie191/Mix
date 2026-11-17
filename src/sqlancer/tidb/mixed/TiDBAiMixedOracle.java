@@ -94,6 +94,21 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         return runs;
     }
 
+    static JsonObject prepareData(TiDBMixedPreparationHarness preparationLoop,
+            TiDBMixedPreparationHarness.ClientFactory factory, Map<String, Object> record) throws Exception {
+        record.put("preparationApiAudit", preparationLoop.apiAudit);
+        JsonObject prepared = preparationLoop.runWithClient(factory);
+        record.put("dataPreparation", prepared);
+        requireUsablePreparation(prepared);
+        return prepared;
+    }
+
+    static void requireUsablePreparation(JsonObject prepared) {
+        if (prepared.get("requires_rebuild").getAsBoolean()) {
+            throw new Rejected("PREPARATION_UNCERTAIN", "append outcome requires rebuilding data");
+        }
+    }
+
     private List<Run> replay(TiDBMixedSupport io, Candidate query, List<String> dump, List<Config> configs)
             throws Exception {
         io.reset();
@@ -242,17 +257,12 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     JsonObject budget = preparationBudget;
                     JsonObject packet = facts.statePacket("prepare_" + revision,
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
-                    TiDBDeepSeekPreparationClient client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
-                    record.put("preparationApiAudit", client.audit);
                     // Fixed benchmark assertions are optional; AI goals come from each validated response.
                     TiDBMixedPreparationHarness preparationLoop = new TiDBMixedPreparationHarness(state, query, packet,
                             List.of(), 10_000, 64, 2);
                     preparationLoop.verificationFloor(TiDBMixedDataCoverage.measurementIds(facts));
-                    JsonObject prepared = preparationLoop.run(client);
-                    record.put("dataPreparation", prepared);
-                    if (prepared.get("requires_rebuild").getAsBoolean()) {
-                        throw new Rejected("PREPARATION_UNCERTAIN", "append outcome requires rebuilding data");
-                    }
+                    JsonObject prepared = prepareData(preparationLoop,
+                            () -> TiDBDeepSeekPreparationClient.fromEnvironment(3), record);
                     TiDBMixedObservations after = new TiDBMixedObservations(query, "query_" + revision, revision,
                             prepared.getAsJsonObject("final_state").get("data_revision").getAsLong());
                     after.collectRequests(io, after.assessmentRequests(prepared.getAsJsonArray("model_goals")),

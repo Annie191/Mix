@@ -372,7 +372,7 @@ class MixedPreparationTest {
                         throw new java.io.IOException("sensitive transport detail");
                     });
             assertEquals(1, calls.get());
-            assertEquals("response_rejected", result.get("termination").getAsString());
+            assertEquals("model_unavailable", result.get("termination").getAsString());
             assertEquals("MODEL_REQUEST_FAILED",
                     round(result, 0).getAsJsonObject("validation_feedback").get("code").getAsString());
             assertFalse(round(result, 0).getAsJsonObject("validation_feedback").get("recoverable").getAsBoolean());
