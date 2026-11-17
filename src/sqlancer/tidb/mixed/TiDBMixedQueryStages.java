@@ -62,7 +62,7 @@ final class TiDBMixedQueryStages {
         }
     }
 
-    private static Set<TiDBColumn> columns(TiDBExpression expression) {
+    static Set<TiDBColumn> columns(TiDBExpression expression) {
         Set<TiDBColumn> columns = new LinkedHashSet<>();
         walk(expression, node -> {
             if (node instanceof TiDBColumnReference) {

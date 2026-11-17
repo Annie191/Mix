@@ -29,6 +29,8 @@
 仅公布当前查询实际支持的能力。未知能力、字段、运算符、负数、小数、JSON 数字及重复目标均拒绝，按已有结构化反馈流程允许模型修订。
 最多累计 64 个不同目标；大整数使用字符串和 BigInteger 比较，不经过浮点数。
 程序重新构造并核对能力目录，模型不能添加能力或输出执行 SQL。
+[参数化能力](data-preparation-active-observation.md) 的目标另须携带 parameters；按能力、键、阶段规范化后核对证据，不能使用其他参数的事实。
+谓词分布可选 true_count/false_count/null_count，均为非负整数目标。
 
 新增 [查询阶段能力](data-preparation-query-stage-coverage.md) 可直接用于结构化目标：整数比较边界分别验证到达 WHERE 输入和通过完整 WHERE，
 NULL 分别验证查询输入、WHERE 输出、聚合参数值。其他没有专用能力的过滤边界仍不可验证，必须在 `verification_limit` 写明。

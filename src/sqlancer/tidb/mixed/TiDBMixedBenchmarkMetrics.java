@@ -39,6 +39,20 @@ public final class TiDBMixedBenchmarkMetrics {
                     && round.get("failure_reason").getAsString().contains("repeated failed row")) {
                 add(counts, "repeated_failure_rejections", 1);
             }
+            if ("observe".equals(proposedAction(round))) {
+                add(counts, "observe_plans_proposed", 1);
+                if (round.has("probe_audit")) {
+                    add(counts, "observe_plans_executed", 1);
+                    add(counts, "observe_probes", round.getAsJsonArray("probe_audit").size());
+                }
+            }
+            if (round.has("probe_audit")) {
+                for (JsonElement probe : round.getAsJsonArray("probe_audit")) {
+                    if (probe.getAsJsonObject().has("parameters")) {
+                        add(counts, "parameterized_probes", 1);
+                    }
+                }
+            }
             if (!"append_rows".equals(proposedAction(round))) {
                 continue;
             }
@@ -177,7 +191,8 @@ public final class TiDBMixedBenchmarkMetrics {
                     "new_observed_scene_hits", "new_effective_scene_hits", "lost_scene_hits", "engine_paths_attempted",
                     "engine_paths_valid", "engine_all_paths_valid_cases", "api_calls", "prompt_tokens",
                     "completion_tokens", "preparation_elapsed_ms", "total_elapsed_ms", "legacy_unscoped_scene_hits",
-                    "base_data_only_append_rounds")) {
+                    "base_data_only_append_rounds", "observe_plans_proposed", "observe_plans_executed",
+                    "observe_probes", "parameterized_probes")) {
                 counts.put(key, 0L);
             }
             BigDecimal cost = BigDecimal.ZERO;

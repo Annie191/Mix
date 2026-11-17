@@ -491,6 +491,9 @@ class MixedAppendTest {
             PreparedStatement real = database.prepareStatement(sql);
             return (PreparedStatement) Proxy.newProxyInstance(getClass().getClassLoader(),
                     new Class<?>[] { PreparedStatement.class }, (proxy, method, args) -> {
+                        if (method.getName().equals("setFetchSize")) {
+                            return null; // Simulate Connector/J's streaming hint, which H2 does not implement.
+                        }
                         if (method.getName().equals("getWarnings") && insertWarning) {
                             return new SQLWarning("injected truncation", "01000", 1265);
                         }

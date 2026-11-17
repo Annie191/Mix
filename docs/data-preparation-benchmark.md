@@ -77,7 +77,10 @@ Oracle 和 benchmark 共用该配置；配对实验的 RANDOM/SHARED 也按同�
 模型可以自行选择补行策略或停止，不强制把空查询补成非空。
 
 三组使用相同普通 INSERT 执行器、6 行尝试上限、96 次探测上限、120 秒准备上限。
-固定的前/后测量每次最多 64 次探测、每列表 64 行、30 秒，三组相同，独立于策略内预算。
+独立前/后测量每次最多 64 次探测、每列表 64 行、30 秒，三组上限相同，独立于策略内预算；
+完整前测不传给模型。策略实际接收另行采集的 model_initial_state：每表行数、最多两行样本和 query_empty，消耗准备预算。
+后测按预算重新测量模型目标的原参数，再测静态目录，未测完的项目记录 unknown，不补成功。
+主动参数化能力与证据保留见 [主动观测](data-preparation-active-observation.md)。
 追加后的审计观测设定最低集合，占用上述 96 次预算，防止只请求有利指标。
 模型最多 3 次真实请求，基线无 API 请求；默认 6 行时，两组固定基线一轮各表补 3 行，然后停止。
 实际消耗允许不同，报告展示实际行数、探测、时间和费用，不要求人为烧完预算。
@@ -122,6 +125,8 @@ WHERE FALSE 可能被优化为空计划，仍保留其数据语义价值，但�
 每个 seed/strategy 生成完整 JSON：初始/最终状态、每轮模型内容和写入事实、观测 SQL、实际数据恢复语句、
 组件版本、快照、EXPLAIN/ANALYZE、结果多重集、API usage、失败和清理情况。
 all.json 保留全部用例，summary.json 提供指标及显式分子/分母；不会删除不利或失败结果。
+新增 observe_plans_proposed/executed、observe_probes 和 parameterized_probes，用于区分主动观察与补行后验证；
+bootstrap_audit 与 model_initial_state 单独保存，完整前测不出现在模型消息中。
 
 客户端按 [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/) 的
 JSON Output、禁用 thinking 及 usage 字段接入。

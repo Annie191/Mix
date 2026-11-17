@@ -159,8 +159,13 @@ public final class TiDBMixedPreparationBenchmark {
 
     private static JsonObject measure(TiDBMixedSupport io, Candidate query, JsonObject schema, long revision,
             String caseId) throws Exception {
+        return measure(io, query, schema, revision, caseId, new JsonArray());
+    }
+
+    private static JsonObject measure(TiDBMixedSupport io, Candidate query, JsonObject schema, long revision,
+            String caseId, JsonArray goals) throws Exception {
         TiDBMixedObservations facts = new TiDBMixedObservations(query, "paired_query", 0, revision);
-        facts.collect(io, facts.allIds(), new TiDBMixedObservations.Budget(64, 64, 30_000));
+        facts.collectRequests(io, facts.assessmentRequests(goals), new TiDBMixedObservations.Budget(64, 64, 30_000));
         return packet(facts, schema, caseId);
     }
 
@@ -208,17 +213,25 @@ public final class TiDBMixedPreparationBenchmark {
             JsonObject actual = TiDBMixedMetadata.collect(io, database, query.tables, 0).schema;
             JsonObject initial = measure(io, query, actual, 0, "paired_" + seed);
             report.add("initial_state", initial.deepCopy());
+            long preparationStarted = System.nanoTime();
+            // Full before/after measurements are assessment evidence, never model input.
+            TiDBMixedObservations bootstrap = new TiDBMixedObservations(query, "paired_query", 0, 0);
+            JsonObject preparationBudget = TiDBMixedPreparationHarness.preparationBudget();
+            bootstrap.bootstrap(io, preparationBudget);
+            JsonObject modelInitial = bootstrap.statePacket("prepare", "paired_" + seed, actual, new JsonArray(),
+                    preparationBudget);
+            report.add("model_initial_state", modelInitial.deepCopy());
+            report.add("bootstrap_audit", new Gson().toJsonTree(bootstrap.audit));
             JsonObject before = TiDBMixedDataCoverage.snapshot(initial);
             report.add("data_coverage_before", before);
             List<Config> configs = TiDBMixedSupport.configurations(List.of("t0", "t1"));
             report.add("selected_engine_configurations", new Gson().toJsonTree(configs));
             state.setRandomly(new Randomly(seed));
-            TiDBMixedPreparationHarness harness = new TiDBMixedPreparationHarness(state, query, initial, goals(seed),
-                    100, 64, 2);
+            TiDBMixedPreparationHarness harness = new TiDBMixedPreparationHarness(state, query, modelInitial,
+                    goals(seed), 100, 64, 2);
             harness.verificationFloor(
                     TiDBMixedDataCoverage.measurementIds(new TiDBMixedObservations(query, "paired_query", 0, 0)));
             JsonObject preparation;
-            long preparationStarted = System.nanoTime();
             if (arm.equals("AI")) {
                 client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
                 preparation = harness.run(client);
@@ -239,7 +252,8 @@ public final class TiDBMixedPreparationBenchmark {
                 throw new IllegalStateException("uncertain append outcome");
             }
             long revision = preparation.getAsJsonObject("final_state").get("data_revision").getAsLong();
-            JsonObject finalState = measure(io, query, actual, revision, "paired_" + seed);
+            JsonObject finalState = measure(io, query, actual, revision, "paired_" + seed,
+                    preparation.getAsJsonArray("model_goals"));
             report.add("final_state", finalState);
             report.add("final_model_goal_evaluation",
                     TiDBMixedPreparationGoals.evaluate(finalState, preparation.getAsJsonArray("model_goals"), false));

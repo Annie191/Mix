@@ -165,7 +165,9 @@ data_revision_after, sqlstate, error_code, error`：status 为 `success`、`fail
 
 `reason`、`goal`、`expected_effect` 均为非空字符串。`evidence_ids` 只能引用状态包中的
 query_id、schema.id、观测或样本 ID；不能凭空造证据。解释是否符合事实仍需后续验证。
-`observation_requests`、`verification_requests` 是能力 ID 数组，不允许重复或超出探测预算。
+`observation_requests`、`verification_requests` 是静态能力 ID 或参数化请求对象的数组；
+参数化对象包含 capability_id、parameters，按能力和规范化参数去重，不允许超过探测预算。
+参数化目标也须携带相同 parameters；具体类型、范围和完整交互见 [主动观测](data-preparation-active-observation.md)。
 observe 必须有请求，verification_limit 为 null；append_rows 不能同时 observe。
 append_rows 的验证请求为空时，必须在 verification_limit 中明确说明未验证目标及能力缺口。
 stop 的所有操作数组必须为空，stop_reason 非空；其他决策的 stop_reason 必须为 null。

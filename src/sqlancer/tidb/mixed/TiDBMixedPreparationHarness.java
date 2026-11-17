@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -133,16 +132,22 @@ public final class TiDBMixedPreparationHarness {
     }
 
     private JsonArray verification(JsonObject plan) {
-        java.util.Set<String> ids = new LinkedHashSet<>(verificationFloor);
-        plan.getAsJsonArray("verification_requests").forEach(id -> ids.add(id.getAsString()));
+        Map<String, JsonElement> requests = new java.util.LinkedHashMap<>();
+        verificationFloor.forEach(
+                id -> requests.put(TiDBMixedObservationRequest.key(id, null), new com.google.gson.JsonPrimitive(id)));
+        plan.getAsJsonArray("verification_requests")
+                .forEach(request -> requests.put(TiDBMixedObservationRequest.key(request), request));
         // Accepted goals survive later stop/empty proposals; measure the whole ledger after each append.
-        combinedGoals(plan).forEach(goal -> ids.add(goal.getAsJsonObject().get("capability_id").getAsString()));
-        if (ids.size() > budget("probe_requests")) {
+        combinedGoals(plan).forEach(goal -> {
+            JsonElement request = TiDBMixedObservationRequest.goalRequest(goal.getAsJsonObject());
+            requests.put(TiDBMixedObservationRequest.key(request), request);
+        });
+        if (requests.size() > budget("probe_requests")) {
             throw new IllegalArgumentException("verification floor exceeds remaining probe budget");
         }
-        JsonArray requests = new JsonArray();
-        ids.forEach(requests::add);
-        return requests;
+        JsonArray result = new JsonArray();
+        requests.values().forEach(request -> result.add(request.deepCopy()));
+        return result;
     }
 
     private JsonArray combinedGoals(JsonObject plan) {
@@ -160,17 +165,15 @@ public final class TiDBMixedPreparationHarness {
     }
 
     private void observe(JsonArray requests, JsonObject round) throws SQLException {
-        // A new batch replaces old evidence, even after a failed write. IDs remain unique across batches.
-        packet.add("observations", new JsonArray());
-        packet.add("samples", new JsonArray());
+        packet.getAsJsonArray("observations").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
+        packet.getAsJsonArray("samples").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
         if (requests.isEmpty()) {
             return;
         }
-        List<String> ids = new ArrayList<>();
-        requests.forEach(id -> ids.add(id.getAsString()));
         TiDBMixedObservations facts = facts();
-        budget("probe_requests", budget("probe_requests") - ids.size());
-        facts.collect(io, ids, new TiDBMixedObservations.Budget(ids.size(), sampleRows, budget("time_ms")));
+        budget("probe_requests", budget("probe_requests") - requests.size());
+        facts.collectRequests(io, requests,
+                new TiDBMixedObservations.Budget(requests.size(), sampleRows, budget("time_ms")));
         String prefix = "batch_" + ++batch + "_";
         for (JsonArray entries : List.of(facts.observations, facts.samples)) {
             entries.forEach(entry -> {
@@ -179,10 +182,25 @@ public final class TiDBMixedPreparationHarness {
             });
         }
         facts.audit.forEach(event -> event.put("observation_id", prefix + event.get("observation_id")));
-        packet.add("observations", facts.observations.deepCopy());
-        packet.add("samples", facts.samples.deepCopy());
+        java.util.Set<String> refreshed = new java.util.HashSet<>();
+        requests.forEach(request -> refreshed.add(TiDBMixedObservationRequest.key(request)));
+        packet.getAsJsonArray("observations").asList()
+                .removeIf(entry -> refreshed.contains(TiDBMixedObservationRequest.factKey(entry.getAsJsonObject())));
+        packet.getAsJsonArray("samples").asList().removeIf(entry -> refreshed.contains(
+                TiDBMixedObservationRequest.key("sample_" + entry.getAsJsonObject().get("table").getAsString(), null)));
+        packet.getAsJsonArray("observations").addAll(facts.observations.deepCopy());
+        packet.getAsJsonArray("samples").addAll(facts.samples.deepCopy());
         round.add("probe_audit", new com.google.gson.Gson().toJsonTree(facts.audit));
         round.addProperty("observation_snapshot", facts.snapshot);
+    }
+
+    private boolean sameVersion(JsonObject evidence) {
+        for (String key : List.of("query_id", "schema_revision", "data_revision")) {
+            if (!packet.get(key).equals(evidence.get(key))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static JsonObject rowKey(String table, JsonObject values) {
@@ -231,8 +249,10 @@ public final class TiDBMixedPreparationHarness {
         failedRounds = changed ? 0 : failedRounds + 1;
         budget("insert_rows", Math.min(budget("insert_rows"), feedback.get("remaining_insert_rows").getAsLong()));
         budget("time_ms", Math.min(budget("time_ms"), feedback.get("remaining_time_ms").getAsLong()));
-        packet.add("observations", new JsonArray());
-        packet.add("samples", new JsonArray());
+        if (changed || uncertain) {
+            packet.add("observations", new JsonArray());
+            packet.add("samples", new JsonArray());
+        }
         if (!uncertain) {
             packet.add("data_revision", feedback.get("data_revision_after"));
             observe(verification(plan), round);

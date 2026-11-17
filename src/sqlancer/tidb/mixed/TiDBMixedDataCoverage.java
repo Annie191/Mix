@@ -16,7 +16,8 @@ public final class TiDBMixedDataCoverage {
     }
 
     public static java.util.List<String> measurementIds(TiDBMixedObservations facts) {
-        return facts.available().asList().stream().map(e -> e.getAsJsonObject().get("id").getAsString())
+        return facts.available().asList().stream().filter(e -> !e.getAsJsonObject().has("parameters"))
+                .map(e -> e.getAsJsonObject().get("id").getAsString())
                 .filter(id -> !id.startsWith("sample_") && !id.startsWith("freq_"))
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -25,6 +26,9 @@ public final class TiDBMixedDataCoverage {
         Map<String, JsonObject> facts = new LinkedHashMap<>();
         for (JsonElement entry : packet.getAsJsonArray("observations")) {
             JsonObject fact = entry.getAsJsonObject();
+            if (fact.has("parameters")) {
+                continue; // Parameter-specific diagnostics do not overwrite whole-query coverage facts.
+            }
             boolean current = "exact".equals(fact.get("status").getAsString()) && !fact.get("value").isJsonNull();
             for (String key : java.util.List.of("query_id", "schema_revision", "data_revision")) {
                 current &= packet.get(key).equals(fact.get(key));

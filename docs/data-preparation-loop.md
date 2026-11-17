@@ -26,7 +26,9 @@ model_expectation → writes → actual_observations / actual_samples → evalua
 - `unverified`（未验证）：没有明确反证，但缺少精确事实；sampled、unknown、unsupported、error 或旧版本不能证明达成。
 
 写入成功、模型声称达成、查询非空或模型 stop，都不会直接改变 evaluation。
-补行后丢弃旧观测/样本，合并 verification_requests、已接受结构化目标和最低审计观测，去重后重新采集并扣预算。
+写入实际改变数据版本后丢弃旧观测/样本，合并 verification_requests、已接受结构化目标和最低审计观测，去重后重新采集并扣预算。
+同版本只读 observe 或全部确定失败的 INSERT 保留未刷新的有效证据；被刷新条目按能力和规范化参数替换，失败也替换旧成功。
+参数化能力、稀疏初始探测与主动观测交互见 [主动观测](data-preparation-active-observation.md)。
 观测批次使用独立 ID 并保留 SQL、模拟快照和版本，失败后也不能把新 ID 当成新事实。
 
 空结果不触发自动补行。固定用例可以将“保持为空”设为有意义目标，并精确核对它。

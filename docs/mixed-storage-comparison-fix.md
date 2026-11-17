@@ -322,3 +322,24 @@ observationEvidence、observationSnapshot 和 availableObservations。
 逐项证据见 [实测记录](data-preparation-loop/query-stage-coverage-results.json)。
 
 本轮新增 10 项回归；共 170 项测试中 161 项通过、9 项真实集群测试按开关跳过。完整构建、formatter/XML/Checkstyle/PMD/SpotBugs、命名和差异空白检查通过。
+
+## 追加：主动参数化观测与同版本证据保留（2026-11-17）
+
+- 开启 AI 准备后，初始只采每表行数、最多两行样本、query_empty，并扣探测和时间预算，不再把全量诊断预先交给模型。
+  Benchmark 的完整前测仍作独立评价；模型接收另行采集的 `model_initial_state`，RANDOM/SHARED/AI 共用同样的初始采集与预算。
+- 增加程序从 AST 编译的参数化目录：指定键的基础/查询阶段行数、原 ON 的指定键匹配、指定谓词及逻辑子树的 TRUE/FALSE/NULL 分布、指定完整分组键的输入行数。
+  非等值、复合和嵌套 JOIN 可用局部诊断；局部匹配与完整查询输出分别说明，不让模型输出 SQL 或修改 target。
+- 参数使用带类型的值及限定枚举；整数/DECIMAL 保留精度，非空值使用 JDBC 占位符，SQL 外观文本也只是普通数据。非法类型、参数、重复请求和超预算在读取前拒绝。
+- 参数化结构化目标携带原参数，补行后自动重测，最终独立评价也重测同一键和阶段；不同键、阶段及旧数据版本的证据不能串用。
+- 同版本 observe 按“能力＋规范化参数”更新证据，保留未刷新的当前观测/样本；刷新失败也替换该请求的旧成功。
+  全部 INSERT 确定失败且版本未变时保留其他证据，成功写入或提交不确定时仍使旧证据失效。
+- 独立记录主动 observe 提案/执行、探测请求和参数化探测数；参数化诊断不直接通过枚举更多键增加查询阶段覆盖分数。
+
+受控实测跑通 `observe → append_rows → stop`：先测得原 WHERE 排除了 1 条连接结果、指定键输出为 0，随后两表各补一行，重新测得指定键输出为 1，目标才达成。
+准备探测预算依次为 96 → 初始后 91 → 主动观测后 89 → 补行验证后 88。
+新增 13 项回归还覆盖复合/非等值 ON、三表局部匹配被后续 JOIN 阻断、NULL/复合分组、精确 DECIMAL、非法输入、证据保留/替换及最终复测。
+本轮使用模拟响应和实际 H2 SELECT/INSERT，没有调用真实 DeepSeek 或运行真实 TiDB/TiFlash；不改写旧真实实验，也不声称真实模型的 observe 使用率或覆盖收益已提高。
+请求协议、能力边界及交互见 [主动观测说明](data-preparation-active-observation.md)，
+逐轮事实见 [实测记录](data-preparation-loop/active-observation-results.json)。
+
+本轮共 183 项测试：174 项通过、9 项真实集群测试按开关跳过；完整构建、formatter/XML/Checkstyle/PMD/SpotBugs、命名、JSON、本地文档链接及差异空白检查通过。

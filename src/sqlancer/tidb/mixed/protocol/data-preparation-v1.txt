@@ -30,7 +30,7 @@ verification_requests, verification_limit, stop_reason。
 版本、请求和用例标识必须原样回显。decision 只能是 observe、append_rows、stop。
 reason、goal、expected_effect 是非空字符串；它们描述依据、意图和假设，不声明执行成功或缺陷成立。
 evidence_ids 是状态包中 schema.id、query_id、观测 id 或样本 id 的数组。
-structured_goals 必须是数组，列出本轮全部可测目标，每项目标只能包含：
+structured_goals 必须是数组，列出本轮全部可测目标，每项目标包含以下字段；参数化能力另须增加 parameters：
 {"capability_id":"j0_left_unmatched_after","field":"count","comparison":"at_least","expected":"1"}。
 只能从 available_observations 的 id 和该项 goal_fields 选择 capability_id、field。
 goal_fields 的 non_negative_integer 字段允许 equals、at_least、at_most，expected 是非负整数字符串；
@@ -55,7 +55,26 @@ goal、expected_effect 保留文字解释，但程序只评价 structured_goals�
 后续 stop 或 structured_goals=[] 不会抹掉先前未达成目标。观察请求只执行 observation_requests；
 需要新证据时应显式请求对应目标能力。stop 本身不触发新观测，也不能证明目标达成。
 
-observe：observation_requests 必须非空，元素是 available_observations 中的 id；
+初始只提供每表行数、最多两行样本和原查询是否为空；这些探测已经扣除预算，不代表已有 JOIN/过滤/分组诊断。
+有信息缺口时主动 observe，不能把初始样本当作全量诊断；也不要求每轮强制 observe。
+observation_requests 和 verification_requests 可以混合两种条目：
+静态能力使用 id 字符串；有 parameters 声明的能力使用 {"capability_id":"目录ID","parameters":{...}}。
+参数名、类型、stage 的可选值必须严格来自该能力的 parameters 目录；不得提供 SQL、表达式或改写 target。
+kind=enum 的参数用目录中的字符串；其他 kind 使用带类型的值对象，例如 {"type":"integer","value":"12"}。
+NULL 参数使用 {"type":"null","value":null}，大整数和 DECIMAL 用精确字符串；参数名和值类型都必须匹配。
+同一能力可以观察不同键/阶段，按能力和规范化参数区分证据、去重与扣探测预算。
+例如 {"capability_id":"key_rows_t0.k","parameters":{"key":{"type":"integer","value":"12"},"stage":"where_input"}}。
+key_rows_* 的 base 只证明表里有值；where_input/where_output 分别是完整原 FROM/JOIN 输出和完整 WHERE 后的行数，含外连接补行。
+key_matches_j*_表.列 的 local_pairs 检查该 JOIN 子输入中的原 ON=TRUE 匹配，支持复合/非等值 ON；
+query_input/where_output 检查完整查询行，不把局部匹配当作全查询覆盖。
+predicate_where[_l/_r/_u...] 的 input/output 返回指定 AST 谓词的 true_count/false_count/null_count；
+predicate_j*_on 仅接受 input，范围是应用该 ON 之前的局部两侧子关系组合，_query 目录项才是完整查询输出；详细范围以目录描述为准。
+group_input_rows 必须指定全部 key0/key1/...，返回原 WHERE 后、HAVING 前该显式列分组的输入行数。
+参数化目标必须在 structured_goals 中携带同样的 parameters，程序只使用相同键与阶段的精确观测证明目标；
+其他键/阶段的证据不能替代。参数化目标和验证请求同样在补行后自动重新测量，合并后扣预算。
+没有写入且版本不变时，局部 observe 按能力和参数替换被刷新证据，其余当前事实与样本仍保留。
+刷新失败会替换同一请求的旧精确事实，不能继续引用旧成功；数据写入改变版本或提交不确定时，旧事实全部失效。
+observe：observation_requests 必须非空，条目使用上述两种格式；
 operations、verification_requests 必须为空，verification_limit、stop_reason 为 null。
 程序根据目录中绑定的 target 执行只读探测，模型不能提供探测 SQL 或自行修改 target。
 

@@ -1,0 +1,968 @@
+{
+  "validation": "Scripted responder; actual H2 SELECTs with JDBC bindings and INSERT transactions; TiDB catalog/session simulated. No real DeepSeek or TiDB/TiFlash run.",
+  "query": {
+    "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+    "joins": [
+      {
+        "id": "j0",
+        "type": "INNER",
+        "left_tables": [
+          "t0"
+        ],
+        "right_tables": [
+          "t1"
+        ],
+        "on": "((t0.k)=(t1.k))"
+      }
+    ],
+    "where": "((t0.k)>(10))",
+    "group_by": [],
+    "having": null
+  },
+  "initial_observations": [
+    {
+      "id": "obs_0_0",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "rows_t0",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_2",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "sample_t0",
+      "status": "exact",
+      "value": {
+        "columns": [
+          "k",
+          "n",
+          "s",
+          "b",
+          "g"
+        ],
+        "rows": [
+          [
+            {
+              "type": "integer",
+              "value": "1"
+            },
+            {
+              "type": "decimal",
+              "value": "1.23"
+            },
+            {
+              "type": "text",
+              "value": "original"
+            },
+            {
+              "type": "null",
+              "value": null
+            },
+            {
+              "type": "integer",
+              "value": "2"
+            }
+          ]
+        ],
+        "complete": true
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_3",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "rows_t1",
+      "status": "exact",
+      "value": {
+        "count": "1"
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_5",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "sample_t1",
+      "status": "exact",
+      "value": {
+        "columns": [
+          "k"
+        ],
+        "rows": [
+          [
+            {
+              "type": "integer",
+              "value": "1"
+            }
+          ]
+        ],
+        "complete": true
+      },
+      "error": null
+    },
+    {
+      "id": "obs_0_6",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "capability_id": "query_empty",
+      "status": "exact",
+      "value": {
+        "empty": true
+      },
+      "error": null
+    }
+  ],
+  "initial_samples": [
+    {
+      "id": "sample_0_1",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "table": "t0",
+      "columns": [
+        "k",
+        "n",
+        "s",
+        "b",
+        "g"
+      ],
+      "rows": [
+        [
+          {
+            "type": "integer",
+            "value": "1"
+          },
+          {
+            "type": "decimal",
+            "value": "1.23"
+          },
+          {
+            "type": "text",
+            "value": "original"
+          },
+          {
+            "type": "null",
+            "value": null
+          },
+          {
+            "type": "integer",
+            "value": "2"
+          }
+        ]
+      ],
+      "complete": true
+    },
+    {
+      "id": "sample_0_4",
+      "query_id": "active_query",
+      "schema_revision": 0,
+      "data_revision": 0,
+      "table": "t1",
+      "columns": [
+        "k"
+      ],
+      "rows": [
+        [
+          {
+            "type": "integer",
+            "value": "1"
+          }
+        ]
+      ],
+      "complete": true
+    }
+  ],
+  "initial_remaining_budget": {
+    "model_calls": 3,
+    "probe_requests": 91,
+    "insert_rows": 6,
+    "time_ms": 119996
+  },
+  "rounds": [
+    {
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "active_round_0",
+        "case_id": "active_observation",
+        "query_id": "active_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "observation_requests": [
+          {
+            "capability_id": "predicate_where",
+            "parameters": {
+              "stage": "input"
+            }
+          },
+          {
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "stage": "where_output",
+              "key": {
+                "type": "integer",
+                "value": "12"
+              }
+            }
+          }
+        ],
+        "operations": [],
+        "verification_requests": [],
+        "evidence_ids": [
+          "schema_0",
+          "obs_0_0",
+          "obs_0_2",
+          "obs_0_3",
+          "obs_0_5",
+          "obs_0_6"
+        ],
+        "structured_goals": [],
+        "verification_limit": null,
+        "stop_reason": null,
+        "decision": "observe",
+        "reason": "Locate the blocking condition with current exact evidence",
+        "goal": "Observe first",
+        "expected_effect": "Unknown until measured"
+      },
+      "validation_status": "accepted",
+      "writes": [],
+      "actual_observations": [
+        {
+          "id": "obs_0_0",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "rows_t0",
+          "status": "exact",
+          "value": {
+            "count": "1"
+          },
+          "error": null
+        },
+        {
+          "id": "obs_0_2",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "sample_t0",
+          "status": "exact",
+          "value": {
+            "columns": [
+              "k",
+              "n",
+              "s",
+              "b",
+              "g"
+            ],
+            "rows": [
+              [
+                {
+                  "type": "integer",
+                  "value": "1"
+                },
+                {
+                  "type": "decimal",
+                  "value": "1.23"
+                },
+                {
+                  "type": "text",
+                  "value": "original"
+                },
+                {
+                  "type": "null",
+                  "value": null
+                },
+                {
+                  "type": "integer",
+                  "value": "2"
+                }
+              ]
+            ],
+            "complete": true
+          },
+          "error": null
+        },
+        {
+          "id": "obs_0_3",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "rows_t1",
+          "status": "exact",
+          "value": {
+            "count": "1"
+          },
+          "error": null
+        },
+        {
+          "id": "obs_0_5",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "sample_t1",
+          "status": "exact",
+          "value": {
+            "columns": [
+              "k"
+            ],
+            "rows": [
+              [
+                {
+                  "type": "integer",
+                  "value": "1"
+                }
+              ]
+            ],
+            "complete": true
+          },
+          "error": null
+        },
+        {
+          "id": "obs_0_6",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "query_empty",
+          "status": "exact",
+          "value": {
+            "empty": true
+          },
+          "error": null
+        },
+        {
+          "id": "batch_1_obs_0_0",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "predicate_where",
+          "parameters": {
+            "stage": "input"
+          },
+          "status": "exact",
+          "value": {
+            "columns": [
+              "true_count",
+              "false_count",
+              "null_count"
+            ],
+            "rows": [
+              [
+                {
+                  "type": "integer",
+                  "value": "0"
+                },
+                {
+                  "type": "integer",
+                  "value": "1"
+                },
+                {
+                  "type": "integer",
+                  "value": "0"
+                }
+              ]
+            ],
+            "complete": true
+          },
+          "error": null
+        },
+        {
+          "id": "batch_1_obs_0_1",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "capability_id": "key_rows_t0.k",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "12"
+            },
+            "stage": "where_output"
+          },
+          "status": "exact",
+          "value": {
+            "count": "0"
+          },
+          "error": null
+        }
+      ],
+      "actual_samples": [
+        {
+          "id": "sample_0_1",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "table": "t0",
+          "columns": [
+            "k",
+            "n",
+            "s",
+            "b",
+            "g"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "decimal",
+                "value": "1.23"
+              },
+              {
+                "type": "text",
+                "value": "original"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        {
+          "id": "sample_0_4",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 0,
+          "table": "t1",
+          "columns": [
+            "k"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        }
+      ],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "cumulative_model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "data_revision_before": 0,
+      "data_revision_after": 0,
+      "probe_audit": [
+        {
+          "sql": "SELECT COALESCE(SUM(CASE WHEN (((t0.k)>(10))) IS TRUE THEN 1 ELSE 0 END),0) AS true_count,COALESCE(SUM(CASE WHEN (((t0.k)>(10))) IS FALSE THEN 1 ELSE 0 END),0) AS false_count,COALESCE(SUM(CASE WHEN (((t0.k)>(10))) IS NULL THEN 1 ELSE 0 END),0) AS null_count FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k))",
+          "observation_id": "batch_1_obs_0_0",
+          "metric": "predicate_truth_distribution",
+          "target": {},
+          "description": "TRUE/FALSE/NULL distribution of AST predicate ((t0.k)>(10)); input scope: FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)); output scope additionally applies complete original WHERE when present",
+          "snapshot": "1234567",
+          "parameters": {
+            "stage": "input"
+          },
+          "bindings": []
+        },
+        {
+          "sql": "SELECT COUNT(*) AS count FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE (`t0`.`k` = ?) AND (((t0.k)>(10)))",
+          "observation_id": "batch_1_obs_0_1",
+          "metric": "key_scoped_rows",
+          "target": {},
+          "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+          "snapshot": "1234567",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "12"
+            },
+            "stage": "where_output"
+          },
+          "bindings": [
+            {
+              "type": "integer",
+              "value": "12"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "active_round_1",
+        "case_id": "active_observation",
+        "query_id": "active_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "observation_requests": [],
+        "operations": [
+          {
+            "table": "t0",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                },
+                "n": {
+                  "type": "decimal",
+                  "value": "12.34"
+                },
+                "s": {
+                  "type": "text",
+                  "value": "kept"
+                },
+                "b": {
+                  "type": "binary",
+                  "value": "AP8="
+                }
+              }
+            ]
+          },
+          {
+            "table": "t1",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "12"
+                }
+              }
+            ]
+          }
+        ],
+        "verification_requests": [],
+        "evidence_ids": [
+          "schema_0",
+          "obs_0_0",
+          "obs_0_2",
+          "obs_0_3",
+          "obs_0_5",
+          "obs_0_6",
+          "batch_1_obs_0_0",
+          "batch_1_obs_0_1"
+        ],
+        "structured_goals": [
+          {
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "stage": "where_output",
+              "key": {
+                "type": "integer",
+                "value": "12"
+              }
+            },
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          }
+        ],
+        "verification_limit": "not measured",
+        "stop_reason": null,
+        "decision": "append_rows",
+        "reason": "negative scripted assertion",
+        "goal": "duplicate coverage",
+        "expected_effect": "I claim coverage already succeeded"
+      },
+      "validation_status": "accepted",
+      "writes": [
+        {
+          "table": "t0",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            },
+            "n": {
+              "type": "decimal",
+              "value": "12.34"
+            },
+            "s": {
+              "type": "text",
+              "value": "kept"
+            },
+            "b": {
+              "type": "binary",
+              "value": "AP8="
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            },
+            "n": {
+              "type": "decimal",
+              "value": "12.34"
+            },
+            "s": {
+              "type": "text",
+              "value": "kept"
+            },
+            "b": {
+              "type": "binary",
+              "value": "AP8="
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            },
+            "n": {
+              "type": "decimal",
+              "value": "12.34"
+            },
+            "s": {
+              "type": "text",
+              "value": "kept"
+            },
+            "b": {
+              "type": "binary",
+              "value": "AP8="
+            },
+            "g": {
+              "type": "integer",
+              "value": "13"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`n`,`s`,`b`) VALUES (?,?,?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 1
+        },
+        {
+          "table": "t1",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "12"
+            }
+          },
+          "sql": "INSERT INTO `t1` (`k`) VALUES (?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 2
+        }
+      ],
+      "actual_observations": [
+        {
+          "id": "batch_2_obs_2_0",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 2,
+          "capability_id": "key_rows_t0.k",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "12"
+            },
+            "stage": "where_output"
+          },
+          "status": "exact",
+          "value": {
+            "count": "1"
+          },
+          "error": null
+        }
+      ],
+      "actual_samples": [],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "achieved",
+        "checks": [
+          {
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "stage": "where_output",
+              "key": {
+                "type": "integer",
+                "value": "12"
+              }
+            },
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_2_obs_2_0",
+                "query_id": "active_query",
+                "schema_revision": 0,
+                "data_revision": 2,
+                "capability_id": "key_rows_t0.k",
+                "parameters": {
+                  "key": {
+                    "type": "integer",
+                    "value": "12"
+                  },
+                  "stage": "where_output"
+                },
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          }
+        ]
+      },
+      "cumulative_model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "achieved",
+        "checks": [
+          {
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "key": {
+                "type": "integer",
+                "value": "12"
+              },
+              "stage": "where_output"
+            },
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_2_obs_2_0",
+                "query_id": "active_query",
+                "schema_revision": 0,
+                "data_revision": 2,
+                "capability_id": "key_rows_t0.k",
+                "parameters": {
+                  "key": {
+                    "type": "integer",
+                    "value": "12"
+                  },
+                  "stage": "where_output"
+                },
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          }
+        ]
+      },
+      "data_revision_before": 0,
+      "data_revision_after": 2,
+      "probe_audit": [
+        {
+          "sql": "SELECT COUNT(*) AS count FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE (`t0`.`k` = ?) AND (((t0.k)>(10)))",
+          "observation_id": "batch_2_obs_2_0",
+          "metric": "key_scoped_rows",
+          "target": {},
+          "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+          "snapshot": "1234567",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "12"
+            },
+            "stage": "where_output"
+          },
+          "bindings": [
+            {
+              "type": "integer",
+              "value": "12"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "active_round_2",
+        "case_id": "active_observation",
+        "query_id": "active_query",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "observation_requests": [],
+        "operations": [],
+        "verification_requests": [],
+        "evidence_ids": [
+          "schema_0",
+          "batch_2_obs_2_0"
+        ],
+        "structured_goals": [],
+        "verification_limit": null,
+        "stop_reason": "finished",
+        "decision": "stop",
+        "reason": "finished",
+        "goal": "preserve data",
+        "expected_effect": "no writes"
+      },
+      "validation_status": "accepted",
+      "writes": [],
+      "actual_observations": [
+        {
+          "id": "batch_2_obs_2_0",
+          "query_id": "active_query",
+          "schema_revision": 0,
+          "data_revision": 2,
+          "capability_id": "key_rows_t0.k",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "12"
+            },
+            "stage": "where_output"
+          },
+          "status": "exact",
+          "value": {
+            "count": "1"
+          },
+          "error": null
+        }
+      ],
+      "actual_samples": [],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "cumulative_model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "achieved",
+        "checks": [
+          {
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "key": {
+                "type": "integer",
+                "value": "12"
+              },
+              "stage": "where_output"
+            },
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_2_obs_2_0",
+                "query_id": "active_query",
+                "schema_revision": 0,
+                "data_revision": 2,
+                "capability_id": "key_rows_t0.k",
+                "parameters": {
+                  "key": {
+                    "type": "integer",
+                    "value": "12"
+                  },
+                  "stage": "where_output"
+                },
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          }
+        ]
+      },
+      "data_revision_before": 2,
+      "data_revision_after": 2
+    }
+  ],
+  "termination": "model_stop",
+  "final_remaining_budget": {
+    "model_calls": 0,
+    "probe_requests": 88,
+    "insert_rows": 4,
+    "time_ms": 119924
+  },
+  "final_model_goal_evaluation": {
+    "scope": "structured_goals_only",
+    "outcome": "achieved",
+    "checks": [
+      {
+        "capability_id": "key_rows_t0.k",
+        "parameters": {
+          "key": {
+            "type": "integer",
+            "value": "12"
+          },
+          "stage": "where_output"
+        },
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "batch_2_obs_2_0",
+            "query_id": "active_query",
+            "schema_revision": 0,
+            "data_revision": 2,
+            "capability_id": "key_rows_t0.k",
+            "parameters": {
+              "key": {
+                "type": "integer",
+                "value": "12"
+              },
+              "stage": "where_output"
+            },
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      }
+    ]
+  }
+}

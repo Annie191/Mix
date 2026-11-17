@@ -457,3 +457,24 @@ git diff --check
 
 能力及限制见 [查询阶段覆盖说明](data-preparation-query-stage-coverage.md)，
 逐项精确事实及闭环记录见 [实测证据](data-preparation-loop/query-stage-coverage-results.json)。
+
+## 主动参数化观测与证据缓存（2026-11-17）
+
+- 新增 MixedActiveObservationTest 的 13 项回归，使用实际 H2 SELECT/JDBC 参数绑定和 INSERT/事务；TiDB 会话与元数据为 fixture。
+- 覆盖稀疏初始采集及扣费、指定键匹配、谓词 TRUE/FALSE/NULL、非等值/复合 ON、三表局部匹配与完整查询阻断、NULL/复合分组、精确 DECIMAL、SQL 外观文本、非法参数/重复/超预算、参数隔离、局部证据保留、刷新失败撤销旧证明、写入后失效和最终独立复测。
+- 受控 responder 实际选择 observe → append_rows → stop：WHERE 输入 false_count=1，指定键输出 count=0；两侧各补一行后，自动重测同一参数得到 count=1，目标 achieved。
+- 初始 5 个请求、主动 2 个请求、补行后 1 个验证，准备探测预算为 96 → 91 → 89 → 88；两行写入，剩余追加行尝试 4。
+- Benchmark 完整前测保存作独立评价，模型只接收另行采集的 model_initial_state；静态最低审计不枚举参数模板。局部 ON 目录仅允许 input，完整查询范围另有 _query 目录。
+- 共 183 项测试中 174 项通过、9 项真实集群测试按开关跳过；完整 Maven verify、formatter/XML/Checkstyle/PMD/SpotBugs 通过，SpotBugs 0 bugs。命名、JSON、本地链接、git diff --check 通过。
+- 本轮没有调用真实 DeepSeek，也没有运行真实 TiDB/TiFlash；不能据此声称真实模型的主动观测使用率或覆盖收益提高。旧真实实验记录不改写。
+
+验证命令（Maven 3.9.11 / JDK 17）：
+
+```bash
+/tmp/mix-retry-maven/bin/mvn -o -B -ntp -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify
+python3 src/check_names.py
+git diff --check
+```
+
+协议、范围与完整 observe 响应见 [主动观测说明](data-preparation-active-observation.md)，
+实际 SQL、绑定值、逐行写入和逐轮观测见 [实测记录](data-preparation-loop/active-observation-results.json)。

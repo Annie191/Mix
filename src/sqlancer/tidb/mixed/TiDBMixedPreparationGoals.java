@@ -27,6 +27,10 @@ public final class TiDBMixedPreparationGoals {
             for (String field : java.util.List.of("group_count", "input_rows", "min_size", "max_size")) {
                 fields.addProperty(field, "non_negative_integer");
             }
+        } else if (kind.equals("truth")) {
+            for (String field : java.util.List.of("true_count", "false_count", "null_count")) {
+                fields.addProperty(field, "non_negative_integer");
+            }
         }
         return fields;
     }
@@ -66,8 +70,13 @@ public final class TiDBMixedPreparationGoals {
             throw invalid("at most 64 structured goals per response");
         }
         Set<String> seen = new HashSet<>();
+        JsonArray normalized = new JsonArray();
         for (JsonElement entry : goals) {
-            if (!entry.isJsonObject() || !entry.getAsJsonObject().keySet().equals(FIELDS)) {
+            Set<String> allowed = new HashSet<>(FIELDS);
+            if (entry.isJsonObject() && entry.getAsJsonObject().has("parameters")) {
+                allowed.add("parameters");
+            }
+            if (!entry.isJsonObject() || !entry.getAsJsonObject().keySet().equals(allowed)) {
                 throw invalid("goal requires exactly capability_id, field, comparison, expected");
             }
             JsonObject goal = entry.getAsJsonObject();
@@ -76,6 +85,7 @@ public final class TiDBMixedPreparationGoals {
             String comparison = string(goal.get("comparison"));
             String expected = string(goal.get("expected"));
             JsonObject capability = capability(state, id);
+            JsonObject parameters = TiDBMixedObservationRequest.parameters(capability, goal.get("parameters"));
             JsonObject catalog = capability.getAsJsonObject("goal_fields");
             if (catalog == null || !catalog.has(field)) {
                 throw invalid("field is not a measurable goal in capability " + id + ": " + field);
@@ -88,11 +98,17 @@ public final class TiDBMixedPreparationGoals {
                 valid = type.equals("non_negative_integer") && natural(expected)
                         && Set.of("equals", "at_least", "at_most").contains(comparison);
             }
-            if (!valid || !seen.add(id + "\n" + field + "\n" + comparison + "\n" + expected)) {
+            if (!valid || !seen.add(TiDBMixedObservationRequest.key(id, goal.get("parameters")) + "\n" + field + "\n"
+                    + comparison + "\n" + expected)) {
                 throw invalid("invalid type/comparison/expected or duplicate structured goal");
             }
+            JsonObject copy = goal.deepCopy();
+            if (copy.has("parameters")) {
+                copy.add("parameters", parameters);
+            }
+            normalized.add(copy);
         }
-        return goals.deepCopy();
+        return normalized;
     }
 
     static void validateFields(JsonElement proposed) {
@@ -101,7 +117,7 @@ public final class TiDBMixedPreparationGoals {
         }
         JsonObject fields = proposed.getAsJsonObject();
         if (!fields.equals(fields("count")) && !fields.equals(fields("empty")) && !fields.equals(fields("summary"))
-                && !fields.isEmpty()) {
+                && !fields.equals(fields("truth")) && !fields.isEmpty()) {
             throw invalid("unsupported goal_fields schema");
         }
     }
@@ -183,7 +199,8 @@ public final class TiDBMixedPreparationGoals {
             if (!uncertain) {
                 for (JsonElement fact : state.getAsJsonArray("observations")) {
                     JsonObject observation = fact.getAsJsonObject();
-                    if (id.equals(observation.get("capability_id").getAsString()) && current(state, observation)) {
+                    if (TiDBMixedObservationRequest.key(id, goal.get("parameters"))
+                            .equals(TiDBMixedObservationRequest.factKey(observation)) && current(state, observation)) {
                         String measured = actual(observation, field, type);
                         if (measured != null) {
                             conflict |= actual != null && !actual.equals(measured);

@@ -2,6 +2,7 @@ package sqlancer.tidb.mixed;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -75,16 +76,26 @@ final class TiDBMixedReadOnly {
     }
 
     static Result read(TiDBMixedSupport io, String sql, int rowLimit, int timeoutSeconds) throws SQLException {
+        return read(io, sql, new JsonArray(), rowLimit, timeoutSeconds);
+    }
+
+    static Result read(TiDBMixedSupport io, String sql, JsonArray bindings, int rowLimit, int timeoutSeconds)
+            throws SQLException {
         if (!sql.startsWith("SELECT ") || rowLimit < 1 || rowLimit >= Integer.MAX_VALUE || timeoutSeconds < 1) {
             throw new IllegalArgumentException("invalid read-only probe");
         }
         io.events.add(Map.of("stage", "READ_ONLY_OBSERVATION", "sql", sql, "rowLimit", rowLimit));
         Result result = new Result();
-        try (Statement statement = io.connection().createStatement()) {
+        try (Statement statement = bindings.isEmpty() ? io.connection().createStatement()
+                : io.connection().prepareStatement(sql)) {
             statement.setQueryTimeout(timeoutSeconds);
             statement.setMaxRows(rowLimit + 1);
             statement.setFetchSize(Integer.MIN_VALUE);
-            try (ResultSet rows = statement.executeQuery(sql)) {
+            if (statement instanceof PreparedStatement) {
+                bind((PreparedStatement) statement, bindings);
+            }
+            try (ResultSet rows = statement instanceof PreparedStatement
+                    ? ((PreparedStatement) statement).executeQuery() : statement.executeQuery(sql)) {
                 ResultSetMetaData metadata = rows.getMetaData();
                 for (int i = 1; i <= metadata.getColumnCount(); i++) {
                     result.columns.add(metadata.getColumnLabel(i).toLowerCase(Locale.ROOT));
@@ -108,5 +119,29 @@ final class TiDBMixedReadOnly {
             }
         }
         return result;
+    }
+
+    private static void bind(PreparedStatement statement, JsonArray values) throws SQLException {
+        for (int i = 0; i < values.size(); i++) {
+            JsonObject cell = values.get(i).getAsJsonObject();
+            switch (cell.get("type").getAsString()) {
+            case "integer":
+            case "decimal":
+                statement.setBigDecimal(i + 1, new BigDecimal(cell.get("value").getAsString()));
+                break;
+            case "binary":
+                statement.setBytes(i + 1, Base64.getDecoder().decode(cell.get("value").getAsString()));
+                break;
+            case "boolean":
+                statement.setBoolean(i + 1, cell.get("value").getAsBoolean());
+                break;
+            case "null":
+                statement.setNull(i + 1, Types.NULL);
+                break;
+            default:
+                statement.setString(i + 1, cell.get("value").getAsString());
+                break;
+            }
+        }
     }
 }

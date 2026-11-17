@@ -157,7 +157,7 @@ public final class TiDBDataPreparationProtocol {
         }
     }
 
-    private static void typedValue(JsonElement element) {
+    static void typedValue(JsonElement element) {
         JsonObject cell = object(element);
         fields(cell, Set.of("type", "value"));
         String type = text(cell.get("type"));
@@ -256,8 +256,13 @@ public final class TiDBDataPreparationProtocol {
         require(identifiers.add(text(schema.get("id"))), "duplicate evidence identifier");
         for (JsonElement element : array(state.get("observations"))) {
             JsonObject observation = object(element);
-            fields(observation, Set.of("id", "capability_id", "query_id", "schema_revision", "data_revision", "status",
-                    "value", "error"));
+            Set<String> observationFields = new HashSet<>(Set.of("id", "capability_id", "query_id", "schema_revision",
+                    "data_revision", "status", "value", "error"));
+            if (observation.has("parameters")) {
+                observationFields.add("parameters");
+                object(observation.get("parameters"));
+            }
+            fields(observation, observationFields);
             require(identifiers.add(text(observation.get("id"))), "duplicate evidence identifier");
             text(observation.get("capability_id"));
             evidenceVersion(observation);
@@ -292,10 +297,22 @@ public final class TiDBDataPreparationProtocol {
                 allowed.add("goal_fields");
                 TiDBMixedPreparationGoals.validateFields(capability.get("goal_fields"));
             }
+            if (capability.has("parameters")) {
+                allowed.add("parameters");
+                TiDBMixedObservationRequest.schema(capability.get("parameters"));
+            }
             fields(capability, allowed);
             text(capability.get("metric"));
             object(capability.get("target"));
             text(capability.get("description"));
+        }
+        for (JsonElement entry : state.getAsJsonArray("observations")) {
+            JsonObject observation = entry.getAsJsonObject();
+            if (observation.has("parameters")) {
+                JsonObject capability = TiDBMixedObservationRequest.capability(state,
+                        observation.get("capability_id").getAsString());
+                TiDBMixedObservationRequest.parameters(capability, observation.get("parameters"));
+            }
         }
         return state;
     }
@@ -317,14 +334,6 @@ public final class TiDBDataPreparationProtocol {
         return List.of(Map.of("role", "system", "content", resource("overall-v1.txt")),
                 Map.of("role", "system", "content", resource("data-preparation-v1.txt")),
                 Map.of("role", "user", "content", state.toString()));
-    }
-
-    private static void requests(JsonElement entries, Set<String> capabilities, long budget) {
-        Set<String> ids = strings(entries);
-        if (ids.size() > budget || !capabilities.containsAll(ids)) {
-            throw new ValidationException("INVALID_OBSERVATION_REQUESTS",
-                    "unknown or over-budget observation requests; allowed IDs: " + capabilities + "; limit: " + budget);
-        }
     }
 
     public static JsonObject decision(String json, JsonObject input) {
@@ -357,10 +366,11 @@ public final class TiDBDataPreparationProtocol {
         if (!evidence.containsAll(strings(decision.get("evidence_ids")))) {
             throw new ValidationException("UNKNOWN_EVIDENCE_ID", "invented evidence identifier");
         }
-        Set<String> capabilities = named(array(state.get("available_observations")), "id").keySet();
         JsonObject budget = object(state.get("remaining_budget"));
-        requests(decision.get("observation_requests"), capabilities, integer(budget.get("probe_requests")));
-        requests(decision.get("verification_requests"), capabilities, integer(budget.get("probe_requests")));
+        TiDBMixedObservationRequest.validate(state, decision.get("observation_requests"),
+                integer(budget.get("probe_requests")));
+        TiDBMixedObservationRequest.validate(state, decision.get("verification_requests"),
+                integer(budget.get("probe_requests")));
         JsonArray operations = array(decision.get("operations"));
         if (action.equals("stop")) {
             text(decision.get("stop_reason"));

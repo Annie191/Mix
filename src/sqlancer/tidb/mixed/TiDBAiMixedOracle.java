@@ -219,8 +219,13 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 record.put("actualMetadata", actualMetadata.schema);
                 record.put("metadataEvidence", actualMetadata.evidence);
                 TiDBMixedObservations facts = new TiDBMixedObservations(query, "query_" + revision, revision, 0);
+                JsonObject preparationBudget = closedLoop ? TiDBMixedPreparationHarness.preparationBudget() : null;
                 try {
-                    facts.collect(io, facts.allIds(), new TiDBMixedObservations.Budget(64, 64, 10_000));
+                    if (closedLoop) {
+                        facts.bootstrap(io, preparationBudget);
+                    } else {
+                        facts.collect(io, facts.allIds(), new TiDBMixedObservations.Budget(64, 64, 10_000));
+                    }
                     record.put("observationStatus", "COLLECTED");
                 } catch (java.sql.SQLException | Rejected error) {
                     record.put("observationStatus", "ERROR");
@@ -234,7 +239,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     record.put("observationSnapshot", facts.snapshot);
                 }
                 if (closedLoop) {
-                    JsonObject budget = TiDBMixedPreparationHarness.preparationBudget();
+                    JsonObject budget = preparationBudget;
                     JsonObject packet = facts.statePacket("prepare_" + revision,
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
                     TiDBDeepSeekPreparationClient client = TiDBDeepSeekPreparationClient.fromEnvironment(3);
@@ -250,7 +255,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     }
                     TiDBMixedObservations after = new TiDBMixedObservations(query, "query_" + revision, revision,
                             prepared.getAsJsonObject("final_state").get("data_revision").getAsLong());
-                    after.collect(io, after.allIds(), new TiDBMixedObservations.Budget(64, 64, 10_000));
+                    after.collectRequests(io, after.assessmentRequests(prepared.getAsJsonArray("model_goals")),
+                            new TiDBMixedObservations.Budget(64, 64, 10_000));
                     JsonObject afterPacket = after.statePacket("measured_" + revision,
                             packet.get("case_id").getAsString(), actualMetadata.schema, new JsonArray(), budget);
                     record.put("postPreparationObservations", after.observations);

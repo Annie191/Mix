@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -34,6 +35,7 @@ public final class TiDBMixedObservations {
     private final long dataRevision;
     private final JsonObject queryDescription;
     private final Map<String, Probe> probes = new LinkedHashMap<>();
+    private final TiDBMixedParameterizedObservations parameterized;
     public final List<Map<String, Object>> audit = new ArrayList<>();
     public final JsonArray observations = new JsonArray();
     public final JsonArray samples = new JsonArray();
@@ -55,7 +57,7 @@ public final class TiDBMixedObservations {
         }
     }
 
-    private static final class Probe {
+    static final class Probe {
         final String id;
         final String metric;
         final JsonObject target;
@@ -63,8 +65,15 @@ public final class TiDBMixedObservations {
         final String sql;
         final String kind;
         final String table;
+        final JsonObject parameters;
+        final JsonArray bindings;
 
         Probe(String id, String metric, JsonObject target, String description, String sql, String kind, String table) {
+            this(id, metric, target, description, sql, kind, table, new JsonObject(), new JsonArray());
+        }
+
+        Probe(String id, String metric, JsonObject target, String description, String sql, String kind, String table,
+                JsonObject parameters, JsonArray bindings) {
             this.id = id;
             this.metric = metric;
             this.target = target;
@@ -72,6 +81,8 @@ public final class TiDBMixedObservations {
             this.sql = sql;
             this.kind = kind;
             this.table = table;
+            this.parameters = parameters.deepCopy();
+            this.bindings = bindings.deepCopy();
         }
     }
 
@@ -85,6 +96,7 @@ public final class TiDBMixedObservations {
         this.dataRevision = dataRevision;
         queryDescription = describeQuery(candidate);
         plan();
+        parameterized = new TiDBMixedParameterizedObservations(candidate, relation(null));
     }
 
     private static JsonArray tableNames(TiDBExpression expression) {
@@ -351,7 +363,45 @@ public final class TiDBMixedObservations {
                 result.add(capability);
             }
         }
+        result.addAll(parameterized.available());
         return result;
+    }
+
+    public List<String> initialIds() {
+        List<String> ids = new ArrayList<>();
+        for (TiDBTable table : candidate.tables) {
+            ids.add("rows_" + table.getName());
+            ids.add("sample_" + table.getName());
+        }
+        ids.add("query_empty");
+        return ids;
+    }
+
+    public JsonArray assessmentRequests(JsonArray goals) {
+        Map<String, JsonElement> requests = new LinkedHashMap<>();
+        // Preserve model-selected parameters in the independent final assessment, within the same read budget.
+        for (JsonElement goal : goals) {
+            JsonElement request = TiDBMixedObservationRequest.goalRequest(goal.getAsJsonObject());
+            requests.put(TiDBMixedObservationRequest.key(request), request);
+        }
+        for (String id : allIds()) {
+            JsonElement request = new com.google.gson.JsonPrimitive(id);
+            requests.putIfAbsent(TiDBMixedObservationRequest.key(request), request);
+        }
+        JsonArray result = new JsonArray();
+        requests.values().forEach(request -> result.add(request.deepCopy()));
+        return result;
+    }
+
+    public void bootstrap(TiDBMixedSupport io, JsonObject budget) throws SQLException {
+        long started = System.nanoTime();
+        List<String> ids = initialIds();
+        int requested = (int) Math.min(ids.size(), budget.get("probe_requests").getAsLong());
+        collect(io, ids.subList(0, requested),
+                new Budget(requested, 2, Math.min(10_000, budget.get("time_ms").getAsLong())));
+        budget.addProperty("probe_requests", budget.get("probe_requests").getAsLong() - requested);
+        budget.addProperty("time_ms",
+                Math.max(0, budget.get("time_ms").getAsLong() - (System.nanoTime() - started + 999_999) / 1_000_000));
     }
 
     public List<String> allIds() {
@@ -392,6 +442,9 @@ public final class TiDBMixedObservations {
     private void record(Probe probe, String status, JsonObject value, String error, Map<String, Object> evidence) {
         JsonObject observation = versioned("obs_" + dataRevision + "_" + sequence++);
         observation.addProperty("capability_id", probe.id);
+        if (!probe.parameters.isEmpty()) {
+            observation.add("parameters", probe.parameters.deepCopy());
+        }
         observation.addProperty("status", status);
         observation.add("value", value == null ? JsonNull.INSTANCE : value);
         observation.addProperty("error", error);
@@ -401,6 +454,10 @@ public final class TiDBMixedObservations {
         evidence.put("target", probe.target);
         evidence.put("description", probe.description);
         evidence.put("snapshot", snapshot);
+        if (!probe.parameters.isEmpty()) {
+            evidence.put("parameters", probe.parameters.deepCopy());
+            evidence.put("bindings", probe.bindings.deepCopy());
+        }
         audit.add(evidence);
     }
 
@@ -408,7 +465,8 @@ public final class TiDBMixedObservations {
         Map<String, Object> evidence = new LinkedHashMap<>();
         evidence.put("sql", probe.sql);
         try {
-            Result result = TiDBMixedReadOnly.read(io, probe.sql, probe.kind.equals("empty") ? 1 : rows, timeout);
+            Result result = TiDBMixedReadOnly.read(io, probe.sql, probe.bindings, probe.kind.equals("empty") ? 1 : rows,
+                    timeout);
             JsonObject value = new JsonObject();
             String status = result.complete ? "exact" : "sampled";
             if (probe.kind.equals("count")) {
@@ -450,8 +508,33 @@ public final class TiDBMixedObservations {
 
     // All reads share one TiKV TSO. Restore session state even after an error.
     public void collect(TiDBMixedSupport io, List<String> requested, Budget budget) throws SQLException {
-        if (requested.stream().distinct().count() != requested.size() || !probes.keySet().containsAll(requested)) {
-            throw new IllegalArgumentException("unknown or duplicate observation request");
+        JsonArray requests = new JsonArray();
+        requested.forEach(requests::add);
+        collectRequests(io, requests, budget);
+    }
+
+    public void collectRequests(TiDBMixedSupport io, JsonArray requests, Budget budget) throws SQLException {
+        JsonObject catalog = new JsonObject();
+        catalog.add("available_observations", available());
+        // Static allIds includes explicit unsupported entries, which are audited without issuing SQL.
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        List<Probe> selected = new ArrayList<>();
+        for (JsonElement request : requests) {
+            if (!keys.add(TiDBMixedObservationRequest.key(request))) {
+                throw new IllegalArgumentException("duplicate observation request");
+            }
+            String id = TiDBMixedObservationRequest.capabilityId(request);
+            if (probes.containsKey(id)) {
+                if (request.isJsonObject()) {
+                    throw new IllegalArgumentException("static probe does not accept parameters");
+                }
+                selected.add(probes.get(id));
+            } else {
+                JsonArray single = new JsonArray();
+                single.add(request);
+                TiDBMixedObservationRequest.validate(catalog, single, 1);
+                selected.add(parameterized.compile(request));
+            }
         }
         Map<String, String> previous = io
                 .textRows("SELECT @@tidb_snapshot AS snapshot," + " @@tidb_isolation_read_engines AS engines").get(0);
@@ -466,8 +549,7 @@ public final class TiDBMixedObservations {
             } else {
                 snapshot = previous.get("snapshot");
             }
-            for (String id : requested) {
-                Probe probe = probes.get(id);
+            for (Probe probe : selected) {
                 long remaining = (deadline - System.nanoTime()) / 1_000_000L;
                 if (probe.sql == null) {
                     record(probe, "unsupported", null, probe.description, new LinkedHashMap<>());
