@@ -14,12 +14,13 @@ strict 要求对象字段全部必填、禁止额外字段。三种动作不再�
 表行用列名对象；生成列不进入写入 Schema。integer/decimal 保留字符串精度，binary 使用完整字节的 Base64。
 全部可写列必须出现；不指定值时使用 `{"type":"sqlancer"}`，程序移除此标记后复用 SQLancer 生成值。
 每行至少明确指定一个列值。该标记不是写入值，也不能保证满足模型目标。模型不能提交 SQL。
+观测请求统一使用 capability_id 和 parameters 对象；静态观测的 parameters 是 null。
 参数枚举直接用字符串；例如 `"stage":"input"`，不是 `{"type":"enum","value":"input"}`。
 
 完整交互示例（目录存在 `j0_pairs_after`，两表均只有可写整数列 k）：
 
 ```json
-{"name":"observe","arguments":{"reason":"需要精确匹配数","evidence_ids":[],"goal":"判断是否值得补行","observation_requests":["j0_pairs_after"]}}
+{"name":"observe","arguments":{"reason":"需要精确匹配数","evidence_ids":[],"goal":"判断是否值得补行","observation_requests":[{"capability_id":"j0_pairs_after","parameters":null}]}}
 ```
 
 程序返回当前数据版本的实际观测。若匹配数为 0，模型可以选择以下计划，也可以继续观察或停止：
@@ -37,7 +38,7 @@ strict 要求对象字段全部必填、禁止额外字段。三种动作不再�
     ],
     "structured_goals":[{"capability_id":"j0_pairs_after","field":"count","comparison":"at_least","expected":"1"}],
     "expected_effect":"预期至少一对匹配，等待程序验证",
-    "verification_requests":["j0_pairs_after"],
+    "verification_requests":[{"capability_id":"j0_pairs_after","parameters":null}],
     "feasibility":{
       "join_witness":"t0.k=12 与 t1.k=12 满足完整等值连接",
       "where_witness":"12 满足 k>10",
@@ -78,11 +79,15 @@ NATURAL JOIN 列出全部同名键和实际类型，禁止把 BLOB 首字符视�
 
 `MS_PREPARATION_TRANSPORT=strict` 为默认；显式 `json` 保留旧接口。
 `DEEPSEEK_THINKING=enabled|disabled`，默认 disabled；thinking 时使用 API 要求的 tool_choice=auto。
+`DEEPSEEK_MAX_TOKENS` 默认 4000（本地允许 1–16384），调用审计记录实际配置；
+thinking 对照可给两组相同的 8000 上限，仍受总 token、时间和估算费用限制。
 受控 Benchmark 新增 AI_THINKING 独立组，所有组核对初始 SQL/实际 Schema/数据指纹，再分别报告协议、目标、查询阶段覆盖、引擎覆盖和费用。
 
 `real-responses-27.json` 固定了上一轮 27 份真实响应和当时状态：5 份原合规响应继续通过，22 份拒绝均定位到字段。
 回归中的人工格式修订均通过校验，**不代表模型自行修订成功或数据库覆盖达成**。
 三个真实目录的动态 Schema 已通过 Beta HTTP 200 兼容性探测；这仅验证 API 接受结构。
+后续实测仍收到过与 Schema 不符的参数，本地字段校验、拒绝反馈和修订预算不能省略。
+模型历史保留计划、失败、写入和目标评价摘要；当前观测不反复塞进历史，完整证据仍保留在 rounds。
 
 官方依据：[Tool Calls strict](https://api-docs.deepseek.com/guides/tool_calls/)、
 [Chat Completion](https://api-docs.deepseek.com/api/create-chat-completion/)。

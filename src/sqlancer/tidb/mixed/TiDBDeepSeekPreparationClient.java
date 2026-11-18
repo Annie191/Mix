@@ -40,7 +40,7 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
 
     TiDBDeepSeekPreparationClient(TiDBDeepSeekAdvisor.Transport transport, String model, int calls, int maxTokens,
             BigDecimal hitPrice, BigDecimal missPrice, BigDecimal outputPrice, boolean strictTools, boolean thinking) {
-        if (transport == null || model.isBlank() || calls < 0 || maxTokens < 1
+        if (transport == null || model.isBlank() || calls < 0 || maxTokens < 1 || maxTokens > 16384
                 || List.of(hitPrice, missPrice, outputPrice).stream().anyMatch(p -> p.signum() < 0)) {
             throw new IllegalArgumentException("invalid preparation client configuration");
         }
@@ -115,7 +115,8 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
             return new TiDBDeepSeekAdvisor.Reply(response.statusCode(), response.body());
         };
         return new TiDBDeepSeekPreparationClient(transport,
-                environment.getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls, 4000,
+                environment.getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls,
+                Integer.parseInt(environment.getOrDefault("DEEPSEEK_MAX_TOKENS", "4000")),
                 price(environment, "DEEPSEEK_HIT_USD_PER_M", "0.003"),
                 price(environment, "DEEPSEEK_MISS_USD_PER_M", "0.15"),
                 price(environment, "DEEPSEEK_OUTPUT_USD_PER_M", "0.60"), strict, thinking.equals("enabled"));
@@ -186,6 +187,7 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
         event.addProperty("request_id", packet.get("request_id").getAsString());
         event.addProperty("transport", strictTools ? "strict_tools" : "json");
         event.addProperty("thinking", thinking ? "enabled" : "disabled");
+        event.addProperty("max_tokens", maxTokens);
         event.addProperty("started_at", Instant.now().toString());
         event.addProperty("price_hit_usd_per_m", hitPrice);
         event.addProperty("price_miss_usd_per_m", missPrice);

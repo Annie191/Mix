@@ -44,5 +44,26 @@
       "full_compatible_key_matches": 1
     },
     "limitation": "Controlled handwritten plans/minimal fixtures; not a real-model strategy success claim"
+  },
+  "final_offline_verify": {
+    "total": 241,
+    "passed": 228,
+    "skipped_live": 13,
+    "failures": 0,
+    "errors": 0,
+    "spotbugs": 0,
+    "log": "logs/action-interface/release-verify.log"
+  },
+  "history_regression": {
+    "model_requests": 6,
+    "each_request_below_char_limit": 128000,
+    "full_round_evidence_exceeds_char_limit": true,
+    "complete_evidence_retained": true
+  },
+  "beta_uniform_request_compatibility": {
+    "empty_parameters_object_http_status": 400,
+    "static_parameters_null_http_status": 200,
+    "finish_reason": "tool_calls",
+    "limitation": "Schema compatibility only"
   }
 }

@@ -84,7 +84,7 @@ public final class TiDBMixedActionSchema {
         return object(properties);
     }
 
-    private static JsonObject requests(JsonObject state) {
+    private static JsonObject requests(JsonObject state, boolean strict) {
         JsonArray variants = new JsonArray();
         JsonArray staticIds = new JsonArray();
         for (JsonElement entry : state.getAsJsonArray("available_observations")) {
@@ -99,7 +99,14 @@ public final class TiDBMixedActionSchema {
             }
         }
         if (!staticIds.isEmpty()) {
-            variants.add(enumeration(staticIds));
+            if (strict) {
+                JsonObject properties = new JsonObject();
+                properties.add("capability_id", enumeration(staticIds));
+                properties.add("parameters", type("null"));
+                variants.add(object(properties));
+            } else {
+                variants.add(enumeration(staticIds));
+            }
         }
         JsonObject items = new JsonObject();
         items.add("anyOf", variants);
@@ -187,7 +194,7 @@ public final class TiDBMixedActionSchema {
         } else {
             properties.add("goal", type("string"));
             if (action.equals("observe")) {
-                JsonObject requests = requests(state);
+                JsonObject requests = requests(state, true);
                 requests.addProperty("minItems", 1);
                 properties.add("observation_requests", requests);
             } else {
@@ -198,7 +205,7 @@ public final class TiDBMixedActionSchema {
                 properties.add("operations", append);
                 properties.add("structured_goals", goals(state));
                 properties.add("expected_effect", type("string"));
-                JsonObject verification = requests(state);
+                JsonObject verification = requests(state, true);
                 verification.addProperty("minItems", 1);
                 properties.add("verification_requests", verification);
                 JsonObject basis = new JsonObject();
@@ -345,6 +352,34 @@ public final class TiDBMixedActionSchema {
             if (closest != null) {
                 throw closest;
             }
+            if (value != null && value.isJsonObject()) {
+                for (String key : List.of("capability_id", "field", "table", "type")) {
+                    if (!value.getAsJsonObject().has(key)) {
+                        continue;
+                    }
+                    JsonObject others = value.getAsJsonObject().deepCopy();
+                    others.remove(key);
+                    JsonArray allowed = new JsonArray();
+                    for (JsonElement entry : schema.getAsJsonArray("anyOf")) {
+                        JsonObject branch = entry.getAsJsonObject();
+                        if (discriminator(branch, others) && branch.has("properties")
+                                && branch.getAsJsonObject("properties").has(key)) {
+                            JsonObject field = branch.getAsJsonObject("properties").getAsJsonObject(key);
+                            if (field.has("enum")) {
+                                field.getAsJsonArray("enum").forEach(choice -> {
+                                    if (!allowed.contains(choice)) {
+                                        allowed.add(choice);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    if (!allowed.isEmpty() && !allowed.contains(value.getAsJsonObject().get(key))) {
+                        fail(path + "." + key, "ENUM_MISMATCH", "an advertised value", value.getAsJsonObject().get(key),
+                                enumeration(allowed));
+                    }
+                }
+            }
             fail(path, "NO_MATCHING_VARIANT", "one of the advertised typed variants", value, schema);
         }
         String type = schema.get("type").getAsString();
@@ -435,6 +470,17 @@ public final class TiDBMixedActionSchema {
         if (arguments.has("feasibility")) {
             plan.add("feasibility", arguments.get("feasibility").deepCopy());
         }
+        for (String key : List.of("observation_requests", "verification_requests")) {
+            JsonArray entries = plan.getAsJsonArray(key);
+            for (int i = 0; i < entries.size(); i++) {
+                JsonObject request = entries.get(i).getAsJsonObject();
+                JsonObject capability = TiDBMixedObservationRequest.capability(state,
+                        request.get("capability_id").getAsString());
+                if (!capability.has("parameters")) {
+                    entries.set(i, request.get("capability_id").deepCopy());
+                }
+            }
+        }
         for (JsonElement operation : plan.getAsJsonArray("operations")) {
             for (JsonElement row : operation.getAsJsonObject().getAsJsonArray("rows")) {
                 row.getAsJsonObject().entrySet().removeIf(
@@ -450,8 +496,8 @@ public final class TiDBMixedActionSchema {
             properties.add(key, type("string"));
         }
         properties.add("operations", operations(state, false));
-        properties.add("observation_requests", requests(state));
-        properties.add("verification_requests", requests(state));
+        properties.add("observation_requests", requests(state, false));
+        properties.add("verification_requests", requests(state, false));
         for (String field : List.of("observation_requests", "verification_requests")) {
             if (plan.has(field) && plan.get(field).isJsonArray()) {
                 JsonArray entries = plan.getAsJsonArray(field);

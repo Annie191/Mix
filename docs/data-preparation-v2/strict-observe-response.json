@@ -1,0 +1,887 @@
+{
+  "state": {
+    "query_id": "paired_query",
+    "schema_revision": 0,
+    "data_revision": 0,
+    "protocol_version": "1.0",
+    "request_id": "prepare",
+    "case_id": "paired_0",
+    "phase": "DATA_PREPARATION",
+    "frozen": false,
+    "discrepancy_found": false,
+    "query": {
+      "sql": "SELECT t0.k, t1.k FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+      "joins": [
+        {
+          "id": "j0",
+          "type": "INNER",
+          "left_tables": [
+            "t0"
+          ],
+          "right_tables": [
+            "t1"
+          ],
+          "on": "((t0.k)=(t1.k))"
+        }
+      ],
+      "where": "((t0.k)>(10))",
+      "group_by": [],
+      "having": null
+    },
+    "schema": {
+      "id": "schema_0",
+      "tables": [
+        {
+          "name": "t0",
+          "columns": [
+            {
+              "name": "k",
+              "sql_type": "bigint",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "v",
+              "sql_type": "bigint",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            }
+          ],
+          "constraints": [],
+          "metadata_complete": true
+        },
+        {
+          "name": "t1",
+          "columns": [
+            {
+              "name": "k",
+              "sql_type": "bigint",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "v",
+              "sql_type": "bigint",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            }
+          ],
+          "constraints": [],
+          "metadata_complete": true
+        }
+      ],
+      "complete": true
+    },
+    "observations": [
+      {
+        "id": "obs_0_0",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t0",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_2",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "k",
+            "v"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "5"
+              },
+              {
+                "type": "integer",
+                "value": "5"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_3",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t1",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_5",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t1",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "k",
+            "v"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "5"
+              },
+              {
+                "type": "integer",
+                "value": "5"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_6",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_empty",
+        "status": "exact",
+        "value": {
+          "empty": true
+        },
+        "error": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "sample_0_1",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "table": "t0",
+        "columns": [
+          "k",
+          "v"
+        ],
+        "rows": [
+          [
+            {
+              "type": "integer",
+              "value": "5"
+            },
+            {
+              "type": "integer",
+              "value": "5"
+            }
+          ]
+        ],
+        "complete": true
+      },
+      {
+        "id": "sample_0_4",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "table": "t1",
+        "columns": [
+          "k",
+          "v"
+        ],
+        "rows": [
+          [
+            {
+              "type": "integer",
+              "value": "5"
+            },
+            {
+              "type": "integer",
+              "value": "5"
+            }
+          ]
+        ],
+        "complete": true
+      }
+    ],
+    "history": [],
+    "remaining_budget": {
+      "model_calls": 6,
+      "probe_requests": 91,
+      "insert_rows": 12,
+      "time_ms": 119985,
+      "decision_calls": 3,
+      "format_repairs": 3,
+      "api_tokens": 500000,
+      "cost_microusd": 250000
+    },
+    "available_observations": [
+      {
+        "id": "rows_t0",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t0",
+        "metric": "table_sample",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.k",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.k"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.k",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.k"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.v",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.v"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.v",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.v"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "rows_t1",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t1",
+        "metric": "table_sample",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t1.k",
+        "metric": "null_count",
+        "target": {
+          "column": "t1.k"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t1.k",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t1.k"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t1.v",
+        "metric": "null_count",
+        "target": {
+          "column": "t1.v"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t1.v",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t1.v"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "j0_pairs_before",
+        "metric": "join_pairs_before_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_unmatched",
+        "metric": "left_unmatched_input_rows",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_unmatched",
+        "metric": "right_unmatched_input_rows",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_repeated",
+        "metric": "left_input_rows_with_multiple_matches",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_repeated",
+        "metric": "right_input_rows_with_multiple_matches",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_pairs_after",
+        "metric": "join_pairs_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_duplicate_after",
+        "metric": "duplicate_keys_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; different non-NULL keys with at least two surviving matching pairs",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_unmatched_after",
+        "metric": "left_unmatched_output_rows_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; only the side preserved by original JOIN can emit unmatched rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_unmatched_after",
+        "metric": "right_unmatched_output_rows_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; only the side preserved by original JOIN can emit unmatched rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_before",
+        "metric": "query_input_rows_before_where",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Rows emitted by original FROM/JOIN before WHERE and aggregation; outer rows included",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_after",
+        "metric": "query_input_rows_after_where",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Rows after original WHERE and before GROUP BY/HAVING; not a matching-pair count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_empty",
+        "metric": "query_result_empty",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Whether the frozen original SELECT emits any row, including aggregation and HAVING",
+        "goal_fields": {
+          "empty": "boolean"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.k",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "NULL column t0.k at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t1.k",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "NULL column t1.k at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.k",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "NULL column t0.k at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t1.k",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "NULL column t1.k at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_predicate_true",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Complete original WHERE evaluates to TRUE on original FROM/JOIN rows; logical truth value",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_predicate_false",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Complete original WHERE evaluates to FALSE on original FROM/JOIN rows; logical truth value",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_predicate_unknown",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Complete original WHERE evaluates to NULL on original FROM/JOIN rows; logical truth value",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "base_where_boundary_below",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=9; base-table existence only",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_below_before",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=9; rows in original FROM/JOIN reaching WHERE, before any WHERE conjunct (not table existence)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_below_after",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=9; rows surviving the complete original WHERE",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "base_where_boundary_at",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=10; base-table existence only",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_at_before",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=10; rows in original FROM/JOIN reaching WHERE, before any WHERE conjunct (not table existence)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_at_after",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=10; rows surviving the complete original WHERE",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "base_where_boundary_above",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=11; base-table existence only",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_above_before",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=11; rows in original FROM/JOIN reaching WHERE, before any WHERE conjunct (not table existence)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_boundary_above_after",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "paired_query"
+        },
+        "description": "Boundary of predicate ((t0.k)>(10)); t0.k=11; rows surviving the complete original WHERE",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.k",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.v",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t1.k",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t1.v",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "predicate_where",
+        "metric": "predicate_truth_distribution",
+        "target": {},
+        "description": "TRUE/FALSE/NULL distribution of AST predicate ((t0.k)>(10)); input scope: FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)); output scope additionally applies complete original WHERE when present",
+        "parameters": {
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "input",
+              "output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "true_count": "non_negative_integer",
+          "false_count": "non_negative_integer",
+          "null_count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "predicate_j0_on",
+        "metric": "predicate_truth_distribution",
+        "target": {},
+        "description": "TRUE/FALSE/NULL distribution of AST predicate ((t0.k)=(t1.k)); input scope: FROM (t0) CROSS JOIN (t1); local ON input only, before applying this ON; no output stage",
+        "parameters": {
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "input"
+            ]
+          }
+        },
+        "goal_fields": {
+          "true_count": "non_negative_integer",
+          "false_count": "non_negative_integer",
+          "null_count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "predicate_j0_on_query",
+        "metric": "predicate_truth_distribution",
+        "target": {},
+        "description": "TRUE/FALSE/NULL distribution of AST predicate ((t0.k)=(t1.k)); input scope: FROM  t0 INNER JOIN t1 ON ((t0.k)=(t1.k)); output scope additionally applies complete original WHERE when present",
+        "parameters": {
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "input",
+              "output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "true_count": "non_negative_integer",
+          "false_count": "non_negative_integer",
+          "null_count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_matches_j0_t0.k",
+        "metric": "key_scoped_join_matches",
+        "target": {},
+        "description": "Typed key and original ON=TRUE; local_pairs counts this JOIN's child-input pairs; query_input/where_output count whole-query rows (downstream multiplicity retained)",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "local_pairs",
+              "query_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_matches_j0_t1.k",
+        "metric": "key_scoped_join_matches",
+        "target": {},
+        "description": "Typed key and original ON=TRUE; local_pairs counts this JOIN's child-input pairs; query_input/where_output count whole-query rows (downstream multiplicity retained)",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "local_pairs",
+              "query_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      }
+    ]
+  },
+  "response": {
+    "tool_calls": [
+      {
+        "index": 0,
+        "id": "call_00_h0nJCJcVliW4WuPVqK2O4485",
+        "type": "function",
+        "function": {
+          "name": "observe",
+          "arguments": "{\"reason\": \"Need exact facts about current key distributions, NULLs, and join/where stage counts before deciding what to append. Samples show only one row (k=5,v=5) per table and empty query result.\", \"evidence_ids\": [\"obs_0_0\", \"obs_0_2\", \"obs_0_3\", \"obs_0_5\", \"obs_0_6\"], \"goal\": \"Establish baseline: NULL counts, key frequencies, join pair/unmatched stats, and WHERE boundary counts for k=9,10,11.\", \"observation_requests\": [{\"capability_id\": \"nulls_t0.k\", \"parameters\": {}}, {\"capability_id\": \"nulls_t1.k\", \"parameters\": {}}, {\"capability_id\": \"freq_t0.k\", \"parameters\": {}}, {\"capability_id\": \"freq_t1.k\", \"parameters\": {}}, {\"capability_id\": \"j0_pairs_before\", \"parameters\": {}}, {\"capability_id\": \"j0_left_unmatched\", \"parameters\": {}}, {\"capability_id\": \"j0_right_unmatched\", \"parameters\": {}}, {\"capability_id\": \"j0_pairs_after\", \"parameters\": {}}, {\"capability_id\": \"query_input_before\", \"parameters\": {}}, {\"capability_id\": \"query_input_after\", \"parameters\": {}}, {\"capability_id\": \"base_where_boundary_below\", \"parameters\": {}}, {\"capability_id\": \"base_where_boundary_at\", \"parameters\": {}}, {\"capability_id\": \"base_where_boundary_above\", \"parameters\": {}}, {\"capability_id\": \"where_predicate_true\", \"parameters\": {\"stage\": \"input\"}}, {\"capability_id\": \"where_predicate_false\", \"parameters\": {\"stage\": \"input\"}}, {\"capability_id\": \"where_predicate_unknown\", \"parameters\": {\"stage\": \"input\"}}]}"
+        }
+      }
+    ]
+  }
+}

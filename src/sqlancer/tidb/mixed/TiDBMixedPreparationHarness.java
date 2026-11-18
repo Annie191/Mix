@@ -570,9 +570,7 @@ public final class TiDBMixedPreparationHarness {
                 round.addProperty("decision_id", packet.get("request_id").getAsString());
                 round.add("data_revision_after", uncertain ? JsonNull.INSTANCE : packet.get("data_revision"));
                 rounds.add(round);
-                JsonObject history = round.deepCopy();
-                history.remove("state_before"); // Avoid recursive growth of history packets.
-                packet.getAsJsonArray("history").add(history);
+                packet.getAsJsonArray("history").add(historySummary(round));
                 if (plan == null) {
                     if (recoverable) {
                         continue;
@@ -593,6 +591,39 @@ public final class TiDBMixedPreparationHarness {
             freeze();
         }
         return result(termination);
+    }
+
+    static JsonObject historySummary(JsonObject round) {
+        JsonObject summary = new JsonObject();
+        // Keep actionable proposals/failures. Current facts are already in the packet; full facts, SQL audit,
+        // coverage snapshots and API responses remain once in rounds instead of multiplying in every request.
+        for (String key : List.of("decision_id", "data_revision_before", "data_revision_after", "validation_status",
+                "decision", "model_expectation", "failure_reason", "validation_feedback", "writes")) {
+            if (round.has(key)) {
+                summary.add(key, round.get(key).deepCopy());
+            }
+        }
+        if (round.has("raw_response") && (!round.has("decision") || round.get("decision").isJsonNull())) {
+            summary.add("raw_response", round.get("raw_response").deepCopy());
+        }
+        for (String key : List.of("evaluation", "model_goal_evaluation", "cumulative_model_goal_evaluation")) {
+            if (round.has(key)) {
+                JsonObject evaluation = round.getAsJsonObject(key).deepCopy();
+                for (JsonElement entry : evaluation.getAsJsonArray("checks")) {
+                    JsonObject check = entry.getAsJsonObject();
+                    JsonArray ids = new JsonArray();
+                    if (check.has("evidence") && check.get("evidence").isJsonObject()) {
+                        ids.add(check.getAsJsonObject("evidence").get("id"));
+                    } else if (check.has("evidence") && check.get("evidence").isJsonArray()) {
+                        check.getAsJsonArray("evidence").forEach(fact -> ids.add(fact.getAsJsonObject().get("id")));
+                    }
+                    check.add("evidence_ids", ids);
+                    check.remove("evidence");
+                }
+                summary.add(key, evaluation);
+            }
+        }
+        return summary;
     }
 
     private JsonObject result(String termination) {

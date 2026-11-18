@@ -193,6 +193,33 @@ class MixedActionSchemaTest {
     }
 
     @Test
+    void staticObjectsAreSupportedWhileUnadvertisedStaticParametersStillRequireCorrection() throws Exception {
+        JsonObject fixture = JsonParser
+                .parseString(Files.readString(Path.of("docs/data-preparation-v2/strict-observe-response.json")))
+                .getAsJsonObject();
+        TiDBDataPreparationProtocol.ValidationException error = assertThrows(
+                TiDBDataPreparationProtocol.ValidationException.class, () -> TiDBDataPreparationProtocol
+                        .decision(fixture.get("response").toString(), fixture.getAsJsonObject("state")));
+        assertEquals("$.observation_requests[0].parameters", error.details.get("path").getAsString());
+        JsonObject revised = fixture.getAsJsonObject("response").deepCopy();
+        JsonObject function = revised.getAsJsonArray("tool_calls").get(0).getAsJsonObject().getAsJsonObject("function");
+        JsonObject arguments = JsonParser.parseString(function.get("arguments").getAsString()).getAsJsonObject();
+        arguments.getAsJsonArray("observation_requests").forEach(entry -> {
+            JsonObject request = entry.getAsJsonObject();
+            if (!capability(fixture.getAsJsonObject("state"), request.get("capability_id").getAsString())
+                    .has("parameters")) {
+                request.add("parameters", JsonNull.INSTANCE);
+            }
+        });
+        function.addProperty("arguments", arguments.toString());
+        JsonObject plan = TiDBDataPreparationProtocol.decision(revised.toString(), fixture.getAsJsonObject("state"));
+        assertEquals("observe", plan.get("decision").getAsString());
+        assertEquals(16, plan.getAsJsonArray("observation_requests").size());
+        assertEquals("nulls_t0.k", plan.getAsJsonArray("observation_requests").get(0).getAsString());
+        assertTrue(plan.getAsJsonArray("observation_requests").get(15).isJsonPrimitive());
+    }
+
+    @Test
     void malformedToolEnvelopesAndArgumentsStillReturnLocatedFeedback() throws Exception {
         JsonObject state = corpus().get(0).getAsJsonObject().getAsJsonObject("state");
         for (String value : List.of("{\"tool_calls\":null}", "{\"tool_calls\":[]}", "{\"tool_calls\":[null]}",

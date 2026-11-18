@@ -121,6 +121,7 @@ final class TiDBMixedPreparationSemantics {
             JsonObject goal = goals.get(i).getAsJsonObject();
             if (List.of("groups_before_having", "groups_after_having").contains(goal.get("capability_id").getAsString())
                     && List.of("min_size", "max_size").contains(goal.get("field").getAsString())
+                    && !goal.get("comparison").getAsString().equals("at_most")
                     && new BigInteger(goal.get("expected").getAsString()).compareTo(BigInteger.ONE) > 0) {
                 JsonObject details = new JsonObject();
                 details.addProperty("path", "$.structured_goals[" + i + "].expected");

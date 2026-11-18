@@ -28,6 +28,9 @@ class MixedPreparationSemanticsTest {
                 TiDBDataPreparationProtocol.ValidationException.class,
                 () -> TiDBMixedPreparationSemantics.validateGoals(plan, state));
         assertEquals("$.structured_goals[0].expected", failure.details.get("path").getAsString());
+        plan.getAsJsonArray("structured_goals").get(0).getAsJsonObject().addProperty("comparison", "at_most");
+        TiDBMixedPreparationSemantics.validateGoals(plan, state);
+        plan.getAsJsonArray("structured_goals").get(0).getAsJsonObject().addProperty("comparison", "at_least");
         plan.getAsJsonArray("structured_goals").get(0).getAsJsonObject().addProperty("field", "group_count");
         TiDBMixedPreparationSemantics.validateGoals(plan, state);
     }
