@@ -434,3 +434,15 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 新增 8 项回归：全部 65,536 个 UTF-16 码元往返、中文/emoji/字面转义、重复替换、序列化失败、目标不可替换、目录不可写，以及生产保存边界的状态、后续证据和下一用例保存。测试不调用模型或真实数据库，也未重跑查询长测。
 完整混合 Oracle verify 共 217 项：206 项通过、11 项真实集群测试按开关跳过；构建、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
 验证日志保存在项目 `logs/evidence-save/`，其中 `before.log` 保留修复前失败证据。
+
+## 追加：只读观测兼容空列标签（2026-11-18）
+
+修复前已复现 `getColumnLabel()` 返回 null 时的 NPE，现作两处调整：
+
+- 普通结果的标签为 null、空字符串或纯空白时，按列位置使用 `column_1`、`column_2` 等标识；其他标签继续按 `Locale.ROOT` 转小写。行数据仍按位置读取，精度、类型及样本截断标记保留。
+- `query_empty` 使用专用 `isEmpty()`：对原查询结果只调用一次 `next()`，不读取列元数据、类型或单元格。查询有一行即判非空，聚合及 HAVING 仍按原查询的实际输出判断。
+- 两种路径共用 SELECT 校验、参数绑定、流式读取、超时、行数上限、Warning 检查及资源关闭；SQL 失败或 Warning 仍记录观测错误，不能判为空或精确成功。观测结束后继续恢复原快照和引擎设置。
+
+新增 7 项回归，使用实际 H2 SELECT 与 JDBC 元数据代理：覆盖 null/空/空白标签、标识稳定、精确值及截断、空与非空查询完全不解码、NaN、聚合/HAVING、错误及 Warning。未调用真实模型或真实 TiDB，也未重跑长测。
+完整混合 Oracle verify 共 224 项：213 项通过、11 项真实集群测试按开关跳过；构建、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
+日志位于项目 `logs/observation-labels/`，`before.log` 保留修复前复现。

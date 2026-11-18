@@ -468,9 +468,13 @@ public final class TiDBMixedObservations {
         Map<String, Object> evidence = new LinkedHashMap<>();
         evidence.put("sql", probe.sql);
         try {
-            Result result = TiDBMixedReadOnly.read(io, probe.sql, probe.bindings, probe.kind.equals("empty") ? 1 : rows,
-                    timeout);
             JsonObject value = new JsonObject();
+            if (probe.kind.equals("empty")) {
+                value.addProperty("empty", TiDBMixedReadOnly.isEmpty(io, probe.sql, probe.bindings, timeout));
+                record(probe, "exact", value, null, evidence);
+                return;
+            }
+            Result result = TiDBMixedReadOnly.read(io, probe.sql, probe.bindings, rows, timeout);
             String status = result.complete ? "exact" : "sampled";
             if (probe.kind.equals("count")) {
                 if (!result.complete || result.rows.size() != 1) {
@@ -481,9 +485,6 @@ public final class TiDBMixedObservations {
                     throw new IllegalArgumentException("negative count");
                 }
                 value.addProperty("count", count);
-            } else if (probe.kind.equals("empty")) {
-                value.addProperty("empty", result.rows.isEmpty());
-                status = "exact"; // A single observed row proves non-emptiness; no total cardinality claim.
             } else {
                 JsonArray names = new JsonArray();
                 result.columns.forEach(names::add);

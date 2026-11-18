@@ -30,6 +30,11 @@ final class TiDBMixedReadOnly {
     private TiDBMixedReadOnly() {
     }
 
+    @FunctionalInterface
+    private interface ResultReader<T> {
+        T read(ResultSet rows) throws SQLException;
+    }
+
     private static JsonObject value(ResultSet rows, ResultSetMetaData metadata, int index) throws SQLException {
         JsonObject cell = new JsonObject();
         String text = rows.getString(index);
@@ -81,11 +86,42 @@ final class TiDBMixedReadOnly {
 
     static Result read(TiDBMixedSupport io, String sql, JsonArray bindings, int rowLimit, int timeoutSeconds)
             throws SQLException {
+        return read(io, sql, bindings, rowLimit, timeoutSeconds, rows -> {
+            Result result = new Result();
+            ResultSetMetaData metadata = rows.getMetaData();
+            int columns = metadata.getColumnCount();
+            for (int i = 1; i <= columns; i++) {
+                String label = metadata.getColumnLabel(i);
+                result.columns.add(label == null || label.isBlank() ? "column_" + i : label.toLowerCase(Locale.ROOT));
+            }
+            while (rows.next()) {
+                if (result.rows.size() == rowLimit) {
+                    result.complete = false;
+                    break;
+                }
+                JsonArray row = new JsonArray();
+                for (int i = 1; i <= columns; i++) {
+                    row.add(value(rows, metadata, i));
+                }
+                result.rows.add(row);
+            }
+            return result;
+        });
+    }
+
+    static boolean isEmpty(TiDBMixedSupport io, String sql, JsonArray bindings, int timeoutSeconds)
+            throws SQLException {
+        // Existence is exact after one next(); labels, types and cell values are irrelevant.
+        return read(io, sql, bindings, 1, timeoutSeconds, rows -> !rows.next());
+    }
+
+    private static <T> T read(TiDBMixedSupport io, String sql, JsonArray bindings, int rowLimit, int timeoutSeconds,
+            ResultReader<T> reader) throws SQLException {
         if (!sql.startsWith("SELECT ") || rowLimit < 1 || rowLimit >= Integer.MAX_VALUE || timeoutSeconds < 1) {
             throw new IllegalArgumentException("invalid read-only probe");
         }
         io.events.add(Map.of("stage", "READ_ONLY_OBSERVATION", "sql", sql, "rowLimit", rowLimit));
-        Result result = new Result();
+        T result;
         try (Statement statement = bindings.isEmpty() ? io.connection().createStatement()
                 : io.connection().prepareStatement(sql)) {
             statement.setQueryTimeout(timeoutSeconds);
@@ -96,21 +132,7 @@ final class TiDBMixedReadOnly {
             }
             try (ResultSet rows = statement instanceof PreparedStatement
                     ? ((PreparedStatement) statement).executeQuery() : statement.executeQuery(sql)) {
-                ResultSetMetaData metadata = rows.getMetaData();
-                for (int i = 1; i <= metadata.getColumnCount(); i++) {
-                    result.columns.add(metadata.getColumnLabel(i).toLowerCase(Locale.ROOT));
-                }
-                while (rows.next()) {
-                    if (result.rows.size() == rowLimit) {
-                        result.complete = false;
-                        break;
-                    }
-                    JsonArray row = new JsonArray();
-                    for (int i = 1; i <= metadata.getColumnCount(); i++) {
-                        row.add(value(rows, metadata, i));
-                    }
-                    result.rows.add(row);
-                }
+                result = reader.read(rows);
             }
             SQLWarning warning = statement.getWarnings();
             if (warning != null) {

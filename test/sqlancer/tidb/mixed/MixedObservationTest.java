@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
@@ -384,6 +385,7 @@ class MixedObservationTest {
         boolean active;
         boolean warning;
         boolean failure;
+        java.util.function.UnaryOperator<ResultSet> resultDecorator = result -> result;
 
         Fixture() throws SQLException {
             database = DriverManager
@@ -464,7 +466,8 @@ class MixedObservationTest {
                             }
                         }
                         try {
-                            return method.invoke(real, args);
+                            Object result = method.invoke(real, args);
+                            return result instanceof ResultSet ? resultDecorator.apply((ResultSet) result) : result;
                         } catch (InvocationTargetException error) {
                             throw error.getCause();
                         }
