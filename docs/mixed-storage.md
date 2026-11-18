@@ -96,6 +96,7 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 | INVALID_CONFIGURATION | 表访问/引擎分配不符、配置缺失或重复 |
 | INCONCLUSIVE | Warning、浮点结果或资源预算超限 |
 | SNAPSHOT_ERROR | 无法取得正 TSO、设置/读回失败、会话或成功路径快照不一致 |
+| EVIDENCE_SAVE_ERROR | 证据保存失败；不能作为本轮 PASS，已发现的差异仍保留原分类 |
 | EXECUTION_ERROR | 查询 SQL、超时、历史数据已被 GC 或连接异常 |
 | DATA_PREFLIGHT_MISMATCH | 同一快照下基础表双引擎读取不同，需独立调查 |
 | VERSION_MISMATCH / UNSUPPORTED | TiDB 提交不符或缺少必要组件 |

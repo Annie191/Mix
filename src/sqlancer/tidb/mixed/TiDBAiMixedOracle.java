@@ -109,6 +109,43 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         }
     }
 
+    static boolean saveEvidence(Path file, Object value, List<Map<String, String>> failures) {
+        try {
+            TiDBMixedSupport.save(file, value);
+            return true;
+        } catch (java.io.IOException | RuntimeException error) {
+            failures.add(Map.of("target", file.toString(), "error", error.toString()));
+            return false;
+        }
+    }
+
+    private static void saveRequired(Path file, Object value, List<Map<String, String>> failures) {
+        if (!saveEvidence(file, value, failures)) {
+            throw new Rejected("EVIDENCE_SAVE_ERROR", "cannot save original evidence before confirmation: " + file);
+        }
+    }
+
+    static boolean saveFinalEvidence(Path directory, Map<String, Object> report, Map<String, Long> history,
+            Map<String, Long> preflightCounts, Object coverage, boolean preflightMismatch, boolean mismatch,
+            List<Map<String, String>> failures) {
+        boolean saved = true;
+        if (preflightMismatch) {
+            saved &= saveEvidence(directory.resolve("preflight-mismatch.json"), report, failures);
+        }
+        saved &= saveEvidence(directory.resolve("history.json"), history, failures);
+        saved &= saveEvidence(directory.resolve("preflight-counts.json"), preflightCounts, failures);
+        saved &= saveEvidence(directory.resolve("coverage.json"), coverage, failures);
+        if (!saved && !mismatch) {
+            report.put("status", "EVIDENCE_SAVE_ERROR");
+        }
+        // Write the case last so auxiliary failures cannot leave it labelled PASS.
+        saved &= saveEvidence(directory.resolve("case.json"), report, failures);
+        if (!saved && !mismatch) {
+            report.put("status", "EVIDENCE_SAVE_ERROR");
+        }
+        return saved;
+    }
+
     static JsonObject assessData(TiDBMixedSupport io, Candidate query, JsonObject modelInitial, long dataRevision,
             JsonArray goals, TiDBMixedObservations.Budget budget, Map<String, Object> record, String key)
             throws Exception {
@@ -267,6 +304,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         report.put("ai", ai.audit);
         report.put("priorHistory", new LinkedHashMap<>(history));
         report.put("preflightCounts", preflightCounts);
+        List<Map<String, String>> persistenceErrors = new ArrayList<>();
+        report.put("evidenceSaveErrors", persistenceErrors);
         List<Map<String, Object>> attempts = new ArrayList<>();
         report.put("attempts", attempts);
         boolean mismatch = false;
@@ -363,11 +402,12 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 report.put("status", outcome.status);
                 report.put("coverage", coverage.snapshot());
                 history.merge(outcome.status, 1L, Long::sum);
-                TiDBMixedSupport.save(directory.resolve("case.json"), report); // Save before any confirmation/mutation.
-                if (outcome.mismatch()) {
-                    mismatch = true;
+                mismatch = outcome.mismatch();
+                if (mismatch) {
                     record.put("mismatchRunSet", "runs");
-                    TiDBMixedSupport.save(directory.resolve("case.json"), report);
+                }
+                saveRequired(directory.resolve("case.json"), report, persistenceErrors);
+                if (mismatch) {
                     confirm(io, ai, query, dump, configs, outcome, record);
                     break; // A discrepancy is never repaired away or overwritten by another candidate.
                 }
@@ -391,7 +431,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                         if (mismatch) {
                             record.put("mismatchRunSet", "alternativeRuns");
                             report.put("status", alternativeOutcome.status);
-                            TiDBMixedSupport.save(directory.resolve("case.json"), report);
+                            saveRequired(directory.resolve("case.json"), report, persistenceErrors);
                             confirm(io, ai, query, dump, alternatives, alternativeOutcome, record);
                             break;
                         }
@@ -425,13 +465,10 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             report.putIfAbsent("status", "GENERATION_REJECTED");
             report.put("preflightCounts", preflightCounts());
             report.put("coverage", coverage.snapshot());
-            TiDBMixedSupport.save(directory.resolve("case.json"), report);
-            if (preflightMismatch) {
-                TiDBMixedSupport.save(directory.resolve("preflight-mismatch.json"), report);
+            if (!saveFinalEvidence(directory, report, history, preflightCounts(), coverage.snapshot(),
+                    preflightMismatch, mismatch, persistenceErrors)) {
+                passed = false;
             }
-            TiDBMixedSupport.save(directory.resolve("history.json"), history);
-            TiDBMixedSupport.save(directory.resolve("preflight-counts.json"), preflightCounts());
-            TiDBMixedSupport.save(directory.resolve("coverage.json"), coverage.snapshot());
         }
         if (mismatch) {
             throw new AssertionError("Mixed-storage discrepancy; inspect " + directory);

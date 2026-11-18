@@ -420,3 +420,17 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 缺凭据、无写入的回归中前后也可完整比较，新增/丢失集合均为空；前测不足及提交不确定的反例不能冒充有效收益。
 模型响应为模拟数据，未调用真实 DeepSeek，未重跑长测。逐项证据见 [写前基线验证](mixed-assessment-validation.json)。
 完整测试数据位于项目 `target/mixed-assessment/`，运行日志位于 `logs/coverage-baseline/`，不再散放用户主目录。
+
+## 追加：证据 JSON 无损保存及失败兜底（2026-11-18）
+
+修复前已用孤立 UTF-16 代理项复现 `UnmappableCharacterException`。UTF-8 编码保持不变，调整序列化及保存边界：
+
+- `TiDBMixedSupport.save()` 统一转交 `TiDBMixedEvidence`：JSON 中的孤立代理项转为 `\uXXXX`；正常中文、成对代理项（如 emoji）保留。读取 JSON 后，SQL、列名、结果、异常及复杂 Map 键中的原始 UTF-16 码元逐一相同，不替换成 `?` 或 `�`。
+- 先写临时文件，再替换目标；失败清理临时文件，不用错误记录覆盖原有 `case.json`。
+- 保存失败尽力写入 `<文件名>.save-error.json`，记录 `EVIDENCE_SAVE_ERROR`、失败阶段、原状态、SQL、快照及异常。若完整 JSON 已生成，则先尝试另存 `<文件名>.recovery-<UUID>.json`，错误记录给出其文件名；目录完全不可写时，把最小记录输出到进程 stderr。
+- 生产 Oracle 分别尝试保存各份证据，最后保存 `case.json`；保存异常不再从 `finally` 逃出终止工作线程。非差异用例保存失败时不能 PASS，记录 `evidenceSaveErrors` 并结束本轮；已经发现的差异保留原分类，仍走缺陷报告出口。
+- 确认/重放前必须成功保存原始证据，失败则停止确认；在保存前标记已发现的差异，避免保存错误覆盖它。
+
+新增 8 项回归：全部 65,536 个 UTF-16 码元往返、中文/emoji/字面转义、重复替换、序列化失败、目标不可替换、目录不可写，以及生产保存边界的状态、后续证据和下一用例保存。测试不调用模型或真实数据库，也未重跑查询长测。
+完整混合 Oracle verify 共 217 项：206 项通过、11 项真实集群测试按开关跳过；构建、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
+验证日志保存在项目 `logs/evidence-save/`，其中 `before.log` 保留修复前失败证据。

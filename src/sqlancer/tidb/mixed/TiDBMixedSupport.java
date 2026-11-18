@@ -3,10 +3,7 @@ package sqlancer.tidb.mixed;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -27,8 +24,6 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import com.google.gson.GsonBuilder;
 
 import sqlancer.Randomly;
 import sqlancer.SQLConnection;
@@ -645,19 +640,6 @@ public final class TiDBMixedSupport {
     }
 
     public static void save(Path path, Object value) throws java.io.IOException {
-        Path target = path.toAbsolutePath();
-        Files.createDirectories(target.getParent());
-        Path temporary = Files.createTempFile(target.getParent(), ".mixed-", ".json.tmp");
-        try {
-            Files.writeString(temporary, new GsonBuilder().setPrettyPrinting().serializeNulls()
-                    .enableComplexMapKeySerialization().create().toJson(value), StandardCharsets.UTF_8);
-            try {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
+        TiDBMixedEvidence.save(path, value);
     }
 }
