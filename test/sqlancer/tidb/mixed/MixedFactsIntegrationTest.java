@@ -193,6 +193,26 @@ class MixedFactsIntegrationTest {
         }
     }
 
+    @Test
+    void actualOuterJoinPreparationKeepsItsCatalogAcrossObserveAppendAndStop() throws Exception {
+        try (Live fixture = new Live()) {
+            fixture.io.exec("CREATE TABLE t0(k INT)");
+            fixture.io.exec("CREATE TABLE t1(k INT)");
+            fixture.io.exec("INSERT INTO t0 VALUES(1)");
+            fixture.state.updateSchema();
+            List<sqlancer.tidb.TiDBSchema.TiDBTable> tables = TiDBMixedGeneration.baseTables(fixture.state);
+            JsonObject schema = TiDBMixedMetadata.collect(fixture.io, fixture.database, tables, 0).schema;
+            for (TiDBJoin.JoinType type : List.of(TiDBJoin.JoinType.LEFT, TiDBJoin.JoinType.RIGHT)) {
+                fixture.io.exec("DELETE FROM t1");
+                Candidate query = MixedObservationTest.candidate(tables, type, TiDBComparisonOperator.EQUALS, false);
+                JsonObject result = MixedCatalogStabilityTest.outerJoinLoop(fixture.state, query, schema);
+                TiDBMixedSupport.save(Path
+                        .of("target/mixed-catalog/live-" + type.name().toLowerCase(java.util.Locale.ROOT) + ".json"),
+                        result);
+            }
+        }
+    }
+
     private static final class Live implements AutoCloseable {
         final String database = "mix_facts_" + UUID.randomUUID().toString().replace("-", "");
         final Connection connection;

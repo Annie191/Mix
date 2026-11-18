@@ -382,3 +382,22 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 双引擎预检仍读到 4 行，四条查询路径均返回原来的 6 行，34 次会话核验全部通过。独立重放取得另一个正 TSO，也通过。
 生产 Oracle 两用例冒烟正常退出：1 PASS、1 INCONCLUSIVE（Warning），两个 revision 均为正 TSO，未调用模型。
 这些是本轮受控验证及两用例短测，不替代旧 20 分钟实验；逐项数据见 [快照验证记录](mixed-snapshot-validation.json)。
+
+## 追加：外连接观测目录确定化（2026-11-18）
+
+根因：同一 AST 重建关系 SQL 时，随机出现 `LEFT JOIN` / `LEFT OUTER JOIN`（RIGHT 同理），使目录 `description` 变化，完整 JSON 校验误拒合法候选。
+
+- 增加 `TiDBVisitor.asStringDeterministic()`：固定输出 `LEFT JOIN` / `RIGHT JOIN`，嵌套 JOIN 同样处理，渲染不消耗随机数。
+- 混合 Oracle 的冻结候选、状态描述、静态/参数化探测、查询阶段统计统一使用该入口，目录描述与实际编译 SQL 使用一致的关系文本。
+- `PreparationHarness` 仍完整比较 query 和 available_observations；SQL、能力描述、参数签名真正变化时仍拒绝。能力身份和签名继续参与校验。
+- 默认 visitor 继续保留 SQLancer 的随机可选语法渲染。
+
+固定种子 42 的受控复现中，LEFT/RIGHT 各重建 100 次：修复前目录各 54 次不一致，Harness 内部另行重建时各 40 次误拒；修复后两项均为 0。
+这些是此复现实验的计数，不是所有查询的失败率。旧日志不改写。
+新增回归还覆盖三表嵌套 LEFT/RIGHT 的目录与绑定探测 SQL 重建 100 次、渲染不推进随机流、真实目录篡改拒绝，
+以及两种外连接的 `observe → append_rows → stop` 闭环：实测匹配数从 0 变为 1 后才判定目标达成。
+
+完整 verify 共 203 项：193 项通过、10 项真实集群测试按开关跳过；formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名及差异空白检查通过。
+另开启新增的 1 项真实 TiDB 测试，LEFT/RIGHT 两种闭环均通过，实际匹配数均为 `0 → 1 → 1`，完整目录始终一致。
+模型响应为模拟数据，本轮没有调用真实 DeepSeek，也未重跑 20 分钟实验。
+逐项计数及闭环结果见 [目录稳定性验证](mixed-catalog-validation.json)，完整证据和构建日志保存在本机 `/home/lwm/Mix-catalog-validation-20261118/`。

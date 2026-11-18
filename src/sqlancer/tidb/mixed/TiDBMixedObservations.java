@@ -121,7 +121,8 @@ public final class TiDBMixedObservations {
                 ? "NATURAL_" + join.getNaturalJoinType() : join.getJoinType().name());
         object.add("left_tables", tableNames(join.getLeftTable()));
         object.add("right_tables", tableNames(join.getRightTable()));
-        object.addProperty("on", join.getOnCondition() == null ? null : TiDBVisitor.asString(join.getOnCondition()));
+        object.addProperty("on",
+                join.getOnCondition() == null ? null : TiDBVisitor.asStringDeterministic(join.getOnCondition()));
         joins.add(object);
         describeJoin(join.getLeftTable(), joins);
         describeJoin(join.getRightTable(), joins);
@@ -133,13 +134,14 @@ public final class TiDBMixedObservations {
         JsonArray joins = new JsonArray();
         candidate.ast.getJoinList().forEach(expression -> describeJoin(expression, joins));
         query.add("joins", joins);
-        query.addProperty("where",
-                candidate.ast.getWhereClause() == null ? null : TiDBVisitor.asString(candidate.ast.getWhereClause()));
+        query.addProperty("where", candidate.ast.getWhereClause() == null ? null
+                : TiDBVisitor.asStringDeterministic(candidate.ast.getWhereClause()));
         JsonArray groups = new JsonArray();
-        candidate.ast.getGroupByExpressions().forEach(expression -> groups.add(TiDBVisitor.asString(expression)));
+        candidate.ast.getGroupByExpressions()
+                .forEach(expression -> groups.add(TiDBVisitor.asStringDeterministic(expression)));
         query.add("group_by", groups);
-        query.addProperty("having",
-                candidate.ast.getHavingClause() == null ? null : TiDBVisitor.asString(candidate.ast.getHavingClause()));
+        query.addProperty("having", candidate.ast.getHavingClause() == null ? null
+                : TiDBVisitor.asStringDeterministic(candidate.ast.getHavingClause()));
         return query;
     }
 
@@ -283,7 +285,7 @@ public final class TiDBMixedObservations {
         boolean wholePair = left != null && candidate.tables.size() == 2 && candidate.ast.getFromList().isEmpty()
                 && candidate.ast.getJoinList().size() == 1 && candidate.ast.getJoinList().get(0) == join;
         String filter = candidate.ast.getWhereClause() == null ? ""
-                : " WHERE " + TiDBVisitor.asString(candidate.ast.getWhereClause());
+                : " WHERE " + TiDBVisitor.asStringDeterministic(candidate.ast.getWhereClause());
         String after = wholePair ? inner + filter : null;
         String scope = wholePair ? "Exact matching-pair count after original WHERE; excludes null-extended rows"
                 : "Unsupported: WHERE-scoped JOIN metrics require the JOIN to be the entire two-table FROM";
@@ -301,7 +303,7 @@ public final class TiDBMixedObservations {
             String outer = "FROM " + l + (leftSide ? " LEFT JOIN " : " RIGHT JOIN ") + r + " ON " + on;
             String where = " WHERE " + missingKey + " IS NULL";
             if (candidate.ast.getWhereClause() != null) {
-                where += " AND (" + TiDBVisitor.asString(candidate.ast.getWhereClause()) + ")";
+                where += " AND (" + TiDBVisitor.asStringDeterministic(candidate.ast.getWhereClause()) + ")";
             }
             String unmatched = preserved ? outer + where : inner + " WHERE FALSE";
             count(id + (leftSide ? "_left_unmatched_after" : "_right_unmatched_after"),
@@ -317,7 +319,7 @@ public final class TiDBMixedObservations {
         select.setFromList(candidate.ast.getFromList());
         select.setJoinList(candidate.ast.getJoinList());
         select.setWhereClause(where);
-        String rendered = TiDBVisitor.asString(select);
+        String rendered = TiDBVisitor.asStringDeterministic(select);
         return rendered.substring("SELECT 1 ".length());
     }
 
@@ -326,11 +328,12 @@ public final class TiDBMixedObservations {
         boolean supported = !keys.isEmpty() && keys.stream().allMatch(TiDBColumnReference.class::isInstance);
         String description = supported ? "Explicit column GROUP BY; counts are separate from pre-group input rows"
                 : "Unsupported/unverified: requires explicit column GROUP BY (implicit aggregate is not inferred)";
-        String group = " GROUP BY " + keys.stream().map(TiDBVisitor::asString).collect(Collectors.joining(","));
+        String group = " GROUP BY "
+                + keys.stream().map(TiDBVisitor::asStringDeterministic).collect(Collectors.joining(","));
         String grouped = "SELECT COUNT(*) AS group_size " + relation + group;
         List<String> projectedKeys = new ArrayList<>();
         for (int i = 0; i < keys.size(); i++) {
-            projectedKeys.add(TiDBVisitor.asString(keys.get(i)) + " AS group_key_" + i);
+            projectedKeys.add(TiDBVisitor.asStringDeterministic(keys.get(i)) + " AS group_key_" + i);
         }
         add("group_sizes", "group_sizes_before_having", "query_id", queryId, description, supported
                 ? "SELECT " + String.join(",", projectedKeys) + ", COUNT(*) AS group_size " + relation + group : null,
@@ -338,7 +341,7 @@ public final class TiDBMixedObservations {
         add("groups_before_having", "group_summary_before_having", "query_id", queryId, description,
                 supported ? summary(grouped) : null, "summary", null);
         String having = candidate.ast.getHavingClause() == null ? ""
-                : " HAVING " + TiDBVisitor.asString(candidate.ast.getHavingClause());
+                : " HAVING " + TiDBVisitor.asStringDeterministic(candidate.ast.getHavingClause());
         add("groups_after_having", "group_summary_after_having", "query_id", queryId,
                 description + "; surviving groups and their input rows, before projection",
                 supported ? summary(grouped + having) : null, "summary", null);

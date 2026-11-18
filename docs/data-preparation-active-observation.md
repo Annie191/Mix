@@ -3,6 +3,10 @@
 模型仍只能 `observe / append_rows / stop`，不能输出执行 SQL 或修改查询。
 现在由程序从当前 AST 和 Schema 生成参数化目录；模型选择目录项及受约束的值，程序校验、绑定 JDBC 参数后执行 SELECT。
 
+候选和全部派生观测统一使用 `TiDBVisitor.asStringDeterministic()`；LEFT/RIGHT JOIN 固定省略可选 `OUTER`，嵌套 JOIN 采用相同规则。
+同一 AST 的 SQL、关系描述和能力目录在重建及数据版本推进后保持一致。准备入口仍完整比较 query 和 available_observations 的 JSON，
+SQL、能力描述或参数签名变化仍拒绝。实现与回归见 [目录稳定性修复](mixed-storage-comparison-fix.md#追加外连接观测目录确定化2026-11-18)。
+
 ## 初始信息与独立评价
 
 开启 AI 数据准备后，默认初始只执行：

@@ -83,7 +83,7 @@ final class TiDBMixedQueryStages {
 
     private static String filtered(String before, TiDBExpression where, String condition) {
         return before + " WHERE (" + condition + ")"
-                + (where == null ? "" : " AND (" + TiDBVisitor.asString(where) + ")");
+                + (where == null ? "" : " AND (" + TiDBVisitor.asStringDeterministic(where) + ")");
     }
 
     private static void nulls(Counter counter, String stage, Set<TiDBColumn> columns, String before,
@@ -108,7 +108,8 @@ final class TiDBMixedQueryStages {
             walk(expression, node -> {
                 if (node instanceof TiDBAggregate) {
                     ((TiDBAggregate) node).getArgs().forEach(arg -> aggregateColumns.addAll(columns(arg)));
-                    ((TiDBAggregate) node).getArgs().forEach(arg -> aggregateArgs.add(TiDBVisitor.asString(arg)));
+                    ((TiDBAggregate) node).getArgs()
+                            .forEach(arg -> aggregateArgs.add(TiDBVisitor.asStringDeterministic(arg)));
                 }
             });
         };
@@ -136,7 +137,8 @@ final class TiDBMixedQueryStages {
                                 + (truth.equals("NULL") ? "unknown" : truth.toLowerCase(java.util.Locale.ROOT)),
                         "Complete original WHERE evaluates to " + truth
                                 + " on original FROM/JOIN rows; logical truth value",
-                        filtered(before, null, "(" + TiDBVisitor.asString(select.getWhereClause()) + ") IS " + truth));
+                        filtered(before, null,
+                                "(" + TiDBVisitor.asStringDeterministic(select.getWhereClause()) + ") IS " + truth));
             }
         }
         boundaries(select.getWhereClause(), before, select.getWhereClause(), "where_boundary", counter);
@@ -174,7 +176,7 @@ final class TiDBMixedQueryStages {
         }
         if (column == null || bound == null
                 || column.getColumn().getType().getPrimitiveDataType() != TiDBDataType.INT) {
-            counter.count(id + "_unsupported", "Unsupported boundary: " + TiDBVisitor.asString(expression)
+            counter.count(id + "_unsupported", "Unsupported boundary: " + TiDBVisitor.asStringDeterministic(expression)
                     + "; requires integer column vs integer constant, optionally within AND; OR/NOT/casts are not inferred",
                     null);
             return;
@@ -182,9 +184,9 @@ final class TiDBMixedQueryStages {
         for (int delta : List.of(-1, 0, 1)) {
             String point = delta < 0 ? "below" : delta == 0 ? "at" : "above";
             BigInteger value = BigInteger.valueOf(bound.getValue()).add(BigInteger.valueOf(delta));
-            String condition = TiDBVisitor.asString(column) + "=" + value;
-            String description = "Boundary of predicate " + TiDBVisitor.asString(expression) + "; "
-                    + TiDBVisitor.asString(column) + "=" + value;
+            String condition = TiDBVisitor.asStringDeterministic(column) + "=" + value;
+            String description = "Boundary of predicate " + TiDBVisitor.asStringDeterministic(expression) + "; "
+                    + TiDBVisitor.asStringDeterministic(column) + "=" + value;
             counter.count("base_" + id + "_" + point, description + "; base-table existence only",
                     "FROM " + TiDBMixedSupport.quoteIdentifier(column.getColumn().getTable().getName()) + " WHERE "
                             + condition);

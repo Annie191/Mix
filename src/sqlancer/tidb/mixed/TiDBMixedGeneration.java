@@ -43,8 +43,8 @@ public final class TiDBMixedGeneration {
             this.ast = ast;
             this.tables = tables;
             this.guidedColumns = guidedColumns;
-            // Upstream visitor randomly prints optional OUTER. Render once, then freeze.
-            this.sql = TiDBVisitor.asString(ast);
+            // Render candidates and all derived probes consistently, then freeze the query text.
+            this.sql = TiDBVisitor.asStringDeterministic(ast);
         }
     }
 
@@ -224,6 +224,6 @@ public final class TiDBMixedGeneration {
         }
         return Map.of("profile", profile, "insertAttempts", attempted, "successfulStatements", successful, "coverage",
                 coverage, "guidedColumns", query.guidedColumns, "sharedPool",
-                sharedPool.stream().map(TiDBVisitor::asString).collect(Collectors.toList()));
+                sharedPool.stream().map(TiDBVisitor::asStringDeterministic).collect(Collectors.toList()));
     }
 }

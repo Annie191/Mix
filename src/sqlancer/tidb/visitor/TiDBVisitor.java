@@ -66,4 +66,11 @@ public interface TiDBVisitor {
         return v.getString();
     }
 
+    // Frozen candidates and observation capabilities must not depend on optional grammar randomization.
+    static String asStringDeterministic(TiDBExpression expr) {
+        TiDBToStringVisitor v = new TiDBToStringVisitor(false);
+        v.visit(expr);
+        return v.getString();
+    }
+
 }

@@ -26,7 +26,7 @@ final class TiDBMixedParameterizedObservations {
 
     TiDBMixedParameterizedObservations(Candidate candidate, String before) {
         String where = candidate.ast.getWhereClause() == null ? null
-                : TiDBVisitor.asString(candidate.ast.getWhereClause());
+                : TiDBVisitor.asStringDeterministic(candidate.ast.getWhereClause());
         for (sqlancer.tidb.TiDBSchema.TiDBTable table : candidate.tables) {
             for (TiDBColumn column : table.getColumns()) {
                 String id = "key_rows_" + table.getName() + "." + column.getName();
@@ -66,7 +66,7 @@ final class TiDBMixedParameterizedObservations {
                         JsonArray bindings = new JsonArray();
                         List<String> conditions = new java.util.ArrayList<>();
                         for (int i = 0; i < keys.size(); i++) {
-                            conditions.add(equality(TiDBVisitor.asString(keys.get(i)),
+                            conditions.add(equality(TiDBVisitor.asStringDeterministic(keys.get(i)),
                                     values.getAsJsonObject("key" + i), bindings));
                         }
                         return compiled("group_input_rows",
@@ -119,7 +119,7 @@ final class TiDBMixedParameterizedObservations {
         if (expression == null) {
             return;
         }
-        String predicate = TiDBVisitor.asString(expression);
+        String predicate = TiDBVisitor.asStringDeterministic(expression);
         JsonObject parameters = new JsonObject();
         parameters.add("stage", allowOutput ? TiDBMixedObservationRequest.enumSchema("input", "output")
                 : TiDBMixedObservationRequest.enumSchema("input"));
@@ -157,8 +157,8 @@ final class TiDBMixedParameterizedObservations {
         }
         TiDBJoin join = (TiDBJoin) expression;
         String id = "predicate_j" + next + "_on";
-        String input = "FROM (" + TiDBVisitor.asString(join.getLeftTable()) + ") CROSS JOIN ("
-                + TiDBVisitor.asString(join.getRightTable()) + ")";
+        String input = "FROM (" + TiDBVisitor.asStringDeterministic(join.getLeftTable()) + ") CROSS JOIN ("
+                + TiDBVisitor.asStringDeterministic(join.getRightTable()) + ")";
         // Local ON inputs precede this JOIN; a separate capability measures rows surviving the full FROM/JOIN.
         predicates(join.getOnCondition(), id, input, null, false);
         predicates(join.getOnCondition(), id + "_query", before, where, true);
@@ -176,7 +176,8 @@ final class TiDBMixedParameterizedObservations {
                             JsonArray bindings = new JsonArray();
                             String stage = values.get("stage").getAsString();
                             String condition = equality(ref(column), values.getAsJsonObject("key"), bindings)
-                                    + " AND ((" + TiDBVisitor.asString(join.getOnCondition()) + ") IS TRUE)";
+                                    + " AND ((" + TiDBVisitor.asStringDeterministic(join.getOnCondition())
+                                    + ") IS TRUE)";
                             String relation = stage.equals("local_pairs") ? input : before;
                             return compiled(keyId,
                                     "SELECT COUNT(*) AS count "

@@ -16,6 +16,15 @@ import sqlancer.tidb.ast.TiDBTableReference;
 import sqlancer.tidb.ast.TiDBText;
 
 public class TiDBToStringVisitor extends ToStringVisitor<TiDBExpression> implements TiDBVisitor {
+    private final boolean randomizeOuter;
+
+    public TiDBToStringVisitor() {
+        this(true);
+    }
+
+    TiDBToStringVisitor(boolean randomizeOuter) {
+        this.randomizeOuter = randomizeOuter;
+    }
 
     @Override
     public void visitSpecific(TiDBExpression expr) {
@@ -100,14 +109,14 @@ public class TiDBToStringVisitor extends ToStringVisitor<TiDBExpression> impleme
             break;
         case LEFT:
             sb.append("LEFT ");
-            if (Randomly.getBoolean()) {
+            if (randomizeOuter && Randomly.getBoolean()) {
                 sb.append(" OUTER ");
             }
             sb.append("JOIN ");
             break;
         case RIGHT:
             sb.append("RIGHT ");
-            if (Randomly.getBoolean()) {
+            if (randomizeOuter && Randomly.getBoolean()) {
                 sb.append(" OUTER ");
             }
             sb.append("JOIN ");

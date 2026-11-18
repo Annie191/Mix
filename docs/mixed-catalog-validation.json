@@ -1,0 +1,160 @@
+{
+  "date_utc": "2026-11-18",
+  "baseline_revision": "d0a36c89c74d4e122dfc6f475406db34508aa5d8",
+  "scope": "Fixed-candidate experiments; counts are not global query failure rates",
+  "before": {
+    "seed": 42,
+    "rebuilds_per_type": 100,
+    "catalog_mismatches": {
+      "LEFT": 54,
+      "RIGHT": 54
+    },
+    "harness_rejections": {
+      "LEFT": 40,
+      "RIGHT": 40
+    }
+  },
+  "after": {
+    "catalog_mismatches": {
+      "LEFT": 0,
+      "RIGHT": 0
+    },
+    "rebuilds_per_type": 100,
+    "harness_rejections": {
+      "LEFT": 0,
+      "RIGHT": 0
+    },
+    "seed": 42
+  },
+  "nested_outer_join_rebuilds": 100,
+  "random_stream_preserved": true,
+  "full_query_and_catalog_guard_preserved": true,
+  "offline_verify": {
+    "tests": 203,
+    "passed": 193,
+    "skipped_live_tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "build": "SUCCESS",
+    "spotbugs_bugs": 0
+  },
+  "live_test": {
+    "target_tidb_commit": "b1d4142f99",
+    "tests": 1,
+    "passed": 1,
+    "outer_join_types": [
+      "LEFT",
+      "RIGHT"
+    ],
+    "real_database": true,
+    "model_responses": "scripted",
+    "real_model_calls": 0
+  },
+  "preparation_loops": [
+    {
+      "test": "left-loop",
+      "query": "SELECT t0.k, t1.k FROM  t0 LEFT JOIN t1 ON ((t0.k)=(t1.k))",
+      "catalog_unchanged": true,
+      "decisions": [
+        "observe",
+        "append_rows",
+        "stop"
+      ],
+      "validation_statuses": [
+        "accepted",
+        "accepted",
+        "accepted"
+      ],
+      "measured_matches": [
+        "0",
+        "1",
+        "1"
+      ],
+      "write_statuses": [
+        "success"
+      ],
+      "final_data_revision": 1,
+      "goal_outcome": "achieved",
+      "termination": "model_stop"
+    },
+    {
+      "test": "right-loop",
+      "query": "SELECT t0.k, t1.k FROM  t0 RIGHT JOIN t1 ON ((t0.k)=(t1.k))",
+      "catalog_unchanged": true,
+      "decisions": [
+        "observe",
+        "append_rows",
+        "stop"
+      ],
+      "validation_statuses": [
+        "accepted",
+        "accepted",
+        "accepted"
+      ],
+      "measured_matches": [
+        "0",
+        "1",
+        "1"
+      ],
+      "write_statuses": [
+        "success"
+      ],
+      "final_data_revision": 1,
+      "goal_outcome": "achieved",
+      "termination": "model_stop"
+    },
+    {
+      "test": "live-left",
+      "query": "SELECT t0.k, t1.k FROM  t0 LEFT JOIN t1 ON ((t0.k)=(t1.k))",
+      "catalog_unchanged": true,
+      "decisions": [
+        "observe",
+        "append_rows",
+        "stop"
+      ],
+      "validation_statuses": [
+        "accepted",
+        "accepted",
+        "accepted"
+      ],
+      "measured_matches": [
+        "0",
+        "1",
+        "1"
+      ],
+      "write_statuses": [
+        "success"
+      ],
+      "final_data_revision": 1,
+      "goal_outcome": "achieved",
+      "termination": "model_stop"
+    },
+    {
+      "test": "live-right",
+      "query": "SELECT t0.k, t1.k FROM  t0 RIGHT JOIN t1 ON ((t0.k)=(t1.k))",
+      "catalog_unchanged": true,
+      "decisions": [
+        "observe",
+        "append_rows",
+        "stop"
+      ],
+      "validation_statuses": [
+        "accepted",
+        "accepted",
+        "accepted"
+      ],
+      "measured_matches": [
+        "0",
+        "1",
+        "1"
+      ],
+      "write_statuses": [
+        "success"
+      ],
+      "final_data_revision": 1,
+      "goal_outcome": "achieved",
+      "termination": "model_stop"
+    }
+  ],
+  "full_evidence_directory": "/home/lwm/Mix-catalog-validation-20261118"
+}
