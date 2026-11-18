@@ -59,6 +59,20 @@ class MixedIntegrationTest {
                 List<String> restore = io.dump(TiDBMixedGeneration.baseTables(state));
                 io.replicas(TiDBMixedGeneration.baseTables(state));
                 io.beginSnapshot();
+                String snapshot = io.snapshot;
+                assertTrue(TiDBMixedSupport.positiveTso(snapshot));
+                io.verifySnapshot(snapshot);
+                // Commit a new matching key after freezing: all historical reads must still see the old data.
+                try (Connection writer = DriverManager
+                        .getConnection("jdbc:mysql://" + host + ":" + port + "/" + database, user, password);
+                        Statement statement = writer.createStatement()) {
+                    statement.execute("INSERT INTO t0 VALUES (99,99,X'01')");
+                    statement.execute("INSERT INTO t1 VALUES (99,99)");
+                    try (java.sql.ResultSet rows = statement.executeQuery("SELECT COUNT(*) FROM t0")) {
+                        assertTrue(rows.next());
+                        assertEquals(5, rows.getInt(1));
+                    }
+                }
                 io.preflight(TiDBMixedGeneration.baseTables(state));
                 String query = "SELECT t0.k,t0.v,t0.b,t1.v FROM t0 LEFT JOIN t1 ON t0.k=t1.k";
                 List<TiDBMixedSupport.Run> runs = io.executeAll(query,
@@ -66,6 +80,20 @@ class MixedIntegrationTest {
                 assertEquals("PASS", TiDBMixedSupport.compare(runs).status, new com.google.gson.Gson().toJson(runs));
                 assertTrue(runs.stream().allMatch(r -> r.rows.size() == 6 && r.bag.size() == 3));
                 assertTrue(runs.stream().allMatch(r -> r.snapshot.equals(io.snapshot)));
+                for (Map<String, Object> event : io.events) {
+                    if ("PREFLIGHT".equals(event.get("stage"))) {
+                        TiDBMixedSupport.Run kv = (TiDBMixedSupport.Run) event.get("tikv");
+                        TiDBMixedSupport.Run flash = (TiDBMixedSupport.Run) event.get("tiflash");
+                        assertEquals(snapshot, kv.snapshot);
+                        assertEquals(snapshot, flash.snapshot);
+                        assertEquals(kv.config.engines.containsKey("t0") ? 4 : 3, kv.rows.size());
+                    }
+                }
+                Path evidence = Path.of("target", "mixed-snapshot-live");
+                java.nio.file.Files.createDirectories(evidence);
+                TiDBMixedSupport.save(evidence.resolve("historical-read.json"),
+                        Map.of("snapshot", snapshot, "environment", io.environment, "events", io.events, "runs", runs,
+                                "outcome", TiDBMixedSupport.compare(runs), "currentT0Rows", 5, "snapshotT0Rows", 4));
                 Path saved = artifacts.resolve("case.json");
                 TiDBMixedSupport.save(saved,
                         Map.of("target", TiDBMixedTarget.VERSION, "tidbCommit", TiDBMixedTarget.COMMIT, "attempts",
@@ -75,9 +103,14 @@ class MixedIntegrationTest {
                 try (java.util.stream.Stream<Path> files = java.nio.file.Files.list(artifacts)) {
                     for (Path replay : files.filter(p -> p.getFileName().toString().startsWith("replay_"))
                             .collect(java.util.stream.Collectors.toList())) {
-                        String replayDatabase = com.google.gson.JsonParser
-                                .parseString(java.nio.file.Files.readString(replay)).getAsJsonObject().get("database")
-                                .getAsString();
+                        com.google.gson.JsonObject replayReport = com.google.gson.JsonParser
+                                .parseString(java.nio.file.Files.readString(replay)).getAsJsonObject();
+                        assertEquals("PASS", replayReport.getAsJsonObject("outcome").get("status").getAsString());
+                        assertTrue(TiDBMixedSupport.positiveTso(
+                                replayReport.getAsJsonObject("environment").get("snapshotTSO").getAsString()));
+                        java.nio.file.Files.copy(replay, evidence.resolve("replay.json"),
+                                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        String replayDatabase = replayReport.get("database").getAsString();
                         io.reset();
                         io.exec("DROP DATABASE " + TiDBMixedSupport.quoteIdentifier(replayDatabase));
                     }

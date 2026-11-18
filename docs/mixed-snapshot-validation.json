@@ -1,0 +1,184 @@
+{
+  "date_utc": "2026-11-18",
+  "tidb_commit": "b1d4142f99a606aa3cd1ada6ee0caebaa84226dc",
+  "old_run_audit": {
+    "complete_cases": 32,
+    "recorded_passes": 18,
+    "differential_revisions": 33,
+    "tsos": {
+      "0": 33
+    },
+    "strict_common_snapshot_pass_evidence": false
+  },
+  "offline_verify": {
+    "tests": 197,
+    "passed": 188,
+    "skipped_live_tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "build": "SUCCESS",
+    "spotbugs_bugs": 0
+  },
+  "historical_read_control": {
+    "current_t0_rows_after_external_insert": 5,
+    "snapshot_t0_rows": 4,
+    "new_join_key": 99,
+    "snapshot_query_rows": 6
+  },
+  "live_engine_evidence": [
+    {
+      "test": "historical-read",
+      "tso": "470548885236613124",
+      "outcome": "PASS",
+      "comparisons": 6,
+      "snapshot_checks": {
+        "VERIFIED": 34
+      },
+      "readback_tsos": [
+        "470548885236613124"
+      ],
+      "transaction_ts": [
+        "0"
+      ],
+      "paths": [
+        {
+          "configuration": "t0=tikv,t1=tiflash",
+          "tso": "470548885236613124",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tiflash,t1=tiflash",
+          "tso": "470548885236613124",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tikv,t1=tikv",
+          "tso": "470548885236613124",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tiflash,t1=tikv",
+          "tso": "470548885236613124",
+          "status": "OK",
+          "result_rows": 6
+        }
+      ],
+      "preflight": [
+        {
+          "table": "t0",
+          "tso": "470548885236613124",
+          "tikv_rows": 4,
+          "tiflash_rows": 4
+        },
+        {
+          "table": "t1",
+          "tso": "470548885236613124",
+          "tikv_rows": 3,
+          "tiflash_rows": 3
+        }
+      ]
+    },
+    {
+      "test": "replay",
+      "tso": "470548907990450178",
+      "outcome": "PASS",
+      "comparisons": 6,
+      "snapshot_checks": {
+        "VERIFIED": 33
+      },
+      "readback_tsos": [
+        "470548907990450178"
+      ],
+      "transaction_ts": [
+        "0"
+      ],
+      "paths": [
+        {
+          "configuration": "t0=tikv,t1=tiflash",
+          "tso": "470548907990450178",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tikv,t1=tikv",
+          "tso": "470548907990450178",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tiflash,t1=tiflash",
+          "tso": "470548907990450178",
+          "status": "OK",
+          "result_rows": 6
+        },
+        {
+          "configuration": "t0=tiflash,t1=tikv",
+          "tso": "470548907990450178",
+          "status": "OK",
+          "result_rows": 6
+        }
+      ],
+      "preflight": [
+        {
+          "table": "t0",
+          "tso": "470548907990450178",
+          "tikv_rows": 4,
+          "tiflash_rows": 4
+        },
+        {
+          "table": "t1",
+          "tso": "470548907990450178",
+          "tikv_rows": 3,
+          "tiflash_rows": 3
+        }
+      ]
+    }
+  ],
+  "production_smoke": {
+    "exit_code": 0,
+    "model_calls": 0,
+    "cases": [
+      {
+        "case": "mix_snap_0_2e13557b-e228-418a-ab4a-8f1b9c1a6677",
+        "status": "PASS",
+        "revisions": [
+          {
+            "tso": "470548926748688386",
+            "outcome": "PASS",
+            "paths": 4,
+            "comparisons": 6
+          }
+        ]
+      },
+      {
+        "case": "mix_snap_0_9f2f426d-05a4-42b9-9897-1d4cf2fe0980",
+        "status": "INCONCLUSIVE",
+        "revisions": [
+          {
+            "tso": "470548911319678978",
+            "outcome": "INCONCLUSIVE",
+            "paths": 4,
+            "comparisons": 0
+          }
+        ]
+      }
+    ]
+  },
+  "full_evidence_directory": "/home/lwm/Mix-snapshot-validation-20261118",
+  "smoke_directory": "/home/lwm/Mix-snapshot-smoke-20261118",
+  "live_tests": {
+    "tests": 4,
+    "passed": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "build": "SUCCESS",
+    "classes": [
+      "MixedIntegrationTest",
+      "MixedFactsIntegrationTest"
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 package sqlancer.tidb.mixed;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -227,13 +228,99 @@ public final class TiDBMixedSupport {
         throw new Rejected("REPLICA_NOT_READY", "availability wait exceeded 180 seconds");
     }
 
-    public void beginSnapshot() throws SQLException {
-        snapshot = textRows("SELECT TIDB_CURRENT_TSO() AS tso").get(0).get("tso");
-        if (!snapshot.matches("[0-9]+")) {
-            throw new Rejected("SNAPSHOT_ERROR", "invalid TSO");
+    static boolean positiveTso(String value) {
+        return value != null && value.matches("[1-9][0-9]{0,19}") && new BigInteger(value).bitLength() <= 64;
+    }
+
+    private Map<String, String> snapshotSession() throws SQLException {
+        List<Map<String, String>> rows = textRows("SELECT @@tidb_snapshot AS snapshot,"
+                + " @@tidb_current_ts AS transaction_ts, @@autocommit AS autocommit");
+        if (rows.size() != 1) {
+            throw new Rejected("SNAPSHOT_ERROR", "expected one snapshot session row");
         }
-        exec("SET SESSION tidb_snapshot='" + snapshot + "'");
-        environment.put("snapshotTSO", snapshot);
+        return rows.get(0);
+    }
+
+    private static Rejected snapshotFailure(Exception cause) {
+        Rejected failure = new Rejected("SNAPSHOT_ERROR", cause.toString());
+        failure.initCause(cause);
+        return failure;
+    }
+
+    void verifySnapshot(String expected) {
+        Map<String, Object> evidence = new LinkedHashMap<>();
+        evidence.put("stage", "SNAPSHOT_CHECK");
+        evidence.put("expected", expected);
+        evidence.put("status", "SNAPSHOT_ERROR");
+        events.add(evidence);
+        try {
+            if (!positiveTso(expected)) {
+                throw new Rejected("SNAPSHOT_ERROR", "snapshot must be a positive uint64 TSO");
+            }
+            Map<String, String> session = snapshotSession();
+            evidence.put("session", session);
+            if (!expected.equals(session.get("snapshot")) || !"0".equals(session.get("transaction_ts"))
+                    || !"1".equals(session.get("autocommit"))) {
+                throw new Rejected("SNAPSHOT_ERROR", "snapshot readback or transaction context differs");
+            }
+            evidence.put("status", "VERIFIED");
+        } catch (SQLException | RuntimeException error) {
+            evidence.put("error", error.toString());
+            throw snapshotFailure(error);
+        }
+    }
+
+    public void beginSnapshot() throws SQLException {
+        snapshot = "";
+        environment.remove("snapshotTSO");
+        Map<String, Object> evidence = new LinkedHashMap<>();
+        evidence.put("stage", "SNAPSHOT_ACQUIRE");
+        evidence.put("status", "SNAPSHOT_ERROR");
+        events.add(evidence);
+        boolean transactionStarted = false;
+        boolean settingAttempted = false;
+        try {
+            Map<String, String> session = snapshotSession();
+            if (!"0".equals(session.get("transaction_ts")) || !"1".equals(session.get("autocommit"))
+                    || !Set.of("", "0").contains(String.valueOf(session.get("snapshot")))) {
+                throw new Rejected("SNAPSHOT_ERROR", "acquisition requires an idle autocommit session");
+            }
+            transactionStarted = true; // BEGIN can succeed on the server even if acknowledgement fails.
+            exec("BEGIN");
+            List<Map<String, String>> rows = textRows("SELECT TIDB_CURRENT_TSO() AS tso");
+            String acquired = rows.size() == 1 ? rows.get(0).get("tso") : null;
+            evidence.put("requested", acquired);
+            if (!positiveTso(acquired)) {
+                throw new Rejected("SNAPSHOT_ERROR", "transaction returned no positive uint64 TSO");
+            }
+            exec("ROLLBACK"); // End the read-only acquisition transaction before setting historical reads.
+            transactionStarted = false;
+            settingAttempted = true;
+            exec("SET SESSION tidb_snapshot='" + acquired + "'");
+            verifySnapshot(acquired);
+            snapshot = acquired;
+            environment.put("snapshotTSO", acquired);
+            evidence.put("status", "VERIFIED");
+        } catch (SQLException | RuntimeException error) {
+            evidence.put("error", error.toString());
+            if (transactionStarted) {
+                try {
+                    exec("ROLLBACK");
+                } catch (SQLException | RuntimeException cleanup) {
+                    error.addSuppressed(cleanup);
+                    evidence.put("rollbackError", cleanup.toString());
+                }
+            }
+            if (settingAttempted) {
+                try {
+                    exec("SET SESSION tidb_snapshot=''");
+                } catch (SQLException | RuntimeException cleanup) {
+                    error.addSuppressed(cleanup);
+                    evidence.put("clearError", cleanup.toString());
+                }
+            }
+            throw snapshotFailure(error);
+        }
     }
 
     public void reset() throws SQLException {
@@ -398,11 +485,15 @@ public final class TiDBMixedSupport {
         try {
             exec("SET SESSION tidb_isolation_read_engines='"
                     + (config.mixed() ? "tikv,tiflash" : config.engines.values().iterator().next()) + "'");
+            verifySnapshot(run.snapshot);
             run.plan = textRows("EXPLAIN FORMAT='brief' " + run.sql);
             validatePlan(run.plan, config);
+            verifySnapshot(run.snapshot);
             run.analyzed = textRows("EXPLAIN ANALYZE " + run.sql);
             validatePlan(run.analyzed, config);
+            verifySnapshot(run.snapshot);
             result(run, allowFloat);
+            verifySnapshot(run.snapshot);
             run.status = "OK";
         } catch (Rejected e) {
             run.status = e.status;
@@ -429,6 +520,13 @@ public final class TiDBMixedSupport {
             if (!run.status.equals("OK")) {
                 verdict.failures.add(run.config.name + ":" + run.status);
             }
+        }
+        Set<String> successfulSnapshots = runs.stream().filter(r -> r.status.equals("OK")).map(r -> r.snapshot)
+                .collect(Collectors.toSet());
+        if (successfulSnapshots.stream().anyMatch(tso -> !positiveTso(tso)) || successfulSnapshots.size() > 1) {
+            verdict.failures.add("SNAPSHOT_ERROR: successful paths do not share one positive TSO");
+            verdict.status = "SNAPSHOT_ERROR";
+            return verdict;
         }
         verdict.allPathsValid = completeConfigurations(runs) && verdict.failures.isEmpty();
         for (int i = 0; i < runs.size(); i++) {
@@ -457,6 +555,8 @@ public final class TiDBMixedSupport {
             verdict.status = "MIXED_VS_SINGLE_MISMATCH";
         } else if (verdict.mismatchTypes.contains("MIXED_VS_MIXED_MISMATCH")) {
             verdict.status = "MIXED_VS_MIXED_MISMATCH";
+        } else if (runs.stream().anyMatch(r -> r.status.equals("SNAPSHOT_ERROR"))) {
+            verdict.status = "SNAPSHOT_ERROR";
         } else if (runs.stream().anyMatch(r -> r.status.equals("EXECUTION_ERROR"))) {
             verdict.status = "EXECUTION_ERROR";
         } else if (runs.stream().anyMatch(r -> r.status.equals("INCONCLUSIVE"))) {
@@ -494,6 +594,9 @@ public final class TiDBMixedSupport {
             Run kv = execute(sql, new Config(Map.of(name, "tikv")), true);
             Run flash = execute(sql, new Config(Map.of(name, "tiflash")), true);
             events.add(Map.of("stage", "PREFLIGHT", "tikv", kv, "tiflash", flash));
+            if (kv.status.equals("SNAPSHOT_ERROR") || flash.status.equals("SNAPSHOT_ERROR")) {
+                throw new Rejected("SNAPSHOT_ERROR", kv.error + ";" + flash.error);
+            }
             if (!kv.status.equals("OK") || !flash.status.equals("OK")) {
                 throw new Rejected("PREFLIGHT_FAILED", kv.status + ";" + flash.status);
             }

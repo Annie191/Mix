@@ -543,11 +543,13 @@ public final class TiDBMixedObservations {
         int spent = 0;
         try {
             io.exec("SET SESSION tidb_isolation_read_engines='tikv'");
-            if (previous.get("snapshot") == null || previous.get("snapshot").isEmpty()) {
+            if (previous.get("snapshot") == null || previous.get("snapshot").isEmpty()
+                    || previous.get("snapshot").equals("0")) {
                 io.beginSnapshot();
                 snapshot = io.snapshot;
             } else {
                 snapshot = previous.get("snapshot");
+                io.verifySnapshot(snapshot);
             }
             for (Probe probe : selected) {
                 long remaining = (deadline - System.nanoTime()) / 1_000_000L;

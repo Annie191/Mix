@@ -45,6 +45,7 @@ class MixedCoverageTest {
         List<Run> runs = new ArrayList<>();
         for (Config config : configs) {
             Run run = new Run(config, "SELECT 1");
+            run.snapshot = "123456789";
             run.status = "OK";
             run.columns.add("c:INT");
             run.bag.put(List.of("N:1"), 1L);

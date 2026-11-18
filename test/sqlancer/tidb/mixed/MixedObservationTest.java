@@ -276,6 +276,21 @@ class MixedObservationTest {
     }
 
     @Test
+    void zeroSnapshotIsReplacedWithATransactionSnapshotForObservations() throws Exception {
+        try (Fixture fixture = new Fixture()) {
+            fixture.snapshot = "0";
+            TiDBMixedObservations facts = new TiDBMixedObservations(fixture.query(TiDBJoin.JoinType.LEFT), "q", 0, 0);
+            facts.collect(fixture.io, List.of("rows_t0"), new TiDBMixedObservations.Budget(10, 10, 60_000));
+            assertEquals("1234567", facts.snapshot);
+            assertEquals("exact", observation(facts, "rows_t0").get("status").getAsString());
+            assertTrue(
+                    fixture.executed.indexOf("BEGIN") < fixture.executed.indexOf("SELECT TIDB_CURRENT_TSO() AS tso"));
+            assertEquals("0", fixture.snapshot);
+            assertFalse(fixture.active);
+        }
+    }
+
+    @Test
     void existingSnapshotIsReusedAndInvalidRequestsFailBeforeSessionChanges() throws Exception {
         try (Fixture fixture = new Fixture()) {
             fixture.snapshot = "11111";
@@ -366,6 +381,7 @@ class MixedObservationTest {
         final TiDBMixedSupport io;
         String snapshot = "";
         String engines = "tikv,tiflash";
+        boolean active;
         boolean warning;
         boolean failure;
 
@@ -413,10 +429,11 @@ class MixedObservationTest {
                             probe[0] = sql.startsWith("SELECT COUNT");
                             executed.add(sql);
                             if (sql.startsWith("SELECT @@tidb_snapshot")) {
-                                return rows(new String[] { "snapshot", "engines" }, new Object[] { snapshot, engines });
+                                return rows(new String[] { "snapshot", "engines", "transaction_ts", "autocommit" },
+                                        new Object[] { snapshot, engines, active ? "1234567" : "0", "1" });
                             }
                             if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
-                                return rows(new String[] { "tso" }, new Object[] { "1234567" });
+                                return rows(new String[] { "tso" }, new Object[] { active ? "1234567" : "0" });
                             }
                             if (sql.startsWith("SET SESSION ")) {
                                 String value = sql.substring(sql.indexOf('=') + 1);
@@ -437,7 +454,12 @@ class MixedObservationTest {
                                 }
                                 return false;
                             }
-                            if (failure) {
+                            if (sql.equals("BEGIN")) {
+                                active = true;
+                            } else if (sql.equals("ROLLBACK")) {
+                                active = false;
+                            }
+                            if (failure && sql.startsWith("SELECT")) {
                                 throw new SQLException("fixture error", "HY000", 3024);
                             }
                         }

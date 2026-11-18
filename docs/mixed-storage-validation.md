@@ -1,5 +1,7 @@
 # 混合存储 Oracle 验证记录
 
+> 2026-11-18 更正：旧实现可将事务外取得的 TSO `0` 当作共同快照。下文历史 PASS 仅保留为当时的程序输出，不能据此认定严格共同快照差分通过。修复后的验证见文末及 [修复说明](mixed-storage-comparison-fix.md#追加共同快照获取与核验2026-11-18)。
+
 验证日期：2026-11-16（UTC）。运行环境：Linux amd64，OpenJDK 17.0.15；项目编译目标为 Java 11。
 SQLancer 基线与目标 TiDB 源码提交见 [使用说明](mixed-storage.md)。
 下方集群与随机冒烟记录来自首次实现提交 `41ea000d`；后续比较逻辑修复的验证记录见文末。
@@ -497,3 +499,32 @@ git diff --check
 状态和失败边界见 [闭环终止说明](data-preparation-loop.md#模型不可用与数据不可用)。
 
 本轮新增 7 项回归；共 190 项测试中 181 项通过、9 项真实集群测试按开关跳过。完整 Maven verify、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
+
+
+## 共同快照修复后的实际验证（2026-11-18 UTC）
+
+`beginSnapshot()` 已改为短事务内取正 TSO，事务结束后设置并读回；预检与路径执行均核验同一值。
+完整 verify：197 项、0 失败、0 错误、9 项真实集群测试默认跳过；格式、XML、Checkstyle、PMD、SpotBugs（0 bugs）通过。
+新增 7 项回归覆盖非法 TSO、SQL 失败、设置不生效、已有事务、路径中快照被清空、零快照观测及跨快照比较拒绝。
+
+真实集群命令（同上文的目标源码和 22000 端口）：
+
+```bash
+MS_INTEGRATION=true MS_FACTS_INTEGRATION=true \
+TIDB_HOST=127.0.0.1 TIDB_PORT=22000 TIDB_USER=root \
+mvn -o -B -ntp -Djacoco.skip=true \
+  '-Dtest=sqlancer.tidb.mixed.MixedIntegrationTest,sqlancer.tidb.mixed.MixedFactsIntegrationTest' test
+```
+
+4 项全部通过。原始集成用例取得 TSO `470548885236613124`，建立快照后通过另一连接插入匹配键 99；
+当前 t0 已有 5 行，历史 TiKV/TiFlash 预检仍各为 4 行。四种引擎分配均使用同一正 TSO，LEFT JOIN 均为原来的 6 行，六对比较一致。
+34 次快照读回核验全部为 VERIFIED、transaction_ts 全为 0。独立重放取得 `470548907990450178`，四路径六对比较也 PASS。
+其他 3 项真实测试验证实际元数据、只读统计、精确样本及会话恢复。
+
+生产 Oracle 用种子 42、两表、两用例运行，进程退出码 0：1 PASS、1 INCONCLUSIVE。
+两个 revision 的 TSO 分别为 `470548926748688386`、`470548911319678978`，没有零值；后者因下推及类型转换 Warning 未通过。
+本次未调用 DeepSeek，也未重跑 20 分钟实验，不据此推断覆盖率或 AI 收益。
+
+[机器可读摘要](mixed-snapshot-validation.json) 保留各路径 TSO、行数、会话核验及旧日志审计。
+完整历史读/重放 JSON 和构建日志在本机 `/home/lwm/Mix-snapshot-validation-20261118/`，
+生产短测在 `/home/lwm/Mix-snapshot-smoke-20261118/`。旧实验原始日志及压缩包未改动。

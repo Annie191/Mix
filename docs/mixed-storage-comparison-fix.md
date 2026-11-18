@@ -360,3 +360,25 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 测试使用实际 H2 读写和模拟模型/引擎接口，未调用真实 DeepSeek 或运行真实 TiDB/TiFlash。
 
 本轮新增 7 项回归；共 190 项测试中 181 项通过、9 项真实集群测试按开关跳过。完整 Maven verify、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
+
+## 追加：共同快照获取与核验（2026-11-18）
+
+修复 `beginSnapshot()` 在事务外取得 `0` 并继续比较的问题：
+
+- 先检查会话空闲，再执行 `BEGIN → SELECT TIDB_CURRENT_TSO() → ROLLBACK`，在短事务内取得 TSO，结束事务后才设置 `tidb_snapshot`。
+- 拒绝 `0`、负数、空值、非数字及 uint64 溢出；设置后读回确认值一致、无活动事务且 autocommit 开启。全部成功才公布 `snapshotTSO`。
+- 基础表预检及每条引擎路径，在 EXPLAIN、EXPLAIN ANALYZE、结果读取前后核验同一个正 TSO。获取、设置、读回或路径中校验失败记为 `SNAPSHOT_ERROR`，不能 PASS。
+- 比较器另行拒绝成功路径的无效/不同 TSO；没有共同快照的结果不计算差异对。其他有效同快照路径发现的差异仍保留，路径完成情况独立记录。
+- 获取失败尝试回滚自身事务、清空已尝试设置的快照；不覆盖调用前已有事务。日志增加 `SNAPSHOT_ACQUIRE`、`SNAPSHOT_CHECK`，保存请求值、读回值、验证状态及失败原因。
+- 只读数据观测也采用相同流程；已有 `tidb_snapshot=0` 不能复用为有效快照，已有正快照须先核验。
+
+重新核对旧 20 分钟日志：32 个完整用例中 18 个记录为 PASS，33 个进入差分的 revision 全部为 TSO `0`。
+这些旧 PASS **不能作为严格共同快照差分通过的证据**；原始日志和压缩包保留，不改写历史输出。
+
+官方语义及事务内示例见 [TIDB_CURRENT_TSO 文档](https://docs.pingcap.com/tidb/stable/tidb-functions/#tidb_current_tso)。
+
+验证：新增 7 项回归；完整 verify 共 197 项，188 项通过、9 项真实集群测试默认跳过，构建及静态检查通过。
+另在目标集群开启 4 项真实测试，全部通过。共同快照 `470548885236613124` 建立后，由独立连接把 t0 从 4 行增至 5 行；
+双引擎预检仍读到 4 行，四条查询路径均返回原来的 6 行，34 次会话核验全部通过。独立重放取得另一个正 TSO，也通过。
+生产 Oracle 两用例冒烟正常退出：1 PASS、1 INCONCLUSIVE（Warning），两个 revision 均为正 TSO，未调用模型。
+这些是本轮受控验证及两用例短测，不替代旧 20 分钟实验；逐项数据见 [快照验证记录](mixed-snapshot-validation.json)。

@@ -85,6 +85,7 @@ class MixedJdbcTest {
         List<Run> runs = new ArrayList<>();
         for (Config config : TiDBMixedSupport.configurations(List.of("t0", "t1"))) {
             Run run = new Run(config, "SELECT 1");
+            run.snapshot = "123456789";
             run.status = "OK";
             run.columns.add("c:DECIMAL");
             runs.add(run);
@@ -140,11 +141,120 @@ class MixedJdbcTest {
     }
 
     @Test
-    void invalidPlanStopsBeforeAnalyzeAndResultExecution() {
+    void successfulResultsWithZeroOrDifferentSnapshotsCannotBeCompared() {
+        for (String invalid : List.of("", "0", "123456788")) {
+            List<Run> runs = successfulRuns();
+            runs.get(3).snapshot = invalid;
+            runs.get(3).bag.put(List.of("N:2"), 1L);
+            TiDBMixedSupport.Outcome outcome = TiDBMixedSupport.compare(runs);
+            assertEquals("SNAPSHOT_ERROR", outcome.status);
+            assertFalse(outcome.allPathsValid);
+            assertFalse(outcome.mismatch());
+            assertTrue(outcome.comparisons.isEmpty());
+        }
+    }
+
+    @Test
+    void snapshotAcquisitionEndsItsTransactionBeforeSettingAndVerifyingHistoricalReads() throws Exception {
+        Fixture fixture = new Fixture();
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        int begin = fixture.queries.indexOf("BEGIN");
+        int acquire = fixture.queries.indexOf("SELECT TIDB_CURRENT_TSO() AS tso");
+        int rollback = fixture.queries.indexOf("ROLLBACK");
+        int setting = fixture.queries.indexOf("SET SESSION tidb_snapshot='123456789'");
+        assertTrue(begin < acquire && acquire < rollback && rollback < setting);
+        assertTrue(fixture.queries.get(setting + 1).startsWith("SELECT @@tidb_snapshot"));
+        assertFalse(fixture.active);
+        assertEquals("123456789", io.environment.get("snapshotTSO"));
+        assertTrue(io.events.stream()
+                .anyMatch(e -> "SNAPSHOT_CHECK".equals(e.get("stage")) && "VERIFIED".equals(e.get("status"))));
+    }
+
+    @Test
+    void invalidTransactionTsosAreRejectedAndCannotProducePasses() {
+        List<String> invalid = new ArrayList<>(List.of("0", "-1", "01", " 1", "abc", "18446744073709551616"));
+        invalid.add(null);
+        for (String tso : invalid) {
+            Fixture fixture = new Fixture();
+            fixture.transactionTso = tso;
+            TiDBMixedSupport io = fixture.support();
+            assertEquals("SNAPSHOT_ERROR", assertThrows(TiDBMixedSupport.Rejected.class, io::beginSnapshot).status);
+            assertEquals("", io.snapshot);
+            assertFalse(io.environment.containsKey("snapshotTSO"));
+            assertFalse(fixture.active);
+            assertTrue(fixture.queries.contains("ROLLBACK"));
+            assertFalse(fixture.queries.stream().anyMatch(q -> q.startsWith("SET SESSION tidb_snapshot=")));
+            assertEquals("SNAPSHOT_ERROR", TiDBMixedSupport.compare(io.executeAll("SELECT t0.c FROM t0,t1",
+                    TiDBMixedSupport.configurations(List.of("t0", "t1")))).status);
+            assertEquals(0, fixture.streams);
+        }
+        assertTrue(TiDBMixedSupport.positiveTso("1"));
+        assertTrue(TiDBMixedSupport.positiveTso("18446744073709551615"));
+    }
+
+    @Test
+    void snapshotAcquisitionSqlFailuresNeverPublishASnapshot() {
+        for (String sql : List.of("BEGIN", "SELECT TIDB_CURRENT_TSO() AS tso", "ROLLBACK",
+                "SET SESSION tidb_snapshot='123456789'",
+                "SELECT @@tidb_snapshot AS snapshot, @@tidb_current_ts AS transaction_ts, @@autocommit AS autocommit")) {
+            Fixture fixture = new Fixture();
+            fixture.failSql = sql;
+            TiDBMixedSupport io = fixture.support();
+            assertEquals("SNAPSHOT_ERROR", assertThrows(TiDBMixedSupport.Rejected.class, io::beginSnapshot).status);
+            assertEquals("", io.snapshot);
+            assertFalse(io.environment.containsKey("snapshotTSO"));
+            assertFalse(fixture.queries.contains("EXPLAIN ANALYZE SELECT t0.c FROM t0,t1"));
+            if (sql.equals("ROLLBACK")) {
+                assertFalse(fixture.queries.stream().anyMatch(q -> q.startsWith("SET SESSION tidb_snapshot=")));
+            }
+        }
+    }
+
+    @Test
+    void ignoredSnapshotSettingAndExistingTransactionsAreRejected() {
+        Fixture fixture = new Fixture();
+        fixture.ignoreSnapshotSetting = true;
+        TiDBMixedSupport io = fixture.support();
+        assertEquals("SNAPSHOT_ERROR", assertThrows(TiDBMixedSupport.Rejected.class, io::beginSnapshot).status);
+        assertEquals("", io.snapshot);
+        assertTrue(fixture.queries.contains("SET SESSION tidb_snapshot=''"));
+        Fixture busy = new Fixture();
+        busy.active = true;
+        assertEquals("SNAPSHOT_ERROR",
+                assertThrows(TiDBMixedSupport.Rejected.class, () -> busy.support().beginSnapshot()).status);
+        assertFalse(busy.queries.contains("BEGIN"));
+        assertFalse(busy.queries.contains("ROLLBACK"));
+    }
+
+    @Test
+    void snapshotDriftBeforeOrDuringAPathCannotPassOrHideAsPreflightFailure() throws Exception {
+        for (boolean during : List.of(false, true)) {
+            Fixture fixture = new Fixture();
+            TiDBMixedSupport io = fixture.support();
+            io.beginSnapshot();
+            if (during) {
+                fixture.driftOnResult = true;
+            } else {
+                fixture.sessionSnapshot = "0";
+            }
+            List<Run> runs = io.executeAll("SELECT t0.c FROM t0,t1",
+                    TiDBMixedSupport.configurations(List.of("t0", "t1")));
+            assertTrue(runs.stream().allMatch(r -> r.status.equals("SNAPSHOT_ERROR")));
+            assertEquals("SNAPSHOT_ERROR", TiDBMixedSupport.compare(runs).status);
+            assertEquals(during ? 1 : 0, fixture.streams);
+            assertEquals("SNAPSHOT_ERROR", assertThrows(TiDBMixedSupport.Rejected.class, () -> io
+                    .preflight(TiDBMixedGeneration.baseTables(new MixedUnitTest.FakeState()).subList(0, 2))).status);
+        }
+    }
+
+    @Test
+    void invalidPlanStopsBeforeAnalyzeAndResultExecution() throws Exception {
         Fixture fixture = new Fixture();
         fixture.invalidPlan = true;
-        Run run = fixture.support().execute("SELECT t0.c FROM t0,t1", new Config(Map.of("t0", "tikv", "t1", "tiflash")),
-                false);
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        Run run = io.execute("SELECT t0.c FROM t0,t1", new Config(Map.of("t0", "tikv", "t1", "tiflash")), false);
         assertEquals("INVALID_CONFIGURATION", run.status);
         assertEquals(0, fixture.streams);
         assertFalse(fixture.queries.stream().anyMatch(s -> s.startsWith("EXPLAIN ANALYZE")));
@@ -331,22 +441,24 @@ class MixedJdbcTest {
     }
 
     @Test
-    void warningsErrorsAndResourceLimitsNeverBecomePasses() {
+    void warningsErrorsAndResourceLimitsNeverBecomePasses() throws Exception {
         Fixture fixture = new Fixture();
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
         Config config = new Config(Map.of("t0", "tikv", "t1", "tiflash"));
         fixture.warning = new SQLWarning("hint ignored", "01000", 1815);
-        assertEquals("INCONCLUSIVE", fixture.support().execute("SELECT c FROM t0,t1", config, false).status);
+        assertEquals("INCONCLUSIVE", io.execute("SELECT c FROM t0,t1", config, false).status);
         fixture.warning = null;
         fixture.queryError = new SQLException("fixture timeout", "HY000", 3024);
-        Run error = fixture.support().execute("SELECT c FROM t0,t1", config, false);
+        Run error = io.execute("SELECT c FROM t0,t1", config, false);
         assertEquals("EXECUTION_ERROR", error.status);
         assertTrue(error.error.contains("HY000:3024"));
         fixture.queryError = null;
         fixture.rowCount = 10001;
-        assertEquals("INCONCLUSIVE", fixture.support().execute("SELECT c FROM t0,t1", config, false).status);
+        assertEquals("INCONCLUSIVE", io.execute("SELECT c FROM t0,t1", config, false).status);
         fixture.rowCount = 0;
         fixture.resultType = Types.DOUBLE;
-        assertEquals("INCONCLUSIVE", fixture.support().execute("SELECT c FROM t0,t1", config, false).status);
+        assertEquals("INCONCLUSIVE", io.execute("SELECT c FROM t0,t1", config, false).status);
     }
 
     @Test
@@ -387,6 +499,12 @@ class MixedJdbcTest {
 
     private static final class Fixture {
         final List<String> queries = new ArrayList<>();
+        boolean active;
+        String sessionSnapshot = "";
+        String transactionTso = "123456789";
+        String failSql;
+        boolean ignoreSnapshotSetting;
+        boolean driftOnResult;
         boolean invalidPlan;
         boolean mixedOnlyDisagreement;
         boolean preflightMismatch;
@@ -416,7 +534,16 @@ class MixedJdbcTest {
                     (proxy, method, args) -> {
                         switch (method.getName()) {
                         case "execute":
-                            queries.add((String) args[0]);
+                            String sql = (String) args[0];
+                            queries.add(sql);
+                            failIfRequested(sql);
+                            if (sql.equals("BEGIN")) {
+                                active = true;
+                            } else if (sql.equals("ROLLBACK")) {
+                                active = false;
+                            } else if (sql.startsWith("SET SESSION tidb_snapshot=") && !ignoreSnapshotSetting) {
+                                sessionSnapshot = sql.substring(sql.indexOf('=') + 2, sql.length() - 1);
+                            }
                             return false;
                         case "executeQuery":
                             return query((String) args[0]);
@@ -435,8 +562,24 @@ class MixedJdbcTest {
                     });
         }
 
+        void failIfRequested(String sql) throws SQLException {
+            if (sql.equals(failSql)) {
+                throw new SQLException("injected snapshot failure", "HY000", 1105);
+            }
+        }
+
         ResultSet query(String sql) throws SQLException {
             queries.add(sql);
+            failIfRequested(sql);
+            if (sql.startsWith("SELECT @@tidb_snapshot")) {
+                return rows(new String[] { "snapshot", "transaction_ts", "autocommit" },
+                        new int[] { Types.VARCHAR, Types.VARCHAR, Types.VARCHAR },
+                        List.<Object[]> of(new Object[] { sessionSnapshot, active ? transactionTso : "0", "1" }));
+            }
+            if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
+                return rows(new String[] { "tso" }, new int[] { Types.VARCHAR },
+                        List.<Object[]> of(new Object[] { active ? transactionTso : "0" }));
+            }
             if (queryError != null) {
                 throw queryError;
             }
@@ -447,10 +590,6 @@ class MixedJdbcTest {
             if (sql.startsWith("SHOW FULL COLUMNS")) {
                 return rows(new String[] { "field", "extra" }, new int[] { Types.VARCHAR, Types.VARCHAR },
                         List.<Object[]> of(new Object[] { "c", "" }));
-            }
-            if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
-                return rows(new String[] { "tso" }, new int[] { Types.VARCHAR },
-                        List.<Object[]> of(new Object[] { "123456789" }));
             }
             if (mixedOnlyDisagreement && (!sql.contains("TIKV[") || !sql.contains("TIFLASH["))) {
                 throw new SQLException("fixture baseline failure", "HY000", 1105);
@@ -472,6 +611,9 @@ class MixedJdbcTest {
                 }
                 return rows(new String[] { "id", "task", "access object" },
                         new int[] { Types.VARCHAR, Types.VARCHAR, Types.VARCHAR }, scans);
+            }
+            if (driftOnResult) {
+                sessionSnapshot = "0";
             }
             int value = (mixedOnlyDisagreement || preflightMismatch) && sql.contains("TIFLASH[`t0`]") ? 2 : 1;
             return rows(new String[] { "c" }, new int[] { resultType }, java.util.stream.IntStream.range(0, rowCount)

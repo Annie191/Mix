@@ -428,11 +428,13 @@ class MixedAppendTest {
                         if (name.equals("executeQuery")) {
                             String sql = (String) args[0];
                             if (sql.startsWith("SELECT @@tidb_snapshot")) {
-                                return MixedObservationTest.rows(new String[] { "snapshot", "engines" },
-                                        new Object[] { snapshot, engines });
+                                return MixedObservationTest.rows(
+                                        new String[] { "snapshot", "engines", "transaction_ts", "autocommit" },
+                                        new Object[] { snapshot, engines, active ? "1234567" : "0", "1" });
                             }
                             if (sql.startsWith("SELECT TIDB_CURRENT_TSO")) {
-                                return MixedObservationTest.rows(new String[] { "tso" }, new Object[] { "1234567" });
+                                return MixedObservationTest.rows(new String[] { "tso" },
+                                        new Object[] { active ? "1234567" : "0" });
                             }
                             if (sql.startsWith("SELECT DATABASE()")) {
                                 return MixedObservationTest.rows(

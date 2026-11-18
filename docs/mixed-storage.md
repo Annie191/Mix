@@ -61,6 +61,11 @@ SQLancer 自身的默认密码是 `sqlancer`，空密码必须显式传入。密
    固定包含 TiKV-only、TiFlash-only，另选 4 种不同混合配置，执行顺序随机。
 6. 每条路径验证 EXPLAIN 和 EXPLAIN ANALYZE 的逐表引擎，然后比较完整结果多重集。
 
+共同快照使用 `BEGIN → SELECT TIDB_CURRENT_TSO() → ROLLBACK → SET SESSION tidb_snapshot`。
+TSO 必须为正的 uint64；设置后读回确认，且会话没有活动事务。预检及每条路径的
+EXPLAIN、EXPLAIN ANALYZE、结果读取前后都核验同一 TSO，失败记为 `SNAPSHOT_ERROR`。
+比较器也拒绝成功路径携带零值、无效或不同 TSO，不能将这类结果算作 PASS。
+
 修改 S/Q/D 会创建新 revision；仅改变引擎分配保留原 SQL、数据和 TSO。
 当前 Schema 生成器仍最多创建 5 张表。无 ORDER BY、LIMIT、别名、多查询块、UNION 或 CTE。
 计划消除了表、PointGet 没有明确引擎或出现未知扫描格式时，保守拒绝配置。
@@ -90,7 +95,8 @@ EXPLAIN ANALYZE 是独立执行，所以证据级别明确标为 `PLAN_ONLY`。
 | MIXED_VS_MIXED_MISMATCH | 两条有效混合路径不同，即使单引擎基线失败也报告 |
 | INVALID_CONFIGURATION | 表访问/引擎分配不符、配置缺失或重复 |
 | INCONCLUSIVE | Warning、浮点结果或资源预算超限 |
-| EXECUTION_ERROR | SQL、超时、快照/GC 或连接异常 |
+| SNAPSHOT_ERROR | 无法取得正 TSO、设置/读回失败、会话或成功路径快照不一致 |
+| EXECUTION_ERROR | 查询 SQL、超时、历史数据已被 GC 或连接异常 |
 | DATA_PREFLIGHT_MISMATCH | 同一快照下基础表双引擎读取不同，需独立调查 |
 | VERSION_MISMATCH / UNSUPPORTED | TiDB 提交不符或缺少必要组件 |
 
