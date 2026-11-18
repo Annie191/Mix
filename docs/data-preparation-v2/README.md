@@ -89,5 +89,8 @@ thinking 对照可给两组相同的 8000 上限，仍受总 token、时间和�
 后续实测仍收到过与 Schema 不符的参数，本地字段校验、拒绝反馈和修订预算不能省略。
 模型历史保留计划、失败、写入和目标评价摘要；当前观测不反复塞进历史，完整证据仍保留在 rounds。
 
+真实运行结果：[六个固定用例的四策略对照](benchmark-results.md)、
+[真实修订与目标评价交互](live-loop-example.json)、[一小时随机查询测试](query-1h-results.md)。
+
 官方依据：[Tool Calls strict](https://api-docs.deepseek.com/guides/tool_calls/)、
 [Chat Completion](https://api-docs.deepseek.com/api/create-chat-completion/)。

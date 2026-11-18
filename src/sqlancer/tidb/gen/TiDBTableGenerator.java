@@ -132,6 +132,7 @@ public class TiDBTableGenerator {
             errors.add("This partition function is not allowed");
             errors.add("A PRIMARY KEY must include all columns in the table's partitioning function");
             errors.add("A UNIQUE INDEX must include all columns in the table's partitioning function");
+            errors.add("Global Index is needed for index");
             errors.add("is of a not allowed type for this type of partitioning");
             errors.add("The PARTITION function returns the wrong type");
         }

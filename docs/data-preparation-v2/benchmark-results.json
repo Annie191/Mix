@@ -1,0 +1,232 @@
+{
+  "source_commit": "d3d87ebace00f5abb10c72d2cf967ea9d13b1866",
+  "started_at": "2026-11-18T15:02:34.978705+00:00",
+  "finished_at": "2026-11-18T15:24:40.092971+00:00",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "same_initial_input_verified_cases": 24,
+  "limits": {
+    "append_attempts": 12,
+    "valid_decisions": 3,
+    "format_repairs": 3,
+    "total_api_calls": 6,
+    "time_ms": 120000,
+    "total_api_tokens": 500000,
+    "configured_cost_microusd": 250000,
+    "max_output_tokens": 8000
+  },
+  "limitation": "Six controlled cases, shared cluster, exploratory; constant-false case cannot validate all engine scans. Not a general AI superiority claim.",
+  "strategies": {
+    "RANDOM": {
+      "cases": 6,
+      "completed_cases": 6,
+      "api_calls": 0,
+      "responses_accepted": 12,
+      "responses_rejected": 0,
+      "responses_not_received": null,
+      "append_plans_proposed": 6,
+      "append_plans_executed": 6,
+      "plan_execution_rate": {
+        "numerator": 6,
+        "denominator": 6,
+        "ratio": 1.0
+      },
+      "verifiable_append_model_goal_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "ratio": null
+      },
+      "rows_success": 72,
+      "rows_failed": 0,
+      "rows_without_new_scene": 0,
+      "rows_gain_unverified": 72,
+      "new_observed_scene_hits": 3,
+      "new_effective_scene_hits": 3,
+      "engine_all_paths_valid_cases": 5,
+      "preparation_elapsed_ms": 27858,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "known_estimated_usd": 0,
+      "independent_case_assessment": {
+        "successful_rows_in_cases_without_new_query_scenes": 60,
+        "successful_rows_in_cases_with_new_query_scenes": 12,
+        "case_level_row_gain_unverified": 0,
+        "individual_model_goal_checks": {},
+        "api_failed": 0,
+        "api_truncated": 0
+      },
+      "accepted_responses_over_api_calls": null,
+      "case_rows_without_new_query_scene": 60,
+      "case_rows_with_new_query_scene": 12,
+      "case_rows_query_gain_unverified": 0,
+      "accepted_response_per_api_call_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "ratio": null
+      }
+    },
+    "SHARED": {
+      "cases": 6,
+      "completed_cases": 6,
+      "api_calls": 0,
+      "responses_accepted": 12,
+      "responses_rejected": 0,
+      "responses_not_received": null,
+      "append_plans_proposed": 6,
+      "append_plans_executed": 6,
+      "plan_execution_rate": {
+        "numerator": 6,
+        "denominator": 6,
+        "ratio": 1.0
+      },
+      "verifiable_append_model_goal_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "ratio": null
+      },
+      "rows_success": 72,
+      "rows_failed": 0,
+      "rows_without_new_scene": 0,
+      "rows_gain_unverified": 72,
+      "new_observed_scene_hits": 16,
+      "new_effective_scene_hits": 16,
+      "engine_all_paths_valid_cases": 5,
+      "preparation_elapsed_ms": 36379,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "known_estimated_usd": 0,
+      "independent_case_assessment": {
+        "successful_rows_in_cases_without_new_query_scenes": 24,
+        "successful_rows_in_cases_with_new_query_scenes": 48,
+        "case_level_row_gain_unverified": 0,
+        "individual_model_goal_checks": {},
+        "api_failed": 0,
+        "api_truncated": 0
+      },
+      "accepted_responses_over_api_calls": null,
+      "case_rows_without_new_query_scene": 24,
+      "case_rows_with_new_query_scene": 48,
+      "case_rows_query_gain_unverified": 0,
+      "accepted_response_per_api_call_rate": {
+        "numerator": 0,
+        "denominator": 0,
+        "ratio": null
+      }
+    },
+    "AI": {
+      "cases": 6,
+      "completed_cases": 6,
+      "api_calls": 19,
+      "responses_accepted": 18,
+      "responses_rejected": 1,
+      "responses_not_received": null,
+      "append_plans_proposed": 5,
+      "append_plans_executed": 4,
+      "plan_execution_rate": {
+        "numerator": 4,
+        "denominator": 5,
+        "ratio": 0.8
+      },
+      "verifiable_append_model_goal_rate": {
+        "numerator": 1,
+        "denominator": 4,
+        "ratio": 0.25
+      },
+      "rows_success": 33,
+      "rows_failed": 0,
+      "rows_without_new_scene": 0,
+      "rows_gain_unverified": 33,
+      "new_observed_scene_hits": 24,
+      "new_effective_scene_hits": 24,
+      "engine_all_paths_valid_cases": 5,
+      "preparation_elapsed_ms": 95184,
+      "prompt_tokens": 388286,
+      "completion_tokens": 16560,
+      "known_estimated_usd": 0.032767188,
+      "independent_case_assessment": {
+        "successful_rows_in_cases_without_new_query_scenes": 6,
+        "successful_rows_in_cases_with_new_query_scenes": 27,
+        "case_level_row_gain_unverified": 0,
+        "individual_model_goal_checks": {
+          "achieved": 56,
+          "not_achieved": 4
+        },
+        "api_failed": 0,
+        "api_truncated": 0
+      },
+      "accepted_responses_over_api_calls": {
+        "numerator": 18,
+        "denominator": 19
+      },
+      "case_rows_without_new_query_scene": 6,
+      "case_rows_with_new_query_scene": 27,
+      "case_rows_query_gain_unverified": 0,
+      "accepted_response_per_api_call_rate": {
+        "numerator": 18,
+        "denominator": 19,
+        "ratio": 0.9473684210526315
+      }
+    },
+    "AI_THINKING": {
+      "cases": 6,
+      "completed_cases": 6,
+      "api_calls": 12,
+      "responses_accepted": 7,
+      "responses_rejected": 1,
+      "responses_not_received": 4,
+      "append_plans_proposed": 4,
+      "append_plans_executed": 3,
+      "plan_execution_rate": {
+        "numerator": 3,
+        "denominator": 4,
+        "ratio": 0.75
+      },
+      "verifiable_append_model_goal_rate": {
+        "numerator": 2,
+        "denominator": 3,
+        "ratio": 0.6666666666666666
+      },
+      "rows_success": 29,
+      "rows_failed": 0,
+      "rows_without_new_scene": 0,
+      "rows_gain_unverified": 29,
+      "new_observed_scene_hits": 15,
+      "new_effective_scene_hits": 15,
+      "engine_all_paths_valid_cases": 5,
+      "preparation_elapsed_ms": 325676,
+      "prompt_tokens": 261034,
+      "completion_tokens": 65826,
+      "known_estimated_usd": 0.06303342,
+      "independent_case_assessment": {
+        "successful_rows_in_cases_without_new_query_scenes": 8,
+        "successful_rows_in_cases_with_new_query_scenes": 21,
+        "case_level_row_gain_unverified": 0,
+        "individual_model_goal_checks": {
+          "achieved": 68,
+          "not_achieved": 3
+        },
+        "api_failed": 4,
+        "api_truncated": 4
+      },
+      "accepted_responses_over_api_calls": {
+        "numerator": 7,
+        "denominator": 12
+      },
+      "case_rows_without_new_query_scene": 8,
+      "case_rows_with_new_query_scene": 21,
+      "case_rows_query_gain_unverified": 0,
+      "accepted_response_per_api_call_rate": {
+        "numerator": 7,
+        "denominator": 12,
+        "ratio": 0.5833333333333334
+      }
+    }
+  },
+  "aggregation": "Post-run TiDBMixedBenchmarkMetrics with independent case row-gain and all-API-call denominator; original per-round measurements retained"
+}

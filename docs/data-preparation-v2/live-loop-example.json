@@ -1,0 +1,1423 @@
+{
+  "source_commit": "d3d87eba",
+  "real_api": true,
+  "model": "deepseek-flash",
+  "seed": 1,
+  "sql": "SELECT t0.k, t1.k FROM  t0 LEFT JOIN t1 ON ((t0.k)=(t1.k)) WHERE ((t0.k)>(10))",
+  "rows_attempt_budget": 12,
+  "rounds": [
+    {
+      "decision_id": "prepare_round_0",
+      "validation_status": "accepted",
+      "validation_feedback": null,
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "prepare_round_0",
+        "case_id": "paired_1",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "decision": "observe",
+        "reason": "Need exact current facts before planning: join pair/unmatched stats, WHERE truth distribution, boundary counts, and NULL counts for both tables. Samples show only one row each (k=5), so query is empty; I need to know whether any k>10 rows exist and how the LEFT JOIN behaves.",
+        "evidence_ids": [
+          "obs_0_0",
+          "obs_0_2",
+          "obs_0_3",
+          "obs_0_5",
+          "obs_0_6"
+        ],
+        "goal": "Establish baseline join/WHERE/boundary/NULL facts to decide which rows to append for a meaningful LEFT JOIN with WHERE t0.k>10 scenario.",
+        "expected_effect": "Program measures requested facts; no success claim",
+        "observation_requests": [
+          "j0_pairs_before",
+          "j0_left_unmatched",
+          "j0_right_unmatched",
+          "j0_pairs_after",
+          "j0_left_unmatched_after",
+          "query_input_before",
+          "query_input_after",
+          {
+            "capability_id": "predicate_where",
+            "parameters": {
+              "stage": "input"
+            }
+          },
+          {
+            "capability_id": "predicate_j0_on",
+            "parameters": {
+              "stage": "input"
+            }
+          },
+          "nulls_t0.k",
+          "nulls_t1.k",
+          "base_where_boundary_below",
+          "base_where_boundary_at",
+          "base_where_boundary_above"
+        ],
+        "operations": [],
+        "verification_requests": [],
+        "structured_goals": [],
+        "verification_limit": null,
+        "stop_reason": null
+      },
+      "writes": [],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "response_id": "d7b2207c-a1ca-45ce-a50c-27aee511b41a",
+      "remaining_budget_before": {
+        "model_calls": 6,
+        "probe_requests": 91,
+        "insert_rows": 12,
+        "time_ms": 119980,
+        "decision_calls": 3,
+        "format_repairs": 3,
+        "api_tokens": 500000,
+        "cost_microusd": 250000
+      }
+    },
+    {
+      "decision_id": "prepare_round_1",
+      "validation_status": "accepted",
+      "validation_feedback": null,
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "prepare_round_1",
+        "case_id": "paired_1",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "decision": "observe",
+        "reason": "Need exact key frequency distributions for t0.k and t1.k to know which keys exist and whether duplicates are possible, plus NULL counts for v columns, before planning appends for LEFT JOIN with WHERE t0.k>10.",
+        "evidence_ids": [
+          "obs_0_0",
+          "obs_0_2",
+          "obs_0_3",
+          "obs_0_5",
+          "batch_1_obs_0_3",
+          "batch_1_obs_0_7"
+        ],
+        "goal": "Establish exact key distributions and NULL facts to design a meaningful LEFT JOIN scenario with t0.k>10 boundary coverage.",
+        "expected_effect": "Program measures requested facts; no success claim",
+        "observation_requests": [
+          "freq_t0.k",
+          "freq_t1.k",
+          "nulls_t0.v",
+          "nulls_t1.v",
+          "j0_left_repeated",
+          "j0_right_repeated"
+        ],
+        "operations": [],
+        "verification_requests": [],
+        "structured_goals": [],
+        "verification_limit": null,
+        "stop_reason": null
+      },
+      "writes": [],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "response_id": "25b4209f-2437-4674-9483-671857d412eb",
+      "remaining_budget_before": {
+        "model_calls": 5,
+        "probe_requests": 77,
+        "insert_rows": 12,
+        "time_ms": 117189,
+        "decision_calls": 2,
+        "format_repairs": 3,
+        "api_tokens": 480694,
+        "cost_microusd": 249042
+      }
+    },
+    {
+      "decision_id": "prepare_round_2",
+      "validation_status": "rejected",
+      "validation_feedback": {
+        "stage": "plan_validation",
+        "code": "TYPE_MISMATCH",
+        "message": "$.verification_requests[0]: expected object",
+        "path": "$.verification_requests[0]",
+        "expected": "object",
+        "received_type": "string",
+        "example": {
+          "capability_id": "key_rows_t0.k",
+          "parameters": {
+            "key": {
+              "type": "integer",
+              "value": "1"
+            },
+            "stage": "base"
+          }
+        },
+        "recoverable": true,
+        "request_id": "prepare_round_2",
+        "data_revision": 0,
+        "execution_started": false,
+        "attempted_rows": 0,
+        "correction": "Use the latest state and remaining budget to submit a new observe, smaller/different append_rows, or stop; rejected operations were not executed",
+        "remaining_budget": {
+          "model_calls": 3,
+          "probe_requests": 71,
+          "insert_rows": 12,
+          "time_ms": 107463,
+          "decision_calls": 1,
+          "format_repairs": 2,
+          "api_tokens": 437011,
+          "cost_microusd": 245788
+        },
+        "retry_allowed": true
+      },
+      "decision": null,
+      "writes": [],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "unverified",
+        "checks": []
+      },
+      "response_id": "eae53523-686c-43d6-bd37-28561da4a231",
+      "remaining_budget_before": {
+        "model_calls": 4,
+        "probe_requests": 71,
+        "insert_rows": 12,
+        "time_ms": 115227,
+        "decision_calls": 1,
+        "format_repairs": 3,
+        "api_tokens": 460092,
+        "cost_microusd": 247962
+      }
+    },
+    {
+      "decision_id": "prepare_round_3",
+      "validation_status": "accepted",
+      "validation_feedback": null,
+      "decision": {
+        "protocol_version": "1.0",
+        "request_id": "prepare_round_3",
+        "case_id": "paired_1",
+        "query_id": "paired_query",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "decision": "append_rows",
+        "reason": "\u5f53\u524d\u4e24\u8868\u5404\u53ea\u6709 k=5 \u4e00\u884c\uff0cWHERE t0.k>10 \u6052\u4e3a FALSE\uff0c\u67e5\u8be2\u4e3a\u7a7a\uff0cLEFT JOIN \u7684\u5339\u914d/\u672a\u5339\u914d/\u91cd\u590d\u5339\u914d\u8def\u5f84\u5747\u672a\u8986\u76d6\u3002\u8ffd\u52a0\u5c11\u91cf\u884c\u8986\u76d6\uff1at0 \u4fa7\u8fb9\u754c\u503c 9/10/11\uff089\u300110 \u4e0d\u6ee1\u8db3 WHERE\uff0c11 \u6ee1\u8db3\uff09\u3001t0 \u4fa7 k>10 \u4e14 t1 \u65e0\u5339\u914d\u7684\u672a\u5339\u914d\u884c\u3001t0 \u4e0e t1 \u5728 k>10 \u4e0a\u7684\u5339\u914d\u5bf9\u3001t1 \u4fa7 k>10 \u4f46 t0 \u65e0\u5bf9\u5e94\u884c\u7684\u53f3\u4fa7\u672a\u5339\u914d\u884c\uff0c\u4ee5\u53ca t0.k=11 \u91cd\u590d\u4ee5\u4ea7\u751f\u91cd\u590d\u5339\u914d\u3002",
+        "evidence_ids": [
+          "obs_0_0",
+          "obs_0_2",
+          "obs_0_3",
+          "obs_0_5",
+          "obs_0_6",
+          "batch_1_obs_0_3",
+          "batch_1_obs_0_7",
+          "batch_1_obs_0_8",
+          "batch_1_obs_0_11",
+          "batch_1_obs_0_12",
+          "batch_1_obs_0_13",
+          "batch_2_obs_0_0",
+          "batch_2_obs_0_1",
+          "batch_2_obs_0_4",
+          "batch_2_obs_0_5"
+        ],
+        "goal": "\u4e3a LEFT JOIN + WHERE t0.k>10 \u573a\u666f\u8865\u5145\u8fb9\u754c\u503c\u3001\u5339\u914d\u5bf9\u3001\u672a\u5339\u914d\u884c\u4e0e\u91cd\u590d\u5339\u914d\u884c\uff0c\u4f7f\u67e5\u8be2\u4ea7\u751f\u975e\u7a7a\u7ed3\u679c\u5e76\u8986\u76d6\u591a\u6761\u6267\u884c\u8def\u5f84\u3002",
+        "expected_effect": "t0 \u6709 k=9/10\uff08WHERE \u5047\uff09\u3001k=11 \u4e24\u884c\u4e0e k=20\uff08WHERE \u771f\uff09\uff1bt1 \u6709 k=11 \u4e24\u884c\u3001k=20 \u4e00\u884c\u3001k=30 \u4e00\u884c\u3002LEFT JOIN \u540e k=11 \u4ea7\u751f 2\u00d72=4 \u5bf9\u5339\u914d\uff0ck=20 \u4ea7\u751f 1 \u5bf9\uff0ck=30 \u4e3a\u53f3\u4fa7\u672a\u5339\u914d\uff08LEFT JOIN \u4e0d\u8f93\u51fa\uff09\uff0ct0 \u7684 k=11/20 \u5747\u6709\u5339\u914d\u3002WHERE \u540e\u4fdd\u7559 k=11 \u7684 4 \u5bf9\u4e0e k=20 \u7684 1 \u5bf9\uff0c\u5171 5 \u5bf9\uff1bk=11 \u4e3a\u91cd\u590d\u952e\uff08\u22652 \u5bf9\uff09\u3002\u67e5\u8be2\u975e\u7a7a\u3002",
+        "observation_requests": [],
+        "operations": [
+          {
+            "table": "t0",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "9"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "9"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "10"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "10"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "11"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "11"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "11"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "111"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "20"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "20"
+                }
+              }
+            ]
+          },
+          {
+            "table": "t1",
+            "rows": [
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "11"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "11"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "11"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "112"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "20"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "20"
+                }
+              },
+              {
+                "k": {
+                  "type": "integer",
+                  "value": "30"
+                },
+                "v": {
+                  "type": "integer",
+                  "value": "30"
+                }
+              }
+            ]
+          }
+        ],
+        "verification_requests": [
+          "rows_t0",
+          "rows_t1",
+          "j0_pairs_before",
+          "j0_left_unmatched",
+          "j0_right_unmatched",
+          "j0_left_repeated",
+          "j0_right_repeated",
+          "j0_pairs_after",
+          "j0_duplicate_after",
+          "j0_left_unmatched_after",
+          "j0_right_unmatched_after",
+          "query_input_before",
+          "query_input_after",
+          "query_empty",
+          {
+            "capability_id": "predicate_where",
+            "parameters": {
+              "stage": "input"
+            }
+          },
+          {
+            "capability_id": "predicate_where",
+            "parameters": {
+              "stage": "output"
+            }
+          },
+          {
+            "capability_id": "predicate_j0_on",
+            "parameters": {
+              "stage": "input"
+            }
+          },
+          "base_where_boundary_below",
+          "base_where_boundary_at",
+          "base_where_boundary_above",
+          "where_boundary_below_before",
+          "where_boundary_below_after",
+          "where_boundary_at_before",
+          "where_boundary_at_after",
+          "where_boundary_above_before",
+          "where_boundary_above_after"
+        ],
+        "structured_goals": [
+          {
+            "capability_id": "rows_t0",
+            "field": "count",
+            "comparison": "equals",
+            "expected": "6"
+          },
+          {
+            "capability_id": "rows_t1",
+            "field": "count",
+            "comparison": "equals",
+            "expected": "5"
+          },
+          {
+            "capability_id": "base_where_boundary_below",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "base_where_boundary_at",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "base_where_boundary_above",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "4"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "j0_left_unmatched_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "query_empty",
+            "field": "empty",
+            "comparison": "equals",
+            "expected": "false"
+          },
+          {
+            "capability_id": "where_predicate_true",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          },
+          {
+            "capability_id": "where_predicate_false",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1"
+          }
+        ],
+        "verification_limit": null,
+        "stop_reason": null,
+        "feasibility": {
+          "join_witness": "t0 \u65b0\u589e k=11\uff08\u4e24\u884c\uff09\u4e0e t1 \u65b0\u589e k=11\uff08\u4e24\u884c\uff09\u5b8c\u6574\u6574\u6570\u952e\u76f8\u7b49\uff0cON (t0.k)=(t1.k) \u4e3a TRUE\uff0c\u4ea7\u751f 4 \u5bf9\uff1bt0 k=20 \u4e0e t1 k=20 \u76f8\u7b49\u4ea7\u751f 1 \u5bf9\u3002t1 k=30 \u65e0 t0 \u5bf9\u5e94\uff0c\u4e3a\u53f3\u4fa7\u672a\u5339\u914d\uff1bt0 k=9/10 \u65e0 t1 \u5bf9\u5e94\uff0c\u4e3a\u5de6\u4fa7\u672a\u5339\u914d\uff08WHERE \u524d\uff09\u3002",
+          "where_witness": "WHERE (t0.k)>10\uff1ak=11 \u4e0e k=20 \u7684 t0 \u884c\u6ee1\u8db3\uff1bk=9\u3001k=10 \u4e0d\u6ee1\u8db3\u3002\u8fd9\u4e9b\u884c\u786e\u5b9e\u8fdb\u5165 JOIN \u8f93\u51fa\uff08k=11\u3001k=20 \u6709\u5339\u914d\u5bf9\uff09\uff0c\u56e0\u6b64\u5230\u8fbe WHERE \u8f93\u5165\u3002",
+          "group_witness": "\u67e5\u8be2\u65e0 GROUP BY/HAVING\uff0c\u4e0d\u6d89\u53ca\u5206\u7ec4\uff1b\u91cd\u590d\u5339\u914d\u901a\u8fc7 t0.k=11 \u4e24\u884c \u00d7 t1.k=11 \u4e24\u884c\u4ea7\u751f 4 \u5bf9\u4f53\u73b0\u3002",
+          "constraint_check": "\u4e24\u8868\u5747\u65e0\u4e3b\u952e\u3001\u552f\u4e00\u7d22\u5f15\u3001CHECK\u3001\u751f\u6210\u5217\u6216\u81ea\u589e\uff1bk\u3001v \u5747\u4e3a\u53ef\u7a7a bigint\uff0c\u8ffd\u52a0\u7684\u6574\u6570\u503c\u5728\u8303\u56f4\u5185\uff0c\u65e0\u957f\u5ea6\u9650\u5236\u95ee\u9898\uff0c\u91cd\u590d k \u503c\u5141\u8bb8\u3002",
+          "measurement": "\u8865\u884c\u540e\u7a0b\u5e8f\u81ea\u52a8\u6267\u884c verification_requests\uff1arows_t0/rows_t1 \u9a8c\u8bc1\u884c\u6570\uff0cj0_pairs_after/j0_duplicate_after/j0_left_unmatched_after \u9a8c\u8bc1\u5339\u914d\u4e0e\u91cd\u590d\uff0cquery_empty \u4e0e predicate_where \u9a8c\u8bc1 WHERE \u771f/\u5047\u5206\u5e03\uff0c\u8fb9\u754c\u89c2\u6d4b\u9a8c\u8bc1 9/10/11 \u5230\u8fbe WHERE \u8f93\u5165\u4e0e\u8f93\u51fa\u3002"
+        }
+      },
+      "writes": [
+        {
+          "table": "t0",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "9"
+            },
+            "v": {
+              "type": "integer",
+              "value": "9"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "9"
+            },
+            "v": {
+              "type": "integer",
+              "value": "9"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "9"
+            },
+            "v": {
+              "type": "integer",
+              "value": "9"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 1
+        },
+        {
+          "table": "t0",
+          "row_index": 1,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "10"
+            },
+            "v": {
+              "type": "integer",
+              "value": "10"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "10"
+            },
+            "v": {
+              "type": "integer",
+              "value": "10"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "10"
+            },
+            "v": {
+              "type": "integer",
+              "value": "10"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 2
+        },
+        {
+          "table": "t0",
+          "row_index": 2,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 3
+        },
+        {
+          "table": "t0",
+          "row_index": 3,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "111"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "111"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "111"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 4
+        },
+        {
+          "table": "t0",
+          "row_index": 4,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "sql": "INSERT INTO `t0` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 5
+        },
+        {
+          "table": "t1",
+          "row_index": 0,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "11"
+            }
+          },
+          "sql": "INSERT INTO `t1` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 6
+        },
+        {
+          "table": "t1",
+          "row_index": 1,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "112"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "112"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "11"
+            },
+            "v": {
+              "type": "integer",
+              "value": "112"
+            }
+          },
+          "sql": "INSERT INTO `t1` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 7
+        },
+        {
+          "table": "t1",
+          "row_index": 2,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "20"
+            },
+            "v": {
+              "type": "integer",
+              "value": "20"
+            }
+          },
+          "sql": "INSERT INTO `t1` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 8
+        },
+        {
+          "table": "t1",
+          "row_index": 3,
+          "status": "success",
+          "affected_rows": 1,
+          "specified_values": {
+            "k": {
+              "type": "integer",
+              "value": "30"
+            },
+            "v": {
+              "type": "integer",
+              "value": "30"
+            }
+          },
+          "attempted_values": {
+            "k": {
+              "type": "integer",
+              "value": "30"
+            },
+            "v": {
+              "type": "integer",
+              "value": "30"
+            }
+          },
+          "actual_values": {
+            "k": {
+              "type": "integer",
+              "value": "30"
+            },
+            "v": {
+              "type": "integer",
+              "value": "30"
+            }
+          },
+          "sql": "INSERT INTO `t1` (`k`,`v`) VALUES (?,?)",
+          "sqlstate": null,
+          "error_code": null,
+          "error": null,
+          "data_revision_after": 9
+        }
+      ],
+      "model_goal_evaluation": {
+        "scope": "structured_goals_only",
+        "outcome": "not_achieved",
+        "checks": [
+          {
+            "capability_id": "rows_t0",
+            "field": "count",
+            "comparison": "equals",
+            "expected": "6",
+            "actual": "6",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_0",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "rows_t0",
+                "status": "exact",
+                "value": {
+                  "count": "6"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "rows_t1",
+            "field": "count",
+            "comparison": "equals",
+            "expected": "5",
+            "actual": "5",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_3",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "rows_t1",
+                "status": "exact",
+                "value": {
+                  "count": "5"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "base_where_boundary_below",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_25",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "base_where_boundary_below",
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "base_where_boundary_at",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_28",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "base_where_boundary_at",
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "base_where_boundary_above",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "2",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_31",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "base_where_boundary_above",
+                "status": "exact",
+                "value": {
+                  "count": "2"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "j0_pairs_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "4",
+            "actual": "5",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_11",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "j0_pairs_after",
+                "status": "exact",
+                "value": {
+                  "count": "5"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "j0_duplicate_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "1",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_12",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "j0_duplicate_after",
+                "status": "exact",
+                "value": {
+                  "count": "1"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "j0_left_unmatched_after",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "0",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_13",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "j0_left_unmatched_after",
+                "status": "exact",
+                "value": {
+                  "count": "0"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "not_achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "query_empty",
+            "field": "empty",
+            "comparison": "equals",
+            "expected": "false",
+            "actual": "false",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_17",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "query_empty",
+                "status": "exact",
+                "value": {
+                  "empty": false
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "where_predicate_true",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "5",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_22",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "where_predicate_true",
+                "status": "exact",
+                "value": {
+                  "count": "5"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          },
+          {
+            "capability_id": "where_predicate_false",
+            "field": "count",
+            "comparison": "at_least",
+            "expected": "1",
+            "actual": "3",
+            "evidence": [
+              {
+                "id": "batch_3_obs_9_23",
+                "query_id": "paired_query",
+                "schema_revision": 0,
+                "data_revision": 9,
+                "capability_id": "where_predicate_false",
+                "status": "exact",
+                "value": {
+                  "count": "3"
+                },
+                "error": null
+              }
+            ],
+            "outcome": "achieved",
+            "reason": "current_exact_measurement"
+          }
+        ]
+      },
+      "response_id": "7510eb85-246d-45e2-9d0b-781518368bf2",
+      "remaining_budget_before": {
+        "model_calls": 3,
+        "probe_requests": 71,
+        "insert_rows": 12,
+        "time_ms": 107463,
+        "decision_calls": 1,
+        "format_repairs": 2,
+        "api_tokens": 437011,
+        "cost_microusd": 245788
+      }
+    }
+  ],
+  "final_budget": {
+    "model_calls": 2,
+    "probe_requests": 34,
+    "insert_rows": 3,
+    "time_ms": 92163,
+    "decision_calls": 0,
+    "format_repairs": 2,
+    "api_tokens": 410788,
+    "cost_microusd": 243022
+  },
+  "new_query_scenes": [
+    "j0_duplicate_after",
+    "j0_pairs_after",
+    "where_boundary_above_after",
+    "where_boundary_above_before",
+    "where_boundary_at_before",
+    "where_boundary_below_before",
+    "where_input_nulls_t1.k",
+    "where_predicate_true"
+  ],
+  "engine_outcome": {
+    "status": "PASS",
+    "allPathsValid": true,
+    "comparisons": [
+      {
+        "mismatchType": "BASELINE_DISAGREEMENT",
+        "right": "t0=tiflash,t1=tiflash",
+        "baselinePair": true,
+        "left": "t0=tikv,t1=tikv",
+        "equal": true
+      },
+      {
+        "mismatchType": "MIXED_VS_SINGLE_MISMATCH",
+        "right": "t0=tikv,t1=tiflash",
+        "baselinePair": false,
+        "left": "t0=tikv,t1=tikv",
+        "equal": true
+      },
+      {
+        "mismatchType": "MIXED_VS_SINGLE_MISMATCH",
+        "right": "t0=tiflash,t1=tikv",
+        "baselinePair": false,
+        "left": "t0=tikv,t1=tikv",
+        "equal": true
+      },
+      {
+        "mismatchType": "MIXED_VS_SINGLE_MISMATCH",
+        "right": "t0=tikv,t1=tiflash",
+        "baselinePair": false,
+        "left": "t0=tiflash,t1=tiflash",
+        "equal": true
+      },
+      {
+        "mismatchType": "MIXED_VS_SINGLE_MISMATCH",
+        "right": "t0=tiflash,t1=tikv",
+        "baselinePair": false,
+        "left": "t0=tiflash,t1=tiflash",
+        "equal": true
+      },
+      {
+        "mismatchType": "MIXED_VS_MIXED_MISMATCH",
+        "right": "t0=tiflash,t1=tikv",
+        "baselinePair": false,
+        "left": "t0=tikv,t1=tiflash",
+        "equal": true
+      }
+    ],
+    "failures": [],
+    "differingPairs": [],
+    "mismatchTypes": []
+  },
+  "final_model_goal_evaluation": {
+    "scope": "structured_goals_only",
+    "outcome": "not_achieved",
+    "checks": [
+      {
+        "capability_id": "rows_t0",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "6",
+        "actual": "6",
+        "evidence": [
+          {
+            "id": "obs_9_0",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "rows_t0",
+            "status": "exact",
+            "value": {
+              "count": "6"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "rows_t1",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "5",
+        "actual": "5",
+        "evidence": [
+          {
+            "id": "obs_9_1",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "rows_t1",
+            "status": "exact",
+            "value": {
+              "count": "5"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "base_where_boundary_below",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "obs_9_2",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "base_where_boundary_below",
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "base_where_boundary_at",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "obs_9_3",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "base_where_boundary_at",
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "base_where_boundary_above",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "2",
+        "evidence": [
+          {
+            "id": "obs_9_4",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "base_where_boundary_above",
+            "status": "exact",
+            "value": {
+              "count": "2"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_pairs_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "4",
+        "actual": "5",
+        "evidence": [
+          {
+            "id": "obs_9_5",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "j0_pairs_after",
+            "status": "exact",
+            "value": {
+              "count": "5"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_duplicate_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "1",
+        "evidence": [
+          {
+            "id": "obs_9_6",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "j0_duplicate_after",
+            "status": "exact",
+            "value": {
+              "count": "1"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "j0_left_unmatched_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "0",
+        "evidence": [
+          {
+            "id": "obs_9_7",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "j0_left_unmatched_after",
+            "status": "exact",
+            "value": {
+              "count": "0"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "not_achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "query_empty",
+        "field": "empty",
+        "comparison": "equals",
+        "expected": "false",
+        "actual": "false",
+        "evidence": [
+          {
+            "id": "obs_9_8",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "query_empty",
+            "status": "exact",
+            "value": {
+              "empty": false
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "where_predicate_true",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "5",
+        "evidence": [
+          {
+            "id": "obs_9_9",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "where_predicate_true",
+            "status": "exact",
+            "value": {
+              "count": "5"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      },
+      {
+        "capability_id": "where_predicate_false",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1",
+        "actual": "3",
+        "evidence": [
+          {
+            "id": "obs_9_10",
+            "query_id": "paired_query",
+            "schema_revision": 0,
+            "data_revision": 9,
+            "capability_id": "where_predicate_false",
+            "status": "exact",
+            "value": {
+              "count": "3"
+            },
+            "error": null
+          }
+        ],
+        "outcome": "achieved",
+        "reason": "current_exact_measurement"
+      }
+    ]
+  },
+  "limitation": "A fixed controlled case; partial model goals failed, not proof of general random-query improvement."
+}

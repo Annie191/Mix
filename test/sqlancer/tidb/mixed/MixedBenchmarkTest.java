@@ -229,6 +229,32 @@ class MixedBenchmarkTest {
     }
 
     @Test
+    void independentCaseAssessmentClassifiesNoGainWhileRoundBaselineCanRemainUnverified() {
+        for (boolean complete : List.of(true, false)) {
+            JsonObject report = MixedAppendTest.json("{\"strategy\":\"AI\",\"status\":\"COMPLETED\",\"elapsed_ms\":1,"
+                    + "\"api_audit\":[{\"estimated_usd\":0},{\"estimated_usd\":0}],"
+                    + "\"preparation\":{\"rounds\":[{\"validation_status\":\"accepted\","
+                    + "\"decision\":{\"decision\":\"append_rows\"},\"writes\":[{\"status\":\"success\"}],"
+                    + "\"evaluation\":{\"outcome\":\"unverified\"},\"data_coverage_change\":{\"added\":[],\"complete\":false}}]},"
+                    + "\"data_coverage_change\":{\"query_stages\":{\"added\":[],\"lost\":[],\"complete\":" + complete
+                    + "}}}");
+            JsonArray reports = new JsonArray();
+            reports.add(report);
+            JsonObject metrics = TiDBMixedBenchmarkMetrics.summarize(reports).getAsJsonObject("AI");
+            assertEquals(1, metrics.get("rows_gain_unverified").getAsInt());
+            assertEquals(complete ? 1 : 0, metrics.get("case_rows_without_new_query_scene").getAsInt());
+            assertEquals(complete ? 0 : 1, metrics.get("case_rows_query_gain_unverified").getAsInt());
+            assertEquals(0.5,
+                    metrics.getAsJsonObject("accepted_response_per_api_call_rate").get("ratio").getAsDouble());
+            report.getAsJsonObject("data_coverage_change").getAsJsonObject("query_stages").getAsJsonArray("added")
+                    .add("where_boundary_at_before");
+            metrics = TiDBMixedBenchmarkMetrics.summarize(reports).getAsJsonObject("AI");
+            assertEquals(complete ? 1 : 0, metrics.get("case_rows_with_new_query_scene").getAsInt());
+            assertEquals(0, metrics.get("case_rows_without_new_query_scene").getAsInt());
+        }
+    }
+
+    @Test
     void verificationFloorIsMeasuredAndChargedEvenWhenModelRequestsNoProbes() throws Exception {
         try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
             TiDBMixedGeneration.Candidate query = MixedObservationTest.candidate(fixture.tables,

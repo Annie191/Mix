@@ -93,6 +93,28 @@ public final class TiDBMixedBenchmarkMetrics {
         }
     }
 
+    private static void caseRowGain(JsonObject report, Map<String, Long> counts) {
+        if (!report.has("preparation")) {
+            return;
+        }
+        long successful = 0;
+        for (JsonElement entry : report.getAsJsonObject("preparation").getAsJsonArray("rounds")) {
+            for (JsonElement row : entry.getAsJsonObject().getAsJsonArray("writes")) {
+                successful += row.getAsJsonObject().get("status").getAsString().equals("success") ? 1 : 0;
+            }
+        }
+        JsonObject change = report.has("data_coverage_change") ? report.getAsJsonObject("data_coverage_change")
+                : new JsonObject();
+        if (!change.has("query_stages") || !change.getAsJsonObject("query_stages").get("complete").getAsBoolean()) {
+            add(counts, "case_rows_query_gain_unverified", successful);
+        } else if (change.getAsJsonObject("query_stages").getAsJsonArray("added").isEmpty()) {
+            add(counts, "case_rows_without_new_query_scene", successful);
+        } else {
+            // Case-level association only: do not attribute the gain to each particular inserted row.
+            add(counts, "case_rows_with_new_query_scene", successful);
+        }
+    }
+
     private static String proposedAction(JsonObject round) {
         if (!round.get("decision").isJsonNull()) {
             return round.getAsJsonObject("decision").get("decision").getAsString();
@@ -196,7 +218,8 @@ public final class TiDBMixedBenchmarkMetrics {
                     "engine_paths_valid", "engine_all_paths_valid_cases", "api_calls", "prompt_tokens",
                     "completion_tokens", "preparation_elapsed_ms", "total_elapsed_ms", "legacy_unscoped_scene_hits",
                     "base_data_only_append_rounds", "observe_plans_proposed", "observe_plans_executed",
-                    "observe_probes", "parameterized_probes")) {
+                    "observe_probes", "parameterized_probes", "case_rows_without_new_query_scene",
+                    "case_rows_with_new_query_scene", "case_rows_query_gain_unverified")) {
                 counts.put(key, 0L);
             }
             BigDecimal cost = BigDecimal.ZERO;
@@ -212,6 +235,7 @@ public final class TiDBMixedBenchmarkMetrics {
                 add(counts, "cases", 1);
                 add(counts, "completed_cases", report.get("status").getAsString().equals("COMPLETED") ? 1 : 0);
                 rounds(report, counts);
+                caseRowGain(report, counts);
                 add(counts, "total_elapsed_ms", report.get("elapsed_ms").getAsLong());
                 if (report.has("preparation_elapsed_ms")) {
                     add(counts, "preparation_elapsed_ms", report.get("preparation_elapsed_ms").getAsLong());
@@ -276,6 +300,8 @@ public final class TiDBMixedBenchmarkMetrics {
             result.add("engine_join_buckets", engineJoins);
             result.addProperty("known_estimated_usd", cost);
             result.addProperty("cost_complete", costComplete);
+            result.add("accepted_response_per_api_call_rate",
+                    rate(counts.get("api_calls") == 0 ? 0 : counts.get("responses_accepted"), counts.get("api_calls")));
             result.add("protocol_acceptance_rate", rate(counts.get("responses_accepted"),
                     counts.get("responses_accepted") + counts.get("responses_rejected")));
             result.add("plan_execution_rate",

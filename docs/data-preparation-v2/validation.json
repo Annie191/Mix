@@ -65,5 +65,43 @@
     "static_parameters_null_http_status": 200,
     "finish_reason": "tool_calls",
     "limitation": "Schema compatibility only"
+  },
+  "post_run_metrics_verify": {
+    "total": 242,
+    "passed": 229,
+    "skipped_live": 13,
+    "failures": 0,
+    "errors": 0,
+    "spotbugs": 0,
+    "log": "logs/action-interface/metrics-final-verify.log",
+    "test_scope": "sqlancer.tidb.mixed: 26 test classes; full build/static checks"
+  },
+  "partition_error_compatibility": {
+    "seed": 58,
+    "table_generation_only": true,
+    "real_tidb": true,
+    "model_called": false,
+    "exit_code": 0
+  },
+  "paired_real_model_comparison": {
+    "fixtures": 6,
+    "strategies": [
+      "RANDOM",
+      "SHARED",
+      "AI",
+      "AI_THINKING"
+    ],
+    "reports": 24,
+    "same_input_fingerprints": true,
+    "report": "benchmark-results.json"
+  },
+  "real_model_hour_run": {
+    "report": "query-1h-results.json",
+    "launch_window_seconds": 3600,
+    "elapsed_seconds": 3775.206,
+    "real_api_calls": 72,
+    "case_files": 26,
+    "workers": 27,
+    "mismatches": 0
   }
 }
