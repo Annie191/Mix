@@ -36,10 +36,16 @@ public final class TiDBDataPreparationProtocol {
     public static final class ValidationException extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
         public final String code;
+        public final transient JsonObject details;
 
         ValidationException(String code, String message) {
+            this(code, message, new JsonObject());
+        }
+
+        ValidationException(String code, String message, JsonObject details) {
             super(message);
             this.code = code;
+            this.details = details.deepCopy();
         }
     }
 
@@ -145,7 +151,7 @@ public final class TiDBDataPreparationProtocol {
         }
     }
 
-    private static JsonObject parse(String json, int limit) {
+    static JsonObject parse(String json, int limit) {
         require(json != null && json.length() <= limit, "JSON exceeds protocol limit");
         try (JsonReader reader = new JsonReader(new StringReader(json))) {
             reader.setStrictness(Strictness.STRICT);
@@ -289,8 +295,12 @@ public final class TiDBDataPreparationProtocol {
         }
         array(state.get("history")).forEach(TiDBDataPreparationProtocol::object);
         JsonObject budget = object(state.get("remaining_budget"));
-        fields(budget, Set.of("model_calls", "probe_requests", "insert_rows", "time_ms"));
+        require(budget.keySet().containsAll(Set.of("model_calls", "probe_requests", "insert_rows", "time_ms"))
+                && Set.of("model_calls", "probe_requests", "insert_rows", "time_ms", "decision_calls", "format_repairs",
+                        "api_tokens", "cost_microusd").containsAll(budget.keySet()),
+                "invalid budget fields");
         budget.entrySet().forEach(entry -> integer(entry.getValue()));
+        require(budget.has("api_tokens") == budget.has("cost_microusd"), "token and fee budgets must appear together");
         for (JsonObject capability : named(array(state.get("available_observations")), "id").values()) {
             Set<String> allowed = new HashSet<>(Set.of("id", "metric", "target", "description"));
             if (capability.has("goal_fields")) {
@@ -336,10 +346,22 @@ public final class TiDBDataPreparationProtocol {
                 Map.of("role", "user", "content", state.toString()));
     }
 
+    static String toolPrompt() {
+        return resource("overall-v1.txt") + "\n" + resource("data-preparation-v2.txt");
+    }
+
     public static JsonObject decision(String json, JsonObject input) {
         JsonObject state = state(input.toString()); // Revalidate even if the caller modified an earlier state object.
         JsonObject decision = parse(json, 32_000);
+        if (decision.has("tool_calls")) {
+            decision = TiDBMixedActionSchema.normalize(decision, state);
+        }
+        TiDBMixedActionSchema.legacyShape(decision, state);
         Set<String> allowed = new HashSet<>(DECISION_FIELDS);
+        if (decision.has("feasibility")) {
+            allowed.add("feasibility");
+            object(decision.get("feasibility"));
+        }
         if (decision.has("structured_goals")) {
             allowed.add("structured_goals");
             TiDBMixedPreparationGoals.validate(state, decision.get("structured_goals"));
@@ -364,7 +386,13 @@ public final class TiDBDataPreparationProtocol {
         named(array(state.get("observations")), "id").keySet().forEach(evidence::add);
         named(array(state.get("samples")), "id").keySet().forEach(evidence::add);
         if (!evidence.containsAll(strings(decision.get("evidence_ids")))) {
-            throw new ValidationException("UNKNOWN_EVIDENCE_ID", "invented evidence identifier");
+            JsonObject details = new JsonObject();
+            details.addProperty("path", "$.evidence_ids");
+            details.addProperty("received_type", "array");
+            details.addProperty("expected", "current query, schema, observation or sample IDs");
+            details.add("allowed_values", new com.google.gson.Gson().toJsonTree(evidence));
+            details.add("example", new JsonArray());
+            throw new ValidationException("UNKNOWN_EVIDENCE_ID", "invented evidence identifier", details);
         }
         JsonObject budget = object(state.get("remaining_budget"));
         TiDBMixedObservationRequest.validate(state, decision.get("observation_requests"),
@@ -432,8 +460,16 @@ public final class TiDBDataPreparationProtocol {
                             : type.equals(text(column.get("value_kind"))), "column/value kind mismatch");
                 }
                 if (++count > rowBudget) {
+                    JsonObject details = new JsonObject();
+                    details.addProperty("path", "$.operations");
+                    details.addProperty("received_type", "array");
+                    details.addProperty("expected", "total rows across ALL tables <= " + rowBudget);
+                    details.addProperty("maximum_total_rows", rowBudget);
+                    details.addProperty("example",
+                            "Reduce the sum of operations[*].rows to " + rowBudget + " or choose observe/stop");
                     throw new ValidationException("APPEND_ROW_BUDGET_EXCEEDED",
-                            "append exceeds remaining row budget; total across all tables must be <= " + rowBudget);
+                            "append exceeds remaining row budget; total across all tables must be <= " + rowBudget,
+                            details);
                 }
             }
         }

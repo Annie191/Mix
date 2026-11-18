@@ -126,7 +126,8 @@ class MixedActiveObservationTest {
             JsonObject packet = state(fixture, query, true);
             assertEquals(5, packet.getAsJsonArray("observations").size());
             assertEquals(91, packet.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
-            assertEquals(3, packet.getAsJsonObject("remaining_budget").get("model_calls").getAsInt());
+            assertEquals(6, packet.getAsJsonObject("remaining_budget").get("model_calls").getAsInt());
+            assertEquals(3, packet.getAsJsonObject("remaining_budget").get("decision_calls").getAsInt());
             assertFalse(packet.getAsJsonArray("samples").get(0).getAsJsonObject().get("complete").getAsBoolean());
             assertEquals(2, packet.getAsJsonArray("samples").get(0).getAsJsonObject().getAsJsonArray("rows").size());
             assertTrue(packet.getAsJsonArray("observations").asList().stream().noneMatch(

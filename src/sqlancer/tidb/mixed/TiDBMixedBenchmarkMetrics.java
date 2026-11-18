@@ -101,6 +101,10 @@ public final class TiDBMixedBenchmarkMetrics {
             try {
                 JsonObject raw = com.google.gson.JsonParser.parseString(round.get("raw_response").getAsString())
                         .getAsJsonObject();
+                if (raw.has("tool_calls") && raw.getAsJsonArray("tool_calls").size() == 1) {
+                    return raw.getAsJsonArray("tool_calls").get(0).getAsJsonObject().getAsJsonObject("function")
+                            .get("name").getAsString();
+                }
                 return raw.get("decision").getAsString();
             } catch (RuntimeException invalid) {
                 return "unparseable"; // Audit classification only, never execution authorization.
@@ -180,7 +184,7 @@ public final class TiDBMixedBenchmarkMetrics {
 
     public static JsonObject summarize(JsonArray reports) {
         JsonObject summary = new JsonObject();
-        for (String strategy : java.util.List.of("RANDOM", "SHARED", "AI")) {
+        for (String strategy : java.util.List.of("RANDOM", "SHARED", "AI", "AI_THINKING")) {
             Map<String, Long> counts = new LinkedHashMap<>();
             for (String key : java.util.List.of("cases", "completed_cases", "append_plans_proposed",
                     "append_plans_executed", "append_goals_achieved", "append_goals_not_achieved",
@@ -272,6 +276,8 @@ public final class TiDBMixedBenchmarkMetrics {
             result.add("engine_join_buckets", engineJoins);
             result.addProperty("known_estimated_usd", cost);
             result.addProperty("cost_complete", costComplete);
+            result.add("protocol_acceptance_rate", rate(counts.get("responses_accepted"),
+                    counts.get("responses_accepted") + counts.get("responses_rejected")));
             result.add("plan_execution_rate",
                     rate(counts.get("append_plans_executed"), counts.get("append_plans_proposed")));
             result.add("verifiable_append_goal_rate", rate(counts.get("append_goals_achieved"),

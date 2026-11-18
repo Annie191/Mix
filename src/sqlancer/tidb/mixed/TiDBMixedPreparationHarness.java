@@ -55,7 +55,17 @@ public final class TiDBMixedPreparationHarness {
     }
 
     public static JsonObject preparationBudget() {
-        return preparationBudget(Long.parseLong(System.getenv().getOrDefault("MS_PREPARATION_ROWS", "6")));
+        JsonObject budget = preparationBudget(Long.parseLong(System.getenv().getOrDefault("MS_PREPARATION_ROWS", "6")));
+        budget.addProperty("model_calls", preparationCallLimit());
+        budget.addProperty("decision_calls", 3);
+        budget.addProperty("format_repairs", 3);
+        budget.addProperty("api_tokens", 500_000);
+        budget.addProperty("cost_microusd", 250_000);
+        return budget;
+    }
+
+    public static int preparationCallLimit() {
+        return 6;
     }
 
     static JsonObject preparationBudget(long rows) {
@@ -124,6 +134,42 @@ public final class TiDBMixedPreparationHarness {
 
     private long budget(String key) {
         return packet.getAsJsonObject("remaining_budget").get(key).getAsLong();
+    }
+
+    private boolean decisionBudget() {
+        JsonObject remaining = packet.getAsJsonObject("remaining_budget");
+        return !remaining.has("decision_calls") || budget("decision_calls") > 0;
+    }
+
+    private void chargeApi(Responder responder, int before, JsonObject round) {
+        if (!(responder instanceof TiDBDeepSeekPreparationClient)) {
+            return;
+        }
+        JsonArray audit = ((TiDBDeepSeekPreparationClient) responder).audit;
+        if (audit.size() == before) {
+            return;
+        }
+        JsonObject event = audit.get(audit.size() - 1).getAsJsonObject();
+        round.add("api_usage", event.deepCopy());
+        JsonObject remaining = packet.getAsJsonObject("remaining_budget");
+        if (remaining.has("api_tokens")) {
+            if (!event.has("usage") || event.get("usage").isJsonNull()) {
+                budget("api_tokens", 0); // Unknown usage cannot be treated as zero cost or fund another call.
+                budget("cost_microusd", 0);
+                round.addProperty("api_budget_stop", "USAGE_UNKNOWN");
+            } else {
+                JsonObject usage = event.getAsJsonObject("usage");
+                long tokens = usage.get("prompt_tokens").getAsLong() + usage.get("completion_tokens").getAsLong();
+                budget("api_tokens", budget("api_tokens") - tokens);
+                if (!event.get("estimated_usd").isJsonNull()) {
+                    long micro = event.get("estimated_usd").getAsBigDecimal().movePointRight(6)
+                            .setScale(0, java.math.RoundingMode.CEILING).longValueExact();
+                    budget("cost_microusd", budget("cost_microusd") - micro);
+                } else {
+                    budget("cost_microusd", 0);
+                }
+            }
+        }
     }
 
     public void verificationFloor(List<String> ids) {
@@ -382,7 +428,12 @@ public final class TiDBMixedPreparationHarness {
         String termination = "budget_exhausted";
         String requestPrefix = packet.get("request_id").getAsString();
         try {
-            while (budget("model_calls") > 0 && budget("time_ms") > 0) {
+            while (budget("model_calls") > 0 && decisionBudget() && budget("time_ms") > 0) {
+                JsonObject remaining = packet.getAsJsonObject("remaining_budget");
+                if (remaining.has("api_tokens") && (budget("api_tokens") == 0 || budget("cost_microusd") == 0)) {
+                    termination = "api_budget_exhausted";
+                    break;
+                }
                 if (packet.get("frozen").getAsBoolean() || packet.get("discrepancy_found").getAsBoolean()) {
                     termination = "preparation_closed";
                     break;
@@ -405,12 +456,16 @@ public final class TiDBMixedPreparationHarness {
                 JsonObject plan;
                 boolean received = false;
                 boolean recoverable = false;
+                int apiBefore = responder instanceof TiDBDeepSeekPreparationClient
+                        ? ((TiDBDeepSeekPreparationClient) responder).audit.size() : 0;
                 try {
                     String content = responder.respond(messages);
                     received = true;
                     round.addProperty("raw_response", content);
                     plan = TiDBDataPreparationProtocol.decision(content, packet);
                     combinedGoals(plan); // The live loop requires the new field, including [] for unmeasurable goals.
+                    TiDBMixedPreparationSemantics.validateGoals(plan, packet);
+                    round.add("program_semantics", TiDBMixedPreparationSemantics.analyze(packet));
                     round.add("decision", plan.deepCopy());
                     round.add("model_expectation", plan.get("expected_effect"));
                     if (plan.get("decision").getAsString().equals("append_rows")) {
@@ -440,6 +495,10 @@ public final class TiDBMixedPreparationHarness {
                                             : received ? "INVALID_PLAN" : "MODEL_REQUEST_FAILED");
                     feedback.addProperty("message",
                             received && invalid.getMessage() != null ? invalid.getMessage() : message);
+                    if (invalid instanceof TiDBDataPreparationProtocol.ValidationException) {
+                        ((TiDBDataPreparationProtocol.ValidationException) invalid).details.entrySet()
+                                .forEach(entry -> feedback.add(entry.getKey(), entry.getValue().deepCopy()));
+                    }
                     feedback.addProperty("recoverable", recoverable);
                     feedback.addProperty("request_id", packet.get("request_id").getAsString());
                     feedback.add("data_revision", packet.get("data_revision"));
@@ -451,7 +510,19 @@ public final class TiDBMixedPreparationHarness {
                     round.add("decision", JsonNull.INSTANCE);
                     plan = null;
                 }
+                chargeApi(responder, apiBefore, round);
                 budget("model_calls", callsBefore - 1);
+                if (remaining.has("decision_calls")) {
+                    if (plan != null) {
+                        budget("decision_calls", budget("decision_calls") - 1);
+                    } else if (recoverable) {
+                        if (budget("format_repairs") == 0) {
+                            recoverable = false;
+                        } else {
+                            budget("format_repairs", budget("format_repairs") - 1);
+                        }
+                    }
+                }
                 if (plan != null) {
                     JsonArray accepted = combinedGoals(plan);
                     accepted.forEach(goal -> {
@@ -479,7 +550,7 @@ public final class TiDBMixedPreparationHarness {
                     JsonObject feedback = round.getAsJsonObject("validation_feedback");
                     feedback.add("remaining_budget", packet.getAsJsonObject("remaining_budget").deepCopy());
                     feedback.addProperty("retry_allowed",
-                            recoverable && budget("model_calls") > 0 && budget("time_ms") > 0);
+                            recoverable && decisionBudget() && budget("model_calls") > 0 && budget("time_ms") > 0);
                 }
                 round.add("actual_observations", packet.get("observations").deepCopy());
                 round.add("actual_samples", packet.get("samples").deepCopy());
@@ -506,7 +577,10 @@ public final class TiDBMixedPreparationHarness {
                     if (recoverable) {
                         continue;
                     }
-                    termination = received ? "response_rejected" : "model_unavailable";
+                    termination = received ? "response_rejected"
+                            : modelFailure != null
+                                    && modelFailure.get("code").getAsString().equals("API_BUDGET_RESERVATION_EXHAUSTED")
+                                            ? "api_budget_exhausted" : "model_unavailable";
                     break;
                 }
                 if (uncertain || plan.get("decision").getAsString().equals("stop") || failedRounds >= failureLimit) {

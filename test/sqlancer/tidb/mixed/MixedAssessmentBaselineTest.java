@@ -48,6 +48,7 @@ class MixedAssessmentBaselineTest {
             response.addProperty("id", "assessment-script");
             response.addProperty("model", "fixture");
             response.add("choices", choices);
+            response.add("usage", MixedAppendTest.json("{\"prompt_tokens\":0,\"completion_tokens\":0}"));
             return new TiDBDeepSeekAdvisor.Reply(200, response.toString());
         }, "fixture", 3, 3000, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
     }

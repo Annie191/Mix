@@ -446,3 +446,17 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 新增 7 项回归，使用实际 H2 SELECT 与 JDBC 元数据代理：覆盖 null/空/空白标签、标识稳定、精确值及截断、空与非空查询完全不解码、NaN、聚合/HAVING、错误及 Warning。未调用真实模型或真实 TiDB，也未重跑长测。
 完整混合 Oracle verify 共 224 项：213 项通过、11 项真实集群测试按开关跳过；构建、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名、本地文档链接及差异空白检查通过。
 日志位于项目 `logs/observation-labels/`，`before.log` 保留修复前复现。
+
+## 追加：动作接口、修订预算和计划语义（2026-11-18）
+
+1. **接口分成三个函数。** 默认向 DeepSeek Beta 提交动态 strict Schema，`observe`、`append_rows`、`stop` 各有自己的字段。根据真实可写列和观测目录限定类型、枚举及目标字段；生成列不能写，SQL 不能提交。程序继续做预算、版本、权限和数据库约束校验。
+2. **反馈定位错误字段。** 新增 `path/code/expected/received_type/allowed_values/example`。固定上一轮 27 份真实响应作回归：5 份保持合规，22 份均能定位；人工格式修订后 27 份均通过。此结论不等于模型修订或补行成功。
+3. **修订和决策分开计数。** 默认有效决策 3、格式修订 3、总 HTTP 调用 6；120 秒、token 和估算费用仍共同限额。失败反馈不再轻易耗尽后续观察、补行和再决策机会。程序补行后自动验证，不消耗额外模型调用。
+4. **计划说明可达性。** 补行要求五项简短依据：完整连接键、WHERE、全部 GROUP BY 键、实际约束、验证观测。文字不能当覆盖。程序保守推导完整非 NULL 唯一键的分组上界，只拒绝能够证明不可达的结构化组大小目标；其他场景仍实测。
+5. **对照保持同一输入。** Benchmark 在准备前核对 SQL、实际元数据及数据指纹；新增独立 AI_THINKING 组，分别汇总协议通过率、目标达成率、基础数据/查询阶段覆盖、引擎覆盖、耗时及配置单价估算费用。
+
+接口、完整交互示例和限制见 [动作接口 v2](data-preparation-v2/README.md)。
+三组真实目录的 Schema 已通过 Beta API HTTP 200 兼容性检查；这只证明接口接受结构，效果需看后续数据库测量。
+验证日志统一放在项目 `logs/action-interface/`，不会新建用户主目录下的实验目录。
+
+完整 verify 共 238 项：225 项通过、13 项真实集群测试按开关跳过；formatter、XML、Checkstyle、PMD、SpotBugs（0 bugs）全部通过。新增回归还验证两次格式错误后仍能执行 observe → append_rows → stop、最后一次有效决策后的自动验证、请求前 token 预留、实际 usage 扣费及缺失 usage 后停止调用。

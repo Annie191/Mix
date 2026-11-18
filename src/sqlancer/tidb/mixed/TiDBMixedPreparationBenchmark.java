@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -185,7 +186,7 @@ public final class TiDBMixedPreparationBenchmark {
     }
 
     private static JsonObject runArm(Connection connection, Path output, long seed, String arm, boolean engines,
-            String database) throws Exception {
+            String database, java.util.concurrent.atomic.AtomicReference<String> pairedInput) throws Exception {
         TiDBGlobalState state = state(connection, database, seed);
         TiDBMixedSupport io = new TiDBMixedSupport(state);
         JsonObject report = new JsonObject();
@@ -212,6 +213,22 @@ public final class TiDBMixedPreparationBenchmark {
             JsonObject actual = TiDBMixedMetadata.collect(io, database, query.tables, 0).schema;
             JsonObject initial = measure(io, query, actual, 0, "paired_" + seed);
             report.add("initial_state", initial.deepCopy());
+            List<String> restore = io.dump(query.tables);
+            java.util.Collections.sort(restore);
+            JsonObject input = new JsonObject();
+            input.addProperty("sql", query.sql);
+            input.add("schema", actual);
+            input.add("restore", new Gson().toJsonTree(restore));
+            String fingerprint = java.util.Base64.getEncoder().encodeToString(java.security.MessageDigest
+                    .getInstance("SHA-256").digest(input.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            report.addProperty("paired_input_fingerprint", fingerprint);
+            if (pairedInput.get() == null) {
+                pairedInput.set(fingerprint);
+            }
+            report.addProperty("paired_input_verified", pairedInput.get().equals(fingerprint));
+            if (!pairedInput.get().equals(fingerprint)) {
+                throw new IllegalStateException("initial query/schema/data differs from paired reference");
+            }
             long preparationStarted = System.nanoTime();
             // Full before/after measurements are assessment evidence, never model input.
             TiDBMixedObservations bootstrap = new TiDBMixedObservations(query, "paired_query", 0, 0);
@@ -231,9 +248,10 @@ public final class TiDBMixedPreparationBenchmark {
             harness.verificationFloor(
                     TiDBMixedDataCoverage.measurementIds(new TiDBMixedObservations(query, "paired_query", 0, 0)));
             JsonObject preparation;
-            if (arm.equals("AI")) {
+            if (arm.startsWith("AI")) {
                 report.add("api_audit", harness.apiAudit);
-                preparation = harness.runWithClient(() -> TiDBDeepSeekPreparationClient.fromEnvironment(3));
+                preparation = harness.runWithClient(() -> TiDBDeepSeekPreparationClient
+                        .fromEnvironment(TiDBMixedPreparationHarness.preparationCallLimit(), modelEnvironment(arm)));
             } else {
                 JsonArray rows = baseline(state, query, Profile.valueOf(arm),
                         initial.getAsJsonObject("remaining_budget").get("insert_rows").getAsLong());
@@ -301,10 +319,16 @@ public final class TiDBMixedPreparationBenchmark {
         return report;
     }
 
+    private static Map<String, String> modelEnvironment(String arm) {
+        Map<String, String> environment = new java.util.HashMap<>(System.getenv());
+        environment.put("DEEPSEEK_THINKING", arm.equals("AI_THINKING") ? "enabled" : "disabled");
+        return environment;
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length < 2 || args.length > 4) {
             throw new IllegalArgumentException(
-                    "Benchmark output-dir comma-separated-seeds [RANDOM,SHARED,AI] [engines=true|false]");
+                    "Benchmark output-dir comma-separated-seeds [RANDOM,SHARED,AI,AI_THINKING] [engines=true|false]");
         }
         Path output = Path.of(args[0]);
         if (java.nio.file.Files.exists(output.resolve("all.json"))) {
@@ -313,7 +337,7 @@ public final class TiDBMixedPreparationBenchmark {
         String[] arms = args.length > 2 ? args[2].split(",") : new String[] { "RANDOM", "SHARED", "AI" };
         boolean engines = args.length < 4 || Boolean.parseBoolean(args[3]);
         for (String arm : arms) {
-            if (!List.of("RANDOM", "SHARED", "AI").contains(arm)) {
+            if (!List.of("RANDOM", "SHARED", "AI", "AI_THINKING").contains(arm)) {
                 throw new IllegalArgumentException("unknown strategy");
             }
         }
@@ -337,11 +361,13 @@ public final class TiDBMixedPreparationBenchmark {
                     try (java.sql.Statement setup = connection.createStatement()) {
                         setup.execute("CREATE DATABASE " + TiDBMixedSupport.quoteIdentifier(database));
                     }
+                    java.util.concurrent.atomic.AtomicReference<String> pairedInput = new java.util.concurrent.atomic.AtomicReference<>();
                     // Reuse table IDs/replicas; DELETE restores identical initial rows between arms.
                     // Rotate order to reduce systematic warmup bias. Replication wait is reported separately.
                     for (int i = 0; i < arms.length; i++) {
                         reports.add(runArm(connection, output, seed,
-                                arms[(i + Math.floorMod(seed, arms.length)) % arms.length], engines, database));
+                                arms[(i + Math.floorMod(seed, arms.length)) % arms.length], engines, database,
+                                pairedInput));
                         TiDBMixedSupport.save(output.resolve("all.json"), reports);
                         TiDBMixedSupport.save(output.resolve("summary.json"),
                                 TiDBMixedBenchmarkMetrics.summarize(reports));

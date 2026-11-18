@@ -1,0 +1,31 @@
+{
+  "offline_verify": {
+    "total": 238,
+    "passed": 225,
+    "skipped_live": 13,
+    "failures": 0,
+    "errors": 0,
+    "spotbugs": 0
+  },
+  "corpus": {
+    "total": 27,
+    "original_accepted": 5,
+    "located_rejections": 22,
+    "manual_shape_revisions_valid": 27,
+    "errors_by_code": {
+      "TYPE_MISMATCH": 16,
+      "REQUIRED_FIELD": 6
+    },
+    "limitation": "Manual shape repair is not a model repair rate or database goal achievement rate"
+  },
+  "beta_schema_compatibility": {
+    "real_requests": 3,
+    "http_200": 3,
+    "seeds": [
+      42,
+      49,
+      51
+    ],
+    "limitation": "Schema acceptance only; no write or coverage claim"
+  }
+}

@@ -234,6 +234,61 @@ class MixedFactsIntegrationTest {
         }
     }
 
+    @Test
+    void seed49FourPairsAreFourSingletonGroupsOnRealTiDB() throws Exception {
+        try (Live fixture = new Live()) {
+            fixture.io.exec("CREATE TABLE t0(c2 DECIMAL(10,0) UNSIGNED PRIMARY KEY, k INT)");
+            fixture.io.exec("CREATE TABLE t1(c2 DECIMAL(10,0) UNSIGNED PRIMARY KEY, k INT)");
+            fixture.io.exec("INSERT INTO t0 VALUES(1,12),(2,12)");
+            fixture.io.exec("INSERT INTO t1 VALUES(1,12),(2,12)");
+            String grouping = "SELECT t0.c2 AS l, t1.c2 AS r, COUNT(*) AS n FROM t0 JOIN t1 ON t0.k=t1.k "
+                    + "GROUP BY t0.c2,t1.c2";
+            assertEquals(4, fixture.io.textRows(grouping).size());
+            assertTrue(fixture.io.textRows(grouping).stream().allMatch(row -> row.get("n").equals("1")));
+            assertTrue(fixture.io.textRows(grouping + " HAVING COUNT(1)=4").isEmpty());
+            TiDBMixedSupport.save(Path.of("target/action-interface/live-seed49.json"),
+                    Map.of("pairs", "4", "groups", fixture.io.textRows(grouping), "having_count_4", "0"));
+        }
+    }
+
+    @Test
+    void seed51FullCompatibleKeysNeedBothSidesAndAreMeasuredOnRealTiDB() throws Exception {
+        try (Live fixture = new Live()) {
+            fixture.io.exec("CREATE TABLE t2(c0 BLOB)");
+            fixture.io.exec("CREATE TABLE t1(c0 CHAR(1) NOT NULL,c1 CHAR(1),c2 DECIMAL(10,0) UNSIGNED)");
+            fixture.io.exec("INSERT INTO t2 VALUES (X'737A0972'),(X'7032')");
+            fixture.io.exec("INSERT INTO t1(c0) VALUES('s'),('p'),('3')");
+            assertEquals("0", fixture.io.textRows("SELECT COUNT(*) AS n FROM t2 NATURAL JOIN t1").get(0).get("n"));
+            fixture.state.updateSchema();
+            Candidate candidate = MixedObservationTest.candidate(fixture.state.getSchema().getDatabaseTables(),
+                    TiDBJoin.JoinType.INNER, TiDBComparisonOperator.EQUALS, false);
+            JsonObject schema = TiDBMixedMetadata.collect(fixture.io, fixture.database, candidate.tables, 0).schema;
+            TiDBMixedObservations facts = new TiDBMixedObservations(candidate, "seed51_full_keys", 0, 0);
+            JsonObject packet = facts.statePacket("req", fixture.database, schema, new JsonArray(),
+                    TiDBMixedPreparationHarness.preparationBudget(6));
+            JsonObject script = MixedPreparationTest.append(1, true);
+            JsonArray operations = new JsonArray();
+            operations.add(MixedAppendTest.json(
+                    "{\"table\":\"t1\",\"rows\":[{\"c0\":{\"type\":\"text\",\"value\":\"1\"},\"c1\":{\"type\":\"null\",\"value\":null},\"c2\":{\"type\":\"null\",\"value\":null}}]}"));
+            operations.add(MixedAppendTest
+                    .json("{\"table\":\"t2\",\"rows\":[{\"c0\":{\"type\":\"binary\",\"value\":\"MQ==\"}}]}"));
+            script.add("operations", operations);
+            JsonObject plan = MixedPreparationTest.response(packet, script);
+            JsonObject feedback = new TiDBMixedAppendExecutor(fixture.state, packet, 100).execute(plan.toString(),
+                    packet);
+            TiDBMixedSupport.save(Path.of("target/action-interface/live-seed51-writes.json"), feedback);
+            assertEquals(2, feedback.getAsJsonArray("writes").size());
+            assertTrue(feedback.getAsJsonArray("writes").asList().stream()
+                    .allMatch(row -> row.getAsJsonObject().get("status").getAsString().equals("success")));
+            assertEquals("1", fixture.io.textRows("SELECT COUNT(*) AS n FROM t2 NATURAL JOIN t1").get(0).get("n"));
+            String query = "SELECT t1.c0,t1.c2,t1.c1,BIT_AND(EXPORT_SET(t2.c0,(+t2.c0),NULL)),MIN(t1.c0) "
+                    + "FROM t2 NATURAL JOIN t1 GROUP BY t1.c0,t1.c2,t1.c1";
+            assertFalse(fixture.io.textRows(query).isEmpty());
+            TiDBMixedSupport.save(Path.of("target/action-interface/live-seed51.json"),
+                    Map.of("guessed_prefix_matches", "0", "writes", feedback, "full_key_matches", "1"));
+        }
+    }
+
     private static final class Live implements AutoCloseable {
         final String database = "mix_facts_" + UUID.randomUUID().toString().replace("-", "");
         final Connection connection;

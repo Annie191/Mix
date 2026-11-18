@@ -380,8 +380,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     JsonObject budget = preparationBudget;
                     JsonObject packet = facts.statePacket("prepare_" + revision,
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
-                    prepareWithAssessment(state, io, query, packet,
-                            () -> TiDBDeepSeekPreparationClient.fromEnvironment(3), record);
+                    prepareWithAssessment(state, io, query, packet, () -> TiDBDeepSeekPreparationClient
+                            .fromEnvironment(TiDBMixedPreparationHarness.preparationCallLimit()), record);
                 }
                 List<String> dump = io.dump(query.tables);
                 record.put("restoreStatements", dump);

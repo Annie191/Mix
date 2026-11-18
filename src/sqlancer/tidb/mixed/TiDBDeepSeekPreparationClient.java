@@ -15,11 +15,12 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-/** Real v1 preparation transport. No fallback response, implicit retries, or credential logging. */
+/** Real preparation transport. No fallback response, implicit retries, or credential logging. */
 public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparationHarness.Responder {
     private final TiDBDeepSeekAdvisor.Transport transport;
     private final String model;
@@ -27,11 +28,18 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
     private final BigDecimal missPrice;
     private final BigDecimal outputPrice;
     private final int maxTokens;
+    private final boolean strictTools;
+    private final boolean thinking;
     private int remaining;
     public final JsonArray audit = new JsonArray();
 
     public TiDBDeepSeekPreparationClient(TiDBDeepSeekAdvisor.Transport transport, String model, int calls,
             int maxTokens, BigDecimal hitPrice, BigDecimal missPrice, BigDecimal outputPrice) {
+        this(transport, model, calls, maxTokens, hitPrice, missPrice, outputPrice, false, false);
+    }
+
+    TiDBDeepSeekPreparationClient(TiDBDeepSeekAdvisor.Transport transport, String model, int calls, int maxTokens,
+            BigDecimal hitPrice, BigDecimal missPrice, BigDecimal outputPrice, boolean strictTools, boolean thinking) {
         if (transport == null || model.isBlank() || calls < 0 || maxTokens < 1
                 || List.of(hitPrice, missPrice, outputPrice).stream().anyMatch(p -> p.signum() < 0)) {
             throw new IllegalArgumentException("invalid preparation client configuration");
@@ -40,6 +48,8 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
         this.model = model;
         this.remaining = calls;
         this.maxTokens = maxTokens;
+        this.strictTools = strictTools;
+        this.thinking = thinking;
         this.hitPrice = hitPrice;
         this.missPrice = missPrice;
         this.outputPrice = outputPrice;
@@ -80,13 +90,24 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
             throw new InitializationException("MISSING_CREDENTIALS");
         }
         String key = raw;
+        String mode = environment.getOrDefault("MS_PREPARATION_TRANSPORT", "strict");
+        if (!List.of("strict", "json").contains(mode)) {
+            throw new InitializationException("INVALID_CLIENT_CONFIGURATION");
+        }
+        boolean strict = mode.equals("strict");
+        String thinking = environment.getOrDefault("DEEPSEEK_THINKING", "disabled");
+        if (!List.of("enabled", "disabled").contains(thinking)) {
+            throw new InitializationException("INVALID_CLIENT_CONFIGURATION");
+        }
         HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10))
                 .followRedirects(HttpClient.Redirect.NEVER).build();
         TiDBDeepSeekAdvisor.Transport transport = body -> {
             JsonObject requestBody = JsonParser.parseString(body).getAsJsonObject();
             long timeout = requestBody.get("_timeout_ms").getAsLong();
             requestBody.remove("_timeout_ms");
-            HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.deepseek.com/chat/completions"))
+            HttpRequest request = HttpRequest
+                    .newBuilder(URI.create(strict ? "https://api.deepseek.com/beta/chat/completions"
+                            : "https://api.deepseek.com/chat/completions"))
                     .timeout(Duration.ofMillis(timeout)).header("Authorization", "Bearer " + key)
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString())).build();
@@ -94,10 +115,10 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
             return new TiDBDeepSeekAdvisor.Reply(response.statusCode(), response.body());
         };
         return new TiDBDeepSeekPreparationClient(transport,
-                environment.getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls, 3000,
+                environment.getOrDefault("DEEPSEEK_MODEL", "deepseek-flash"), calls, 4000,
                 price(environment, "DEEPSEEK_HIT_USD_PER_M", "0.003"),
                 price(environment, "DEEPSEEK_MISS_USD_PER_M", "0.15"),
-                price(environment, "DEEPSEEK_OUTPUT_USD_PER_M", "0.60"));
+                price(environment, "DEEPSEEK_OUTPUT_USD_PER_M", "0.60"), strict, thinking.equals("enabled"));
     }
 
     private static BigDecimal price(Map<String, String> environment, String key, String fallback) {
@@ -132,13 +153,39 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
         body.addProperty("stream", false);
         body.addProperty("max_tokens", maxTokens);
         body.addProperty("temperature", 0);
-        body.add("thinking", new Gson().toJsonTree(Map.of("type", "disabled")));
-        body.add("response_format", new Gson().toJsonTree(Map.of("type", "json_object")));
-        body.add("messages", new Gson().toJsonTree(messages));
+        body.add("thinking", new Gson().toJsonTree(Map.of("type", thinking ? "enabled" : "disabled")));
+        List<Map<String, String>> outgoing = messages;
+        if (strictTools) {
+            body.add("tools", TiDBMixedActionSchema.tools(packet));
+            body.addProperty("tool_choice", thinking ? "auto" : "required");
+            body.addProperty("parallel_tool_calls", false);
+            outgoing = List.of(
+                    Map.of("role", "system", "content",
+                            TiDBDataPreparationProtocol.toolPrompt() + "\n程序根据实际约束推导的保守事实（不是数据覆盖证明）：\n"
+                                    + TiDBMixedPreparationSemantics.analyze(packet)),
+                    Map.of("role", "user", "content", packet.toString()));
+        } else {
+            body.add("response_format", new Gson().toJsonTree(Map.of("type", "json_object")));
+        }
+        body.add("messages", new Gson().toJsonTree(outgoing));
+        JsonObject budget = packet.getAsJsonObject("remaining_budget");
+        if (budget.has("api_tokens")) {
+            // A byte-count reservation is conservative for the UTF-8 tokenizer and avoids spending the last
+            // fee/token allowance on an unbounded request. Prices are configured estimates, not a billing quote.
+            long inputBound = body.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            BigDecimal feeBound = missPrice.max(hitPrice).multiply(BigDecimal.valueOf(inputBound))
+                    .add(outputPrice.multiply(BigDecimal.valueOf(maxTokens)));
+            if (inputBound + maxTokens > budget.get("api_tokens").getAsLong()
+                    || feeBound.compareTo(budget.get("cost_microusd").getAsBigDecimal()) > 0) {
+                throw new InitializationException("API_BUDGET_RESERVATION_EXHAUSTED");
+            }
+        }
         body.addProperty("_timeout_ms", timeout);
         JsonObject event = new JsonObject();
         event.addProperty("requested_model", model);
         event.addProperty("request_id", packet.get("request_id").getAsString());
+        event.addProperty("transport", strictTools ? "strict_tools" : "json");
+        event.addProperty("thinking", thinking ? "enabled" : "disabled");
         event.addProperty("started_at", Instant.now().toString());
         event.addProperty("price_hit_usd_per_m", hitPrice);
         event.addProperty("price_miss_usd_per_m", missPrice);
@@ -163,10 +210,21 @@ public final class TiDBDeepSeekPreparationClient implements TiDBMixedPreparation
             event.add("returned_model", envelope.get("model"));
             JsonObject choice = envelope.getAsJsonArray("choices").get(0).getAsJsonObject();
             event.add("finish_reason", choice.get("finish_reason"));
-            if (!"stop".equals(choice.get("finish_reason").getAsString())) {
+            String finish = choice.get("finish_reason").getAsString();
+            if (!(strictTools ? finish.equals("tool_calls") || thinking && finish.equals("stop")
+                    : finish.equals("stop"))) {
                 throw new IllegalArgumentException("incomplete DeepSeek response");
             }
-            String content = choice.getAsJsonObject("message").get("content").getAsString();
+            String content;
+            if (strictTools) {
+                JsonObject wrapper = new JsonObject();
+                JsonElement calls = choice.getAsJsonObject("message").get("tool_calls");
+                wrapper.add("tool_calls", calls == null || calls.isJsonNull() ? new JsonArray() : calls);
+                event.add("tool_calls", wrapper.get("tool_calls").deepCopy());
+                content = wrapper.toString();
+            } else {
+                content = choice.getAsJsonObject("message").get("content").getAsString();
+            }
             if (content.isBlank() || content.length() > 32_000) {
                 throw new IllegalArgumentException("empty or oversized DeepSeek response");
             }
