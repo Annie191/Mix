@@ -460,3 +460,5 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 验证日志统一放在项目 `logs/action-interface/`，不会新建用户主目录下的实验目录。
 
 完整 verify 共 238 项：225 项通过、13 项真实集群测试按开关跳过；formatter、XML、Checkstyle、PMD、SpotBugs（0 bugs）全部通过。新增回归还验证两次格式错误后仍能执行 observe → append_rows → stop、最后一次有效决策后的自动验证、请求前 token 预留、实际 usage 扣费及缺失 usage 后停止调用。
+
+真实 TiDB `b1d4142f99` 的两项回归均通过：seed 49 的最小用例有 4 对匹配，但分为 4 个单行组，HAVING COUNT=4 输出 0 行；seed 51 的首字符猜测仍为 0 匹配，两侧分别追加完整文本 `"1"` 和二进制 `MQ==` 后，两行写入成功、实测匹配为 1。这里是人工固定计划，不计作真实模型的策略成功。计数见 [验证数据](data-preparation-v2/validation.json)。

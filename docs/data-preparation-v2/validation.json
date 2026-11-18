@@ -27,5 +27,22 @@
       51
     ],
     "limitation": "Schema acceptance only; no write or coverage claim"
+  },
+  "real_tidb_regressions": {
+    "tidb_commit": "b1d4142f99",
+    "tests": 2,
+    "passed": 2,
+    "seed49": {
+      "matched_pairs": 4,
+      "group_count": 4,
+      "max_group_size": 1,
+      "having_count_equals_4_rows": 0
+    },
+    "seed51": {
+      "prefix_guesses_matches": 0,
+      "append_rows_success": 2,
+      "full_compatible_key_matches": 1
+    },
+    "limitation": "Controlled handwritten plans/minimal fixtures; not a real-model strategy success claim"
   }
 }
