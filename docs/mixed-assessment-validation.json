@@ -1,0 +1,270 @@
+{
+  "date_utc": "2026-11-18",
+  "source_base_commit": "661bb5784bd8c88312bfd624378e064c396dc6f8",
+  "scope": "Production preparation helper with independent assessments; scripted model responses, real H2/TiDB writes and SELECTs; no real DeepSeek calls or claim of AI coverage improvement",
+  "offline_verify": {
+    "tests": 209,
+    "passed": 198,
+    "failures": 0,
+    "errors": 0,
+    "skipped_live_tests": 11,
+    "build": "SUCCESS",
+    "spotbugs_bugs": 0
+  },
+  "live_test": {
+    "tests": 1,
+    "passed": 1,
+    "failures": 0,
+    "errors": 0,
+    "target_tidb_commit": "b1d4142f99",
+    "build": "SUCCESS"
+  },
+  "scenarios": [
+    {
+      "scenario": "new-query-scene",
+      "phases": {
+        "prePreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 0,
+          "snapshot": "1234567",
+          "budget": {
+            "probe_requests": 64,
+            "rows_per_probe": 64,
+            "time_ms": 10000
+          },
+          "probes_attempted": 44,
+          "probes_remaining": 20,
+          "elapsed_ms": 31,
+          "time_remaining_ms": 9969,
+          "observationStatuses": {
+            "exact": 44,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "0"
+        },
+        "postPreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 2,
+          "snapshot": "1234567",
+          "budget": {
+            "probe_requests": 64,
+            "rows_per_probe": 64,
+            "time_ms": 10000
+          },
+          "probes_attempted": 44,
+          "probes_remaining": 20,
+          "elapsed_ms": 20,
+          "time_remaining_ms": 9980,
+          "observationStatuses": {
+            "exact": 44,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "1"
+        }
+      },
+      "coverage_change": {
+        "added": [
+          "j0_pairs_after",
+          "where_predicate_true"
+        ],
+        "lost": [],
+        "unverified": [],
+        "complete": true,
+        "base_data": {
+          "added": [
+            "j0_pairs_before",
+            "rows_t1"
+          ],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "query_stages": {
+          "added": [
+            "j0_pairs_after",
+            "where_predicate_true"
+          ],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "scope_version": 2
+      },
+      "preparation_termination": "model_stop",
+      "model_initial_observation_count": 5,
+      "preparation_probes_remaining": 55,
+      "actual_write_statuses": [
+        "success",
+        "success"
+      ],
+      "scripted_transport_calls": 2
+    },
+    {
+      "scenario": "unavailable-model",
+      "phases": {
+        "prePreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 0,
+          "snapshot": "1234567",
+          "budget": {
+            "probe_requests": 64,
+            "rows_per_probe": 64,
+            "time_ms": 10000
+          },
+          "probes_attempted": 44,
+          "probes_remaining": 20,
+          "elapsed_ms": 66,
+          "time_remaining_ms": 9934,
+          "observationStatuses": {
+            "exact": 44,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "0"
+        },
+        "postPreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 0,
+          "snapshot": "1234567",
+          "budget": {
+            "probe_requests": 64,
+            "rows_per_probe": 64,
+            "time_ms": 10000
+          },
+          "probes_attempted": 44,
+          "probes_remaining": 20,
+          "elapsed_ms": 43,
+          "time_remaining_ms": 9957,
+          "observationStatuses": {
+            "exact": 44,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "0"
+        }
+      },
+      "coverage_change": {
+        "added": [],
+        "lost": [],
+        "unverified": [],
+        "complete": true,
+        "base_data": {
+          "added": [],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "query_stages": {
+          "added": [],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "scope_version": 2
+      },
+      "preparation_termination": "model_unavailable",
+      "model_initial_observation_count": 5,
+      "preparation_probes_remaining": 91,
+      "actual_write_statuses": [],
+      "scripted_transport_calls": 0
+    },
+    {
+      "scenario": "live-new-query-scene",
+      "phases": {
+        "prePreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 0,
+          "snapshot": "470549616421502980",
+          "budget": {
+            "rows_per_probe": 64,
+            "time_ms": 10000,
+            "probe_requests": 64
+          },
+          "probes_attempted": 42,
+          "probes_remaining": 22,
+          "elapsed_ms": 784,
+          "time_remaining_ms": 9216,
+          "observationStatuses": {
+            "exact": 42,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "0"
+        },
+        "postPreparationAssessment": {
+          "status": "COLLECTED",
+          "dataRevision": 2,
+          "snapshot": "470549617496293380",
+          "budget": {
+            "rows_per_probe": 64,
+            "time_ms": 10000,
+            "probe_requests": 64
+          },
+          "probes_attempted": 42,
+          "probes_remaining": 22,
+          "elapsed_ms": 711,
+          "time_remaining_ms": 9289,
+          "observationStatuses": {
+            "exact": 42,
+            "unsupported": 3
+          },
+          "model_budget_charged": false,
+          "query_stage_measured": 19,
+          "matched_pairs_after_where": "1"
+        }
+      },
+      "coverage_change": {
+        "added": [
+          "j0_pairs_after",
+          "where_predicate_true"
+        ],
+        "lost": [],
+        "unverified": [],
+        "complete": true,
+        "base_data": {
+          "added": [
+            "j0_pairs_before",
+            "rows_t1"
+          ],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "query_stages": {
+          "added": [
+            "j0_pairs_after",
+            "where_predicate_true"
+          ],
+          "lost": [],
+          "unverified": [],
+          "complete": true
+        },
+        "scope_version": 2
+      },
+      "preparation_termination": "model_stop",
+      "model_initial_observation_count": 5,
+      "preparation_probes_remaining": 56,
+      "actual_write_statuses": [
+        "success",
+        "success"
+      ],
+      "scripted_transport_calls": 2
+    }
+  ],
+  "regressions": [
+    "Only compact bootstrap evidence enters the first model request",
+    "Assessment does not mutate preparation input/budgets",
+    "Partial before measurement cannot claim new coverage from newly observed facts",
+    "Assessment session failure is recorded and prevents model initialization",
+    "Uncertain commit retains baseline but prevents after measurement and gain claims"
+  ],
+  "full_evidence_directory": "target/mixed-assessment/",
+  "build_logs_directory": "logs/coverage-baseline/"
+}

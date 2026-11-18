@@ -401,3 +401,22 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 另开启新增的 1 项真实 TiDB 测试，LEFT/RIGHT 两种闭环均通过，实际匹配数均为 `0 → 1 → 1`，完整目录始终一致。
 模型响应为模拟数据，本轮没有调用真实 DeepSeek，也未重跑 20 分钟实验。
 逐项计数及闭环结果见 [目录稳定性验证](mixed-catalog-validation.json)，完整证据和构建日志保存在本机 `/home/lwm/Mix-catalog-validation-20261118/`。
+
+## 追加：生产入口独立写前覆盖基线（2026-11-18）
+
+修复精简 bootstrap 被当作 `dataCoverageBefore`、缺少查询阶段写前证据的问题：
+
+- 在第一次模型调用及补行前，独立采集写前评估，立即保存 `dataCoverageBefore`；准备结束后按最终数据版本独立复测，再计算 `dataCoverageChange`。
+- 模型仍只接收行数、两行样本和 query_empty，不接收独立评估结果；后续主动观测继续由模型决定。
+- 新增 `prePreparationAssessment` / `postPreparationAssessment`：分别保存请求、事实、SQL 证据、快照、版本、探测状态及预算/耗时。各阶段限额为 64 次探测、单次结果 64 行、10 秒，不扣准备预算。
+- 前后优先测量同一组静态覆盖能力；查询阶段和基础数据仍分开报告。未知、样本、失败或仅写后才测到的场景不能冒充新增覆盖。
+- 模型不可用时仍前后测；写入提交不确定则保留写前证据并要求重建，不产生写后覆盖或收益结论。会话异常继续向外抛出。
+
+旧实验缺少的写前事实不能事后补造，本次不改写旧统计，也不据此宣称 AI 覆盖率已提高。
+
+新增 5 项回归，完整 verify 共 209 项：198 项通过、11 项真实集群测试按开关跳过；构建、formatter/XML/Checkstyle/PMD/SpotBugs（0 bugs）、命名和差异空白检查通过。
+另开启新增的 1 项真实 TiDB 测试并通过：前后各精确测量 19 个查询阶段覆盖项，WHERE 后匹配数 `0 → 1`，新增 `j0_pairs_after` 和 `where_predicate_true`，`complete=true`。
+模型首轮仍只有 5 项 bootstrap 观测，独立评估前后各执行 42 次探测，耗时 784 / 711 毫秒；两者独立记录，不扣准备预算。
+缺凭据、无写入的回归中前后也可完整比较，新增/丢失集合均为空；前测不足及提交不确定的反例不能冒充有效收益。
+模型响应为模拟数据，未调用真实 DeepSeek，未重跑长测。逐项证据见 [写前基线验证](mixed-assessment-validation.json)。
+完整测试数据位于项目 `target/mixed-assessment/`，运行日志位于 `logs/coverage-baseline/`，不再散放用户主目录。

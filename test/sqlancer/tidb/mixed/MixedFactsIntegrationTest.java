@@ -213,6 +213,27 @@ class MixedFactsIntegrationTest {
         }
     }
 
+    @Test
+    void actualProductionAssessmentProvesNewJoinCoverageWithoutExposingTheBaselineToTheModel() throws Exception {
+        try (Live fixture = new Live()) {
+            fixture.io.exec("CREATE TABLE t0(k BIGINT PRIMARY KEY, n DECIMAL(38,2), s VARCHAR(1000), b VARBINARY(8))");
+            fixture.io.exec("CREATE TABLE t1(k INT)");
+            fixture.io.exec("INSERT INTO t0(k,n,s) VALUES(1,1.23,'original')");
+            fixture.state.updateSchema();
+            List<sqlancer.tidb.TiDBSchema.TiDBTable> tables = TiDBMixedGeneration.baseTables(fixture.state);
+            Candidate query = MixedObservationTest.candidate(tables, TiDBJoin.JoinType.INNER,
+                    TiDBComparisonOperator.EQUALS, false);
+            query.ast.setWhereClause(
+                    new TiDBBinaryComparisonOperation(new TiDBColumnReference(tables.get(0).getColumns().get(0)),
+                            TiDBConstant.createIntConstant(10), TiDBComparisonOperator.GREATER));
+            query = new Candidate(query.ast, tables, List.of());
+            JsonObject schema = TiDBMixedMetadata.collect(fixture.io, fixture.database, tables, 0).schema;
+            Map<String, Object> report = MixedAssessmentBaselineTest.matchedScene(fixture.state, fixture.io, query,
+                    schema);
+            TiDBMixedSupport.save(Path.of("target/mixed-assessment/live-new-query-scene.json"), report);
+        }
+    }
+
     private static final class Live implements AutoCloseable {
         final String database = "mix_facts_" + UUID.randomUUID().toString().replace("-", "");
         final Connection connection;

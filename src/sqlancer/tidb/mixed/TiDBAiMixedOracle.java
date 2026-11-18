@@ -109,6 +109,90 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         }
     }
 
+    static JsonObject assessData(TiDBMixedSupport io, Candidate query, JsonObject modelInitial, long dataRevision,
+            JsonArray goals, TiDBMixedObservations.Budget budget, Map<String, Object> record, String key)
+            throws Exception {
+        long started = System.nanoTime();
+        TiDBMixedObservations facts = new TiDBMixedObservations(query, modelInitial.get("query_id").getAsString(),
+                modelInitial.get("schema_revision").getAsLong(), dataRevision);
+        Map<String, Object> assessment = new LinkedHashMap<>();
+        record.put(key, assessment);
+        assessment.put("status", "STARTED");
+        assessment.put("budget",
+                Map.of("probe_requests", budget.probes, "rows_per_probe", budget.rows, "time_ms", budget.timeMs));
+        assessment.put("dataRevision", dataRevision);
+        assessment.put("queryId", modelInitial.get("query_id").getAsString());
+        assessment.put("schemaRevision", modelInitial.get("schema_revision").getAsLong());
+        // Give the same static coverage baseline priority on both sides. Model diagnostics use the remainder.
+        Map<String, com.google.gson.JsonElement> requests = new LinkedHashMap<>();
+        for (String id : TiDBMixedDataCoverage.measurementIds(facts)) {
+            requests.put(TiDBMixedObservationRequest.key(id, null), new com.google.gson.JsonPrimitive(id));
+        }
+        for (com.google.gson.JsonElement request : facts.assessmentRequests(goals)) {
+            requests.putIfAbsent(TiDBMixedObservationRequest.key(request), request);
+        }
+        JsonArray selected = new JsonArray();
+        requests.values().forEach(selected::add);
+        assessment.put("requests", selected);
+        try {
+            facts.collectRequests(io, selected, budget);
+            assessment.put("status", "COLLECTED");
+            JsonObject packet = facts.statePacket(key, modelInitial.get("case_id").getAsString(),
+                    modelInitial.getAsJsonObject("schema"), new JsonArray(),
+                    modelInitial.getAsJsonObject("remaining_budget").deepCopy());
+            assessment.put("coverage", TiDBMixedDataCoverage.snapshot(packet));
+            return packet;
+        } catch (Exception error) {
+            assessment.put("status", "ERROR");
+            assessment.put("error", error.toString());
+            throw error;
+        } finally {
+            long elapsed = (System.nanoTime() - started + 999_999) / 1_000_000;
+            assessment.put("elapsed_ms", elapsed);
+            assessment.put("time_remaining_ms", Math.max(0, budget.timeMs - elapsed));
+            assessment.put("snapshot", facts.snapshot);
+            assessment.put("observations", facts.observations);
+            assessment.put("samples", facts.samples);
+            assessment.put("evidence", facts.audit);
+            Map<String, Long> statuses = new LinkedHashMap<>();
+            facts.observations
+                    .forEach(fact -> statuses.merge(fact.getAsJsonObject().get("status").getAsString(), 1L, Long::sum));
+            assessment.put("observationStatuses", statuses);
+            long attempted = facts.audit.stream().filter(event -> event.containsKey("sql")).count();
+            assessment.put("probes_attempted", attempted);
+            assessment.put("probes_remaining", Math.max(0, budget.probes - attempted));
+            assessment.put("model_budget_charged", false);
+        }
+    }
+
+    static JsonObject prepareWithAssessment(TiDBGlobalState state, TiDBMixedSupport io, Candidate query,
+            JsonObject modelInitial, TiDBMixedPreparationHarness.ClientFactory factory, Map<String, Object> record)
+            throws Exception {
+        long dataRevision = modelInitial.get("data_revision").getAsLong();
+        JsonObject before = assessData(io, query, modelInitial, dataRevision, new JsonArray(),
+                new TiDBMixedObservations.Budget(64, 64, 10_000), record, "prePreparationAssessment");
+        JsonObject beforeCoverage = TiDBMixedDataCoverage.snapshot(before);
+        record.put("dataCoverageBefore", beforeCoverage);
+        TiDBMixedPreparationHarness preparationLoop = new TiDBMixedPreparationHarness(state, query, modelInitial,
+                List.of(), 10_000, 64, 2);
+        preparationLoop.verificationFloor(TiDBMixedDataCoverage
+                .measurementIds(new TiDBMixedObservations(query, modelInitial.get("query_id").getAsString(),
+                        modelInitial.get("schema_revision").getAsLong(), dataRevision)));
+        JsonObject prepared = prepareData(preparationLoop, factory, record);
+        JsonObject after = assessData(io, query, modelInitial,
+                prepared.getAsJsonObject("final_state").get("data_revision").getAsLong(),
+                prepared.getAsJsonArray("model_goals"), new TiDBMixedObservations.Budget(64, 64, 10_000), record,
+                "postPreparationAssessment");
+        record.put("postPreparationObservations", after.get("observations"));
+        record.put("postPreparationEvidence", ((Map<?, ?>) record.get("postPreparationAssessment")).get("evidence"));
+        record.put("postPreparationModelGoalEvaluation",
+                TiDBMixedPreparationGoals.evaluate(after, prepared.getAsJsonArray("model_goals"), false));
+        JsonObject afterCoverage = TiDBMixedDataCoverage.snapshot(after);
+        record.put("dataCoverageAfter", afterCoverage);
+        record.put("dataCoverageChange", TiDBMixedDataCoverage.difference(beforeCoverage, afterCoverage));
+        return prepared;
+    }
+
     private List<Run> replay(TiDBMixedSupport io, Candidate query, List<String> dump, List<Config> configs)
             throws Exception {
         io.reset();
@@ -257,26 +341,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                     JsonObject budget = preparationBudget;
                     JsonObject packet = facts.statePacket("prepare_" + revision,
                             state.getDatabaseName() + "_" + revision, actualMetadata.schema, new JsonArray(), budget);
-                    // Fixed benchmark assertions are optional; AI goals come from each validated response.
-                    TiDBMixedPreparationHarness preparationLoop = new TiDBMixedPreparationHarness(state, query, packet,
-                            List.of(), 10_000, 64, 2);
-                    preparationLoop.verificationFloor(TiDBMixedDataCoverage.measurementIds(facts));
-                    JsonObject prepared = prepareData(preparationLoop,
+                    prepareWithAssessment(state, io, query, packet,
                             () -> TiDBDeepSeekPreparationClient.fromEnvironment(3), record);
-                    TiDBMixedObservations after = new TiDBMixedObservations(query, "query_" + revision, revision,
-                            prepared.getAsJsonObject("final_state").get("data_revision").getAsLong());
-                    after.collectRequests(io, after.assessmentRequests(prepared.getAsJsonArray("model_goals")),
-                            new TiDBMixedObservations.Budget(64, 64, 10_000));
-                    JsonObject afterPacket = after.statePacket("measured_" + revision,
-                            packet.get("case_id").getAsString(), actualMetadata.schema, new JsonArray(), budget);
-                    record.put("postPreparationObservations", after.observations);
-                    record.put("postPreparationEvidence", after.audit);
-                    record.put("postPreparationModelGoalEvaluation", TiDBMixedPreparationGoals.evaluate(afterPacket,
-                            prepared.getAsJsonArray("model_goals"), false));
-                    record.put("dataCoverageBefore", TiDBMixedDataCoverage.snapshot(packet));
-                    record.put("dataCoverageAfter", TiDBMixedDataCoverage.snapshot(afterPacket));
-                    record.put("dataCoverageChange", TiDBMixedDataCoverage.difference(
-                            TiDBMixedDataCoverage.snapshot(packet), TiDBMixedDataCoverage.snapshot(afterPacket)));
                 }
                 List<String> dump = io.dump(query.tables);
                 record.put("restoreStatements", dump);
