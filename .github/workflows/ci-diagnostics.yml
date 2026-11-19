@@ -64,6 +64,10 @@ jobs:
                     /--|SELECT|INSERT|CREATE|SET |Caused by:|Exception:|optimized:|unoptimized:|count:|mismatch/i.test(line))
                   .join('\n').slice(0, 24000);
                 core.notice(sql, {title: `${job.name}: SQL and causes`});
+                if (job.name.includes('MySQL')) {
+                  const crash = lines.filter(line => /mysqld|signal|assertion|Query \(|Query:|killed|out of memory|ERROR|DQE|DELETE FROM|UPDATE.*updated|TRUNCATE|ALTER TABLE|t0.rowid|rows|query error/i.test(line) && !/Downloading|Downloaded|WARNING|PKIX|\tat /.test(line));
+                  core.notice(crash.slice(-26).map(line => line.slice(0, 350)).join('\n').slice(-3800), {title: 'MySQL final SQL and server diagnostics'});
+                }
               }
             }
             core.summary.addRaw(`Inspected ${jobs.length} jobs; ${failed.length} did not succeed.\n`);
