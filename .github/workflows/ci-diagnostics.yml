@@ -74,6 +74,10 @@ jobs:
               const escaped = excerpt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
               core.summary.addDetails(`${job.name} (${job.conclusion})`, `<p>${job.html_url}</p><pre>${escaped}</pre>`);
               core.notice(excerpt, {title: `${job.name}: failure evidence`});
+              if (job.name.includes('Presto')) {
+                const protocol = lines.filter(line => /nodeVersion|Cannot cast java.lang.String to java.util.List|Error fetching next at|java.lang.AssertionError: SELECT/.test(line));
+                core.notice(protocol.slice(-6).map(line => line.slice(0, 14000)).join('\n').slice(-22000), {title: 'Presto server version and wire result evidence'});
+              }
               if (job.name.includes('MySQL') || job.name.includes('Presto')) {
                 const first = hits[0] ?? 0;
                 const sql = lines.slice(first, first + 1200)
