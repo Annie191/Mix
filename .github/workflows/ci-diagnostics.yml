@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'CI run to diagnose (empty selects the latest completed ci run)'
+        description: 'CI run to diagnose (empty selects the latest ci run on main)'
         required: false
         type: string
 
 permissions:
-  actions: write
+  actions: read
   contents: read
 
 jobs:
@@ -20,20 +20,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Cancel obsolete CI runs created during this repair
-        if: github.event_name == 'push'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            // One-time cleanup: these runs predate the CI concurrency group and test superseded revisions.
-            const obsolete = [44461054980, 44461967000, 44462326138, 44463799376];
-            for (const run_id of obsolete) {
-              const {data: run} = await github.rest.actions.getWorkflowRun({...context.repo, run_id});
-              if (run.name === 'ci' && run.head_branch === 'main' && run.event === 'push' && run.status !== 'completed') {
-                await github.rest.actions.cancelWorkflowRun({...context.repo, run_id});
-                core.notice(`Cancelled superseded CI run ${run_id}`);
-              }
-            }
       - name: Read failed job logs and publish bounded excerpts
         uses: actions/github-script@v7
         with:
@@ -42,18 +28,19 @@ jobs:
             let runId = context.payload.inputs?.run_id;
             if (!runId) {
               const runs = await github.rest.actions.listWorkflowRuns({
-                ...repo, workflow_id: 'main.yml', status: 'completed', per_page: 30
+                ...repo, workflow_id: 'main.yml', branch: 'main', per_page: 1
               });
-              runId = runs.data.workflow_runs.find(run => run.conclusion === 'failure')?.id;
+              runId = runs.data.workflow_runs[0]?.id;
             }
             if (!runId || !/^\d+$/.test(String(runId))) {
-              throw new Error('A completed CI run id is required');
+              throw new Error('A CI run id is required');
             }
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
               ...repo, run_id: Number(runId), per_page: 100
             });
             const wanted = new Set(['DBMS Tests (Citus)', 'DBMS Tests (Hive)', 'DBMS Tests (Spark)',
               'DBMS Tests (MySQL, CERT creation only)', 'DBMS Tests (Presto)', 'QPG Tests (Materialize)']);
+            core.notice(jobs.filter(job => wanted.has(job.name)).map(job => `${job.name}: ${job.status}/${job.conclusion ?? 'pending'}`).join('\n'), {title: `CI run ${runId}: six-job status`});
             const failed = jobs.filter(job => wanted.has(job.name) && ['failure', 'cancelled', 'timed_out'].includes(job.conclusion));
             core.summary.addHeading(`Failure evidence for CI run ${runId}`);
             for (const job of failed) {
