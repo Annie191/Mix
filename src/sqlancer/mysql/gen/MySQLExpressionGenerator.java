@@ -61,6 +61,8 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
         EETGenerator<MySQLSelect, MySQLJoin, MySQLExpression, MySQLTable, MySQLColumn>,
         EETDMLGenerator<MySQLExpression, MySQLTable, MySQLColumn> {
 
+    public static final String ROLLBACK_WITHOUT_RELEASE = "ROLLBACK AND NO CHAIN NO RELEASE";
+
     private final MySQLGlobalState state;
     private MySQLRowValue rowVal;
     private List<MySQLTable> tables;
@@ -415,6 +417,12 @@ public class MySQLExpressionGenerator extends UntypedExpressionGenerator<MySQLEx
     }
 
     // --- EET DML only ---
+
+    @Override
+    public String rollbackTransactionStatement() {
+        // Random session/global completion_type settings must not disconnect the oracle or start a new transaction.
+        return ROLLBACK_WITHOUT_RELEASE;
+    }
 
     @Override
     public String asString(MySQLExpression expr) {

@@ -497,3 +497,24 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 Citus 失败于安装阶段，其余失败于数据库测试阶段；完整 Actions 日志下载返回 403，具体原因尚未确认，不能统一归因于环境。
 TiDB QPG 在本次运行中超时取消。未删除检查，也未使用忽略失败来改成绿色。
 逐项检查链接、失败阶段和复现结果见 [CI 诊断记录](mixed-ci-diagnosis.json)，本机日志保存在项目 `logs/ci-diagnosis-20261119/`。
+
+
+## 追加：其余六项 CI 修复（2026-11-19）
+
+已通过仓库只读 Actions 工作流取得原始失败日志，根因及修改如下：
+
+| 检查 | 失败原因 | 修改 |
+| --- | --- | --- |
+| Citus | PGDG 仓库缺少签名公钥，安装失败 | 导入官方公钥并使用 HTTPS、signed-by；固定 Ubuntu 22.04，保留 PG17/Citus13 的三节点测试 |
+| Hive | hive-serde 4.2.1 需要 Java21，CI 为 Java17 | 改为与 hive-cli 一致的 4.0.1 |
+| Spark | 与 Hive 相同的客户端依赖问题 | 使用同一依赖修复，保留 Spark 3.5.1 测试 |
+| Materialize QPG | 无限收集巨大结果集，Java 堆耗尽 | 每个会话设置 max_query_result_size=8388608；超限整条跳过，不截断后比较 |
+| Presto | 随机 JSON 数字含 -Infinity，合法性错误被当成缺陷 | 数字改用 getFiniteDouble()，字符串补齐双引号转义；不忽略其他查询错误 |
+| MySQL | 前序单线程测试可修改全局 completion_type；普通 ROLLBACK 在 RELEASE 模式下断连 | DQE 和 EET DML 显式使用 ROLLBACK AND NO CHAIN NO RELEASE，不重连掩盖丢失的会话 |
+
+新增严格 JSON 解析回归（1 万个字面量）、三种 completion_type 下的实库回滚回归，以及 Materialize 超限整条跳过、连接继续可用的回归。
+MySQL 已独立复现普通 ROLLBACK 断连；相同会话设置下显式 NO RELEASE 后能够继续 SELECT。Materialize 原有精确查询计划测试和新增超限回归均已在实库通过。
+完整静态 verify 通过，SpotBugs 为 0；完整数据库 CI 正在重跑，最终结论以逐项实测结果为准。
+
+CI 增加同分支并发取消，避免重复修订版本的长测堆积；诊断工作流变更不再触发全数据库矩阵。测试时长和差分断言保持，未使用 continue-on-error 或删除失败检查。
+本机日志统一位于项目 logs/ci-six-fixes-20261119/。

@@ -460,7 +460,7 @@ public class MySQLDQEOracle extends DQEBase<MySQLGlobalState> implements TestOra
                 accessedRows.put(table, rows);
             }
 
-            new SQLQueryAdapter("ROLLBACK").execute(state, false);
+            new SQLQueryAdapter(MySQLExpressionGenerator.ROLLBACK_WITHOUT_RELEASE).execute(state, false);
         }
 
         return new SQLQueryResult(accessedRows, queryErrors);
@@ -495,7 +495,7 @@ public class MySQLDQEOracle extends DQEBase<MySQLGlobalState> implements TestOra
                 accessedRows.get(table).removeAll(rows);
             }
 
-            new SQLQueryAdapter("ROLLBACK").execute(state, false);
+            new SQLQueryAdapter(MySQLExpressionGenerator.ROLLBACK_WITHOUT_RELEASE).execute(state, false);
         }
 
         return new SQLQueryResult(accessedRows, queryErrors);

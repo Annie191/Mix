@@ -26,8 +26,8 @@ public class TestMaterializeQueryPlan {
         assumeTrue("true".equalsIgnoreCase(System.getenv("MATERIALIZE_AVAILABLE")));
         MaterializeGlobalState state = createState("resultbudget");
         try (SQLConnection connection = state.getConnection()) {
-            assertEquals(List.of("8388608"), ComparatorHelper
-                    .getResultSetFirstColumnAsString("SHOW max_query_result_size", new ExpectedErrors(), state));
+            assertEquals(List.of("8MB"), ComparatorHelper.getResultSetFirstColumnAsString("SHOW max_query_result_size",
+                    new ExpectedErrors(), state));
             assertThrows(IgnoreMeException.class,
                     () -> ComparatorHelper.getResultSetFirstColumnAsString("SELECT repeat('x', 8388609)",
                             ExpectedErrors.from("result exceeds max size of"), state));

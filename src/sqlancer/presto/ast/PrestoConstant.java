@@ -517,7 +517,7 @@ public abstract class PrestoConstant implements PrestoExpression {
                 string = string.replace("'", "");
                 // https://www.rfc-editor.org/rfc/rfc8259#page-8
                 string = PrestoConstantUtils.removeAllControlChars(string);
-                string = string.replace("\\", "\\\\");
+                string = string.replace("\\", "\\\\").replace("\"", "\\\"");
 
                 value = "{\"val\": \"" + string + "\"}";
                 break;
@@ -526,7 +526,7 @@ public abstract class PrestoConstant implements PrestoExpression {
                     int no = (int) rand.getInteger();
                     val = String.valueOf(no);
                 } else {
-                    double no = rand.getDouble();
+                    double no = rand.getFiniteDouble();
                     val = String.valueOf(no);
                 }
                 value = "{\"val\": " + val + "}";

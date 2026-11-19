@@ -18,6 +18,10 @@ on:
       - '.github/workflows/main.yml'
       - 'pom.xml'
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   misc:
     name: General tests
@@ -508,6 +512,7 @@ jobs:
         run: mysql -h 127.0.0.1  -uroot -proot -e "CREATE USER 'sqlancer'@'%' IDENTIFIED BY 'sqlancer'; GRANT ALL PRIVILEGES ON * . * TO 'sqlancer'@'%';"
       - name: Run Tests
         run: |
+          MYSQL_AVAILABLE=true mvn -Djacoco.skip=true test -Dtest=TestMySQLTransactions
           MYSQL_AVAILABLE=true mvn -Djacoco.skip=true test -Dtest=TestMySQLPQS
           MYSQL_AVAILABLE=true mvn -Djacoco.skip=true test -Dtest=TestMySQLTLP
           MYSQL_AVAILABLE=true mvn -Djacoco.skip=true test -Dtest=TestMySQLCERT
