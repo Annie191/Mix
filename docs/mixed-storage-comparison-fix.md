@@ -501,24 +501,27 @@ TiDB QPG 在本次运行中超时取消。未删除检查，也未使用忽略�
 
 ## 追加：其余六项 CI 修复（2026-11-19）
 
-已通过仓库只读 Actions 工作流取得原始失败日志，根因及修改如下：
+通过只读 Actions 诊断工作流取得原始日志，修复如下：
 
-| 检查 | 失败原因 | 修改 |
+| 检查 | 根因 | 修改 |
 | --- | --- | --- |
-| Citus | PGDG 仓库缺少签名公钥，安装失败 | 导入官方公钥并使用 HTTPS、signed-by；固定 Ubuntu 22.04，保留 PG17/Citus13 的三节点测试 |
-| Hive | hive-serde 4.2.1 需要 Java21，CI 为 Java17 | 改为与 hive-cli 一致的 4.0.1 |
-| Spark | 与 Hive 相同的客户端依赖问题 | 使用同一依赖修复，保留 Spark 3.5.1 测试 |
-| Materialize QPG | 无限收集巨大结果集，Java 堆耗尽 | 每个会话设置 max_query_result_size=8388608；超限整条跳过，不截断后比较 |
-| Presto | 非法 JSON、ARRAY 元素类型丢失；重启后 worker 未就绪；旧 JDBC 无法解析字符串编码的数组 | 修正生成器；用实际读写检查就绪；驱动与 CI 服务端统一为 0.300 |
-| MySQL | 前序单线程测试可修改全局 completion_type；普通 ROLLBACK 在 RELEASE 模式下断连 | DQE 和 EET DML 显式使用 ROLLBACK AND NO CHAIN NO RELEASE，不重连掩盖丢失的会话 |
+| Citus | PGDG 缺少签名公钥 | 使用官方 HTTPS 公钥和 signed-by，固定 Ubuntu 22.04；保留 PG17/Citus13 三节点测试 |
+| Hive | hive-serde 4.2.1 需要 Java21，CI 为 Java17 | 与 hive-cli 统一为 4.0.1 |
+| Spark | 同一 Hive 客户端依赖冲突 | 使用上述依赖修复，保留 Spark 3.5.1 测试 |
+| Materialize QPG | 收集巨大结果集导致 Java 堆耗尽 | 会话设置 max_query_result_size=8388608；超限整条跳过，不截断后比较 |
+| Presto | 非法 JSON、ARRAY 元素类型丢失、worker 就绪竞态、旧 JDBC 解析失败 | 生成合法 JSON；保留 ARRAY 元素类型；启动后验证实际读写；服务端与 JDBC 统一为 0.300 |
+| MySQL | 随机设置的 completion_type=RELEASE 使普通回滚断连 | DQE、EET DML 使用 ROLLBACK AND NO CHAIN NO RELEASE |
 
-新增严格 JSON 解析回归（1 万个字面量）、三种 completion_type 下的实库回滚回归，以及 Materialize 超限整条跳过、连接继续可用的回归。
-MySQL 已独立复现普通 ROLLBACK 断连；相同会话设置下显式 NO RELEASE 后能够继续 SELECT。Materialize 原有精确查询计划测试和新增超限回归均已在实库通过。
-本地完整 General tests 为 371 项：355 项通过、16 项按条件跳过，0 失败/错误。完整静态 verify 通过，SpotBugs 为 0；完整数据库 CI 正在重跑，最终结论以逐项实测结果为准。
+新增回归：
 
-CI 增加同分支并发取消，避免重复修订版本的长测堆积；诊断工作流变更不再触发全数据库矩阵。测试时长和差分断言保持，未使用 continue-on-error 或删除失败检查。
-本机日志统一位于项目 logs/ci-six-fixes-20261119/。逐项根因、新旧代码对照、CI 链接和测试计数见 [CI 诊断记录](mixed-ci-diagnosis.json)。
+- 严格解析 1 万个 JSON 字面量；MIN/MAX 的 ARRAY(TIME) 参数与嵌套数组选列保留完整类型。
+- 真实记录的 interval 数组字符串响应 `data=[["[ \"1983-0\" ]"]]` 经 JDBC 解码；旧 0.283 重现异常，0.300 成功。两版驱动的比较不依赖数据库。
+- MySQL 三种 completion_type 下均撤销写入、保持连接；固定临时表用例也验证了 DQE 旧代码断连、修复后原有三行保留。
+- Materialize 超限时整条跳过，随后 SELECT 仍成功；原有精确查询计划测试保留。
 
-Presto 的后续类型错误示例是 `coalesce(MAX(ARRAY[1557.0000, ...]), ARRAY[TIME ...], ...)`。`MAX` 参数被随机换成了小数数组。现保留请求的复合类型，嵌套数组选列也检查元素类型；两项回归在旧代码上均失败、修复后均通过。没有把该类型错误加入忽略列表。
+Presto 每次启动、重启均等待 CREATE → INSERT → SELECT 实际成功，最多 120 秒；失败则检查失败。0.300 驱动 class-file major 为 52，兼容现有 Java17 CI。
+本地 General tests **371 项：355 项通过、16 项按条件跳过，0 失败/错误**；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
 
-后续 Presto 实跑又定位两项独立问题：HTTP `/v1/info` 已响应时，memory worker 仍可能未注册；服务器返回的 interval 数组可为 JSON 字符串，旧 JDBC 0.283 强制转 List 后异常。现每次启动/重启都等待实际 CREATE → INSERT → SELECT 成功，最多等 120 秒，失败即让检查失败；服务端和驱动固定为 0.300，保留数组测试。以真实响应 `data=[["[ \"1983-0\" ]"]]` 建立 JDBC 回归，旧驱动重现相同异常、新驱动解码成功，未把解析异常加入预期错误。驱动 class-file major 为 52，没有引入 Hive 那种 Java21/17 冲突。
+远程验证：**Citus、Hive、Spark、Materialize QPG、Presto 在 `8e71e271` 通过；MySQL 在 `95abfb08` 通过（31 分 41 秒）**。MySQL 后续实现未改动；记录时（06:49 UTC）本轮仍在重跑，未把最新整轮写成全绿。五项本轮实库检查均未跳过；Presto 两种 Oracle 均通过，查询进度记录分别达到 1851、1491。逐项运行链接、测试数量及查询进度见 [CI 诊断记录](mixed-ci-diagnosis.json)。
+CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更不触发全数据库矩阵。原测试时长与差分断言保留。
+日志统一位于项目 `logs/ci-six-fixes-20261119/`。

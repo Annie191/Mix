@@ -121,8 +121,9 @@
         "root": "PGDG missing signing key on ubuntu-latest; apt exits 100",
         "fix": "signed-by official PGDG key, HTTPS repository, ubuntu-22.04",
         "status": "integration_success",
-        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362508014",
-        "ci_tests": [
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385810311",
+        "validated_commit": "8e71e271",
+        "earlier_ci_tests": [
           {
             "name": "sqlancer.dbms.TestCitus",
             "max_progress_queries": 7466,
@@ -131,15 +132,27 @@
             "errors": 0,
             "skipped": 0
           }
-        ]
+        ],
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestCitus",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 2307
+          }
+        ],
+        "earlier_validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362508014"
       },
       {
         "name": "Hive",
         "root": "hive-serde 4.2.1 class file version 65 (Java21) loaded by Java17",
         "fix": "hive-serde 4.0.1 aligns with existing hive-cli",
         "status": "integration_success",
-        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507882",
-        "ci_tests": [
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385809739",
+        "validated_commit": "8e71e271",
+        "earlier_ci_tests": [
           {
             "name": "sqlancer.dbms.TestHiveTLP",
             "max_progress_queries": 321,
@@ -149,16 +162,26 @@
             "skipped": 0
           }
         ],
-        "latest_validation_url": "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375641930",
-        "latest_validation_status": "integration_success"
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestHiveTLP",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 304
+          }
+        ],
+        "earlier_validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507882"
       },
       {
         "name": "Spark",
         "root": "same hive-serde class version failure",
         "fix": "same Hive client dependency correction",
         "status": "integration_success",
-        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507759",
-        "ci_tests": [
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385809466",
+        "validated_commit": "8e71e271",
+        "earlier_ci_tests": [
           {
             "name": "sqlancer.dbms.TestSparkTLP",
             "max_progress_queries": 46,
@@ -168,16 +191,26 @@
             "skipped": 0
           }
         ],
-        "latest_validation_url": "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375642041",
-        "latest_validation_status": "integration_success"
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestSparkTLP",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 46
+          }
+        ],
+        "earlier_validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507759"
       },
       {
         "name": "Materialize QPG",
         "root": "unbounded result collection throws Java heap space in ComparatorHelper",
         "fix": "8MiB server result budget; reject complete candidate, never truncate",
         "status": "integration_success",
-        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507532",
-        "ci_tests": [
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385813212",
+        "validated_commit": "8e71e271",
+        "earlier_ci_tests": [
           {
             "name": "sqlancer.qpg.materialize.TestMaterializeQPG",
             "max_progress_queries": 6893,
@@ -194,16 +227,55 @@
             "errors": 0,
             "skipped": 0
           }
-        ]
+        ],
+        "ci_tests": [
+          {
+            "name": "sqlancer.qpg.materialize.TestMaterializeQPG",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 6936
+          },
+          {
+            "name": "sqlancer.qpg.materialize.TestMaterializeQueryPlan",
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": null
+          }
+        ],
+        "earlier_validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507532"
       },
       {
         "name": "Presto",
         "root": "invalid JSON -Infinity; ARRAY element types lost; HTTP readiness races memory worker registration after restart; JDBC 0.283 cannot decode string-encoded ARRAY results",
         "fix": "finite JSON and quote escaping; preserve ARRAY composite types; actual memory create/insert/read readiness; pin JDBC and CI server to 0.300",
-        "status": "driver_and_readiness_fix_awaiting_integration",
+        "status": "integration_success",
         "intermediate_failure_urls": [
           "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507916",
           "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375642272"
+        ],
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385809926",
+        "validated_commit": "8e71e271",
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestPrestoNoREC",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 1851
+          },
+          {
+            "name": "sqlancer.dbms.TestPrestoTLP",
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "max_progress_queries": 1491
+          }
         ]
       },
       {
@@ -212,7 +284,13 @@
         "fix": "DQE and EET DML use ROLLBACK AND NO CHAIN NO RELEASE",
         "status": "integration_success",
         "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507909",
-        "scope": "new rollback regression plus unchanged PQS, TLP, CERT creation, DQE, EET, EET DML commands; latest full rerun pending"
+        "scope": "new rollback regression plus unchanged PQS, TLP, CERT creation, DQE, EET, EET DML commands; latest full rerun pending",
+        "validated_commit": "95abfb08",
+        "job_completed_at": "2026-11-19T06:03:22Z",
+        "job_duration": "31m 41s",
+        "header_result": "succeeded",
+        "latest_rerun_url": "https://github.com/Annie191/Mix/actions/runs/44472678643/job/135385813420",
+        "latest_rerun_status": "in_progress"
       }
     ],
     "local_checks": {
@@ -285,6 +363,11 @@
         "new_driver_test": "passes via real JDBC against local recorded-response HTTP server",
         "old_driver_test": "fails with the same String-to-List decoding error"
       }
-    }
+    },
+    "latest_ci_run": "https://github.com/Annie191/Mix/actions/runs/44472678643",
+    "latest_ci_commit": "8e71e271",
+    "latest_ci_scope": "General and five affected database checks succeeded; MySQL rerun in progress. MySQL already succeeded at 95abfb08; no later MySQL implementation changes.",
+    "evidence_workflow": "https://github.com/Annie191/Mix/actions/runs/44475059935",
+    "latest_status_recorded_at": "2026-11-19T06:49:27Z"
   }
 }
