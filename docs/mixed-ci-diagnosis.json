@@ -148,7 +148,9 @@
             "errors": 0,
             "skipped": 0
           }
-        ]
+        ],
+        "latest_validation_url": "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375641930",
+        "latest_validation_status": "integration_success"
       },
       {
         "name": "Spark",
@@ -165,7 +167,9 @@
             "errors": 0,
             "skipped": 0
           }
-        ]
+        ],
+        "latest_validation_url": "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375642041",
+        "latest_validation_status": "integration_success"
       },
       {
         "name": "Materialize QPG",
@@ -194,22 +198,27 @@
       },
       {
         "name": "Presto",
-        "root": "invalid JSON -Infinity; subsequent TLP run also exposed loss of ARRAY element types in aggregate arguments and column selection",
-        "fix": "finite JSON numbers, escaped double quotes, preserve composite aggregate argument types, select columns with matching complete ARRAY types",
-        "status": "array_type_fix_awaiting_integration",
-        "intermediate_failure_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507916"
+        "root": "invalid JSON -Infinity; ARRAY element types lost; HTTP readiness races memory worker registration after restart; JDBC 0.283 cannot decode string-encoded ARRAY results",
+        "fix": "finite JSON and quote escaping; preserve ARRAY composite types; actual memory create/insert/read readiness; pin JDBC and CI server to 0.300",
+        "status": "driver_and_readiness_fix_awaiting_integration",
+        "intermediate_failure_urls": [
+          "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507916",
+          "https://github.com/Annie191/Mix/actions/runs/44469600551/job/135375642272"
+        ]
       },
       {
         "name": "MySQL",
         "root": "DQE session closes on first ordinary ROLLBACK; previous single-threaded CERT can set GLOBAL completion_type=RELEASE; server logs do not show a crash",
         "fix": "DQE and EET DML use ROLLBACK AND NO CHAIN NO RELEASE",
-        "status": "integration_running"
+        "status": "integration_success",
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507909",
+        "scope": "new rollback regression plus unchanged PQS, TLP, CERT creation, DQE, EET, EET DML commands; latest full rerun pending"
       }
     ],
     "local_checks": {
       "general": {
-        "tests": 370,
-        "passed": 354,
+        "tests": 371,
+        "passed": 355,
         "skipped": 16,
         "failures": 0,
         "errors": 0
@@ -263,6 +272,18 @@
         "old_code": "both regressions fail",
         "new_code": "both pass",
         "scope": "MIN/MAX ARRAY(TIME) arguments; structurally equal nested arrays accepted; ARRAY(ARRAY(DECIMAL)) rejected for ARRAY(ARRAY(TIME))"
+      },
+      "presto_jdbc_recorded_array": {
+        "response_data": [
+          [
+            "[ \"1983-0\" ]"
+          ]
+        ],
+        "old_driver": "0.283",
+        "new_driver": "0.300",
+        "new_driver_class_major": 52,
+        "new_driver_test": "passes via real JDBC against local recorded-response HTTP server",
+        "old_driver_test": "fails with the same String-to-List decoding error"
       }
     }
   }

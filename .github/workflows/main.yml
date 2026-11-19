@@ -8,6 +8,7 @@ on:
       - 'src/**'
       - 'test/**'
       - '.github/workflows/main.yml'
+      - '.github/scripts/presto_ready.py'
       - 'pom.xml'
   pull_request:
     branches:
@@ -16,6 +17,7 @@ on:
       - 'src/**'
       - 'test/**'
       - '.github/workflows/main.yml'
+      - '.github/scripts/presto_ready.py'
       - 'pom.xml'
 
 concurrency:
@@ -583,16 +585,17 @@ jobs:
           cache: 'maven'
       - name: Set up Presto
         run: |
-          docker pull prestodb/presto:latest
+          docker pull prestodb/presto:0.300
           echo "connector.name=memory" >> memory.properties
-          docker run -p 8080:8080 -d -v ./memory.properties:/opt/presto-server/etc/catalog/memory.properties --name presto prestodb/presto:latest
-          until curl -sf http://127.0.0.1:8080/v1/info 2>/dev/null; do sleep 2; done
+          docker run -p 8080:8080 -d -v ./memory.properties:/opt/presto-server/etc/catalog/memory.properties --name presto prestodb/presto:0.300
+          python3 .github/scripts/presto_ready.py
       - name: Build SQLancer
         run: mvn -B package -DskipTests=true
       - name: Run Tests
         run: |
           PRESTO_AVAILABLE=true mvn -Djacoco.skip=true -Dtest=TestPrestoNoREC test
-          docker restart presto && until curl -sf http://127.0.0.1:8080/v1/info 2>/dev/null; do sleep 2; done
+          docker restart presto
+          python3 .github/scripts/presto_ready.py
           PRESTO_AVAILABLE=true mvn -Djacoco.skip=true -Dtest=TestPrestoTLP test
   sqlite:
     name: DBMS Tests (SQLite)
