@@ -545,3 +545,13 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 
 验证命令使用 Maven 3.9.11：`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`。日志：`logs/review-followups-20261119/02-verify-final.log`。新增测试还检查零探测预算复用、数据版本变化、非精确事实不复用和 API 尾部预留；原局部观测测试改为核对缓存证据 ID 保留，非精确观测失败仍替换旧记录。
 本项完整 verify：248 项中 235 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
+
+## 追加：复合主键与计划分组值的程序检查（2026-11-19）
+
+- 固定 seed 57 的真实写前状态和模型计划为 [回归样例](data-preparation-v2/seed57-group-plan.json)。程序不再只检查 feasibility 的文字结构：结合当前完整样本与计划行值，按实际 GROUP BY 数值列计算现有数据加计划行的单组大小保守上界。原计划两侧 c4 各不同，实测上界为 1；承诺 max_size>=4 的目标在写入前被拒，反馈 `GROUP_PLAN_CANNOT_REACH_GOAL`、具体目标路径、分组列和各表因子，允许模型修订。
+- 分析中列出复合唯一键的已分组和未分组部分。主键 `(c4,c1)` 要求整对唯一，不要求 c4 单独不同；提示词明确可考虑保持 c4 及其他完整分组键相同，通过改变未分组的 c1 满足唯一性，仍需检查所有实际约束。
+- 上界忽略 ON/WHERE/HAVING 的进一步限制，包含外连接 NULL 扩展。仅使用能够安全规范化的数值列作为区分项；文本排序规则、DECIMAL 舍入、未知自动生成值等合并计算，避免错误证明。普通 FLOAT/DOUBLE 按存储精度归一，带显示小数位的旧类型不据此区分。没有当前完整样本、元数据或支持的 JOIN 时标 unverified，不把两行样本当成全表证明。
+- 允许目标不等于目标达成：上界足够大仍需数据库写后测量。回归使用真实 H2 JOIN/GROUP BY：原计划产生 4 对匹配、最大组 1；两侧保持 c4 相同、分别改变 c1 后，复合主键合法、仍为 4 对匹配、最大组为 4。保留 seed 49 的完整唯一键分组上界检查。
+
+验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`；日志 `logs/review-followups-20261119/03-verify.log`。新增回归覆盖真实失败计划、可行修订、完整 GROUP BY 键、有限/过期样本、浮点存储精度及未知分组值。没有再次调用真实模型，不能保证模型从此不犯语义错误。
+本项完整 verify：253 项中 240 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。

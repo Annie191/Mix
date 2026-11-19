@@ -30,6 +30,8 @@ final class TiDBMixedPreparationSemantics {
             String kind = entry.getAsJsonObject().get("type").getAsString();
             bound &= List.of("INNER", "STRAIGHT", "CROSS", "NATURAL_INNER").contains(kind);
         }
+        JsonArray composite = new JsonArray();
+        result.add("composite_key_guidance", composite);
         JsonArray natural = new JsonArray();
         result.add("natural_join_keys", natural);
         for (JsonElement entry : schema.getAsJsonArray("tables")) {
@@ -44,6 +46,8 @@ final class TiDBMixedPreparationSemantics {
                     continue;
                 }
                 boolean complete = table.get("metadata_complete").getAsBoolean();
+                JsonArray groupedParts = new JsonArray();
+                JsonArray otherParts = new JsonArray();
                 JsonArray columns = new JsonArray();
                 for (JsonElement part : key.getAsJsonArray("key_parts")) {
                     JsonObject component = part.getAsJsonObject();
@@ -53,11 +57,22 @@ final class TiDBMixedPreparationSemantics {
                         continue;
                     }
                     String column = component.get("column").getAsString();
+                    (grouping.contains(name + "." + column) ? groupedParts : otherParts).add(name + "." + column);
                     boolean notNull = table.getAsJsonArray("columns").asList().stream()
                             .map(JsonElement::getAsJsonObject).anyMatch(c -> c.get("name").getAsString().equals(column)
                                     && !c.get("nullable").getAsBoolean());
                     complete &= notNull && grouping.contains(name + "." + column);
                     columns.add(name + "." + column);
+                }
+                if (!groupedParts.isEmpty() && !otherParts.isEmpty()) {
+                    JsonObject guidance = new JsonObject();
+                    guidance.addProperty("table", name);
+                    guidance.add("constraint", key.get("name"));
+                    guidance.add("grouped_components", groupedParts);
+                    guidance.add("ungrouped_components", otherParts);
+                    guidance.addProperty("meaning",
+                            "Uniqueness applies to the whole tuple; grouped components may stay equal while ungrouped components differ, subject to all actual constraints");
+                    composite.add(guidance);
                 }
                 if (complete) {
                     JsonObject fact = new JsonObject();
@@ -113,25 +128,30 @@ final class TiDBMixedPreparationSemantics {
 
     static void validateGoals(JsonObject plan, JsonObject state) {
         JsonObject analysis = analyze(state);
-        if (analysis.get("max_input_rows_per_group").isJsonNull()) {
+        JsonObject planned = TiDBMixedPlannedGroups.analyze(plan, state);
+        boolean constraintBound = !analysis.get("max_input_rows_per_group").isJsonNull();
+        if (!constraintBound && planned.get("upper_bound").isJsonNull()) {
             return;
         }
+        BigInteger bound = constraintBound ? BigInteger.ONE : new BigInteger(planned.get("upper_bound").getAsString());
         JsonArray goals = plan.getAsJsonArray("structured_goals");
         for (int i = 0; i < goals.size(); i++) {
             JsonObject goal = goals.get(i).getAsJsonObject();
             if (List.of("groups_before_having", "groups_after_having").contains(goal.get("capability_id").getAsString())
                     && List.of("min_size", "max_size").contains(goal.get("field").getAsString())
                     && !goal.get("comparison").getAsString().equals("at_most")
-                    && new BigInteger(goal.get("expected").getAsString()).compareTo(BigInteger.ONE) > 0) {
+                    && new BigInteger(goal.get("expected").getAsString()).compareTo(bound) > 0) {
                 JsonObject details = new JsonObject();
                 details.addProperty("path", "$.structured_goals[" + i + "].expected");
-                details.addProperty("code", "UNREACHABLE_GROUP_SIZE");
-                details.addProperty("expected",
-                        "group size <= 1: GROUP BY includes a complete non-null unique key " + "from every base table");
+                String code = constraintBound ? "UNREACHABLE_GROUP_SIZE" : "GROUP_PLAN_CANNOT_REACH_GOAL";
+                details.addProperty("code", code);
+                details.addProperty("expected", "group size <= " + bound
+                        + "; keep ALL GROUP BY values equal for rows intended for the same group; vary ungrouped composite-key components when legal");
                 details.addProperty("received_type", "string");
-                details.addProperty("example", "1");
+                details.addProperty("example", bound.toString());
                 details.add("constraint_proof", analysis);
-                throw new TiDBDataPreparationProtocol.ValidationException("UNREACHABLE_GROUP_SIZE",
+                details.add("planned_group_bound", planned);
+                throw new TiDBDataPreparationProtocol.ValidationException(code,
                         "Matching pairs with different full GROUP BY keys form different groups", details);
             }
         }

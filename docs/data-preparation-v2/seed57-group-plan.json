@@ -1,0 +1,2256 @@
+{
+  "source": "Saved seed 57, fixed pre-write state and actual model plan; no new API call",
+  "state": {
+    "query_id": "query_0",
+    "schema_revision": 0,
+    "data_revision": 0,
+    "protocol_version": "1.0",
+    "request_id": "prepare_0_round_2",
+    "case_id": "ms60_20261118150233_16_0_0",
+    "phase": "DATA_PREPARATION",
+    "frozen": false,
+    "discrepancy_found": false,
+    "query": {
+      "sql": "SELECT t2.c4, t0.c2, t2.c2, t2.c3, t2.c0, t0.c4, t0.c0, BIT_OR(t0.c0), SUM(((t2.c3)<<(t2.c0))), MAX(NULL) FROM  t2 LEFT JOIN t0 ON ((t2.c3)=(t0.c3)) GROUP BY t2.c4, t0.c2, t2.c2, t2.c3, t2.c0, t0.c4, t0.c0",
+      "joins": [
+        {
+          "id": "j0",
+          "type": "LEFT",
+          "left_tables": [
+            "t2"
+          ],
+          "right_tables": [
+            "t0"
+          ],
+          "on": "((t2.c3)=(t0.c3))"
+        }
+      ],
+      "where": null,
+      "group_by": [
+        "t2.c4",
+        "t0.c2",
+        "t2.c2",
+        "t2.c3",
+        "t2.c0",
+        "t0.c4",
+        "t0.c0"
+      ],
+      "having": null
+    },
+    "schema": {
+      "id": "schema_0",
+      "tables": [
+        {
+          "name": "t2",
+          "columns": [
+            {
+              "name": "c0",
+              "sql_type": "tinyblob",
+              "value_kind": "binary",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "c1",
+              "sql_type": "tinyint(1) unsigned",
+              "value_kind": "integer",
+              "nullable": false,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "0"
+            },
+            {
+              "name": "c2",
+              "sql_type": "tinytext",
+              "value_kind": "text",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "c3",
+              "sql_type": "int(10) unsigned",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "914614426"
+            },
+            {
+              "name": "c4",
+              "sql_type": "double unsigned",
+              "value_kind": "decimal",
+              "nullable": false,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "914614426"
+            }
+          ],
+          "constraints": [
+            {
+              "name": "PRIMARY",
+              "kind": "primary_key",
+              "columns": [
+                "c4",
+                "c1"
+              ],
+              "expression": null,
+              "enforced": true,
+              "key_parts": [
+                {
+                  "sequence": 1,
+                  "column": "c4",
+                  "expression": null,
+                  "prefix_length": null
+                },
+                {
+                  "sequence": 2,
+                  "column": "c1",
+                  "expression": null,
+                  "prefix_length": null
+                }
+              ]
+            }
+          ],
+          "metadata_complete": true
+        },
+        {
+          "name": "t0",
+          "columns": [
+            {
+              "name": "c0",
+              "sql_type": "tinyblob",
+              "value_kind": "binary",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "c1",
+              "sql_type": "tinyint(1) unsigned",
+              "value_kind": "integer",
+              "nullable": false,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "0"
+            },
+            {
+              "name": "c2",
+              "sql_type": "tinytext",
+              "value_kind": "text",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": null
+            },
+            {
+              "name": "c3",
+              "sql_type": "int(10) unsigned",
+              "value_kind": "integer",
+              "nullable": true,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "914614426"
+            },
+            {
+              "name": "c4",
+              "sql_type": "double unsigned",
+              "value_kind": "decimal",
+              "nullable": false,
+              "generated": false,
+              "generation_expression": null,
+              "auto_increment": false,
+              "default_expression": "914614426"
+            }
+          ],
+          "constraints": [
+            {
+              "name": "PRIMARY",
+              "kind": "primary_key",
+              "columns": [
+                "c4",
+                "c1"
+              ],
+              "expression": null,
+              "enforced": true,
+              "key_parts": [
+                {
+                  "sequence": 1,
+                  "column": "c4",
+                  "expression": null,
+                  "prefix_length": null
+                },
+                {
+                  "sequence": 2,
+                  "column": "c1",
+                  "expression": null,
+                  "prefix_length": null
+                }
+              ]
+            }
+          ],
+          "metadata_complete": true
+        }
+      ],
+      "complete": true
+    },
+    "observations": [
+      {
+        "id": "obs_0_0",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t2",
+        "status": "exact",
+        "value": {
+          "count": "2"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_2",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t2",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4"
+          ],
+          "rows": [
+            [
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "0"
+              },
+              {
+                "type": "text",
+                "value": "988607279"
+              },
+              {
+                "type": "integer",
+                "value": "552193036"
+              },
+              {
+                "type": "decimal",
+                "value": "0.9989891801287297"
+              }
+            ],
+            [
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "0"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "914614426"
+              },
+              {
+                "type": "decimal",
+                "value": "914614426"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_3",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t0",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_5",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0",
+            "c1",
+            "c2",
+            "c3",
+            "c4"
+          ],
+          "rows": [
+            [
+              {
+                "type": "binary",
+                "value": "cEkzCTBs476XV2E="
+              },
+              {
+                "type": "integer",
+                "value": "0"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "853550754"
+              },
+              {
+                "type": "decimal",
+                "value": "0.0"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_6",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_empty",
+        "status": "exact",
+        "value": {
+          "empty": false
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_0",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "j0_pairs_before",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_1",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "j0_left_unmatched",
+        "status": "exact",
+        "value": {
+          "count": "2"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_2",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "j0_right_unmatched",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_3",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "j0_left_repeated",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_4",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "j0_right_repeated",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_5",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_input_before",
+        "status": "exact",
+        "value": {
+          "count": "2"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_6",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "groups_before_having",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_count",
+            "input_rows",
+            "min_size",
+            "max_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "2"
+              },
+              {
+                "type": "decimal",
+                "value": "2"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_7",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "group_sizes",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_key_0",
+            "group_key_1",
+            "group_key_2",
+            "group_key_3",
+            "group_key_4",
+            "group_key_5",
+            "group_key_6",
+            "group_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "decimal",
+                "value": "0.9989891801287297"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "text",
+                "value": "988607279"
+              },
+              {
+                "type": "integer",
+                "value": "552193036"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "decimal",
+                "value": "914614426"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "914614426"
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "null",
+                "value": null
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_8",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t2.c3",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_9",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c3",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_10",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t2.c0",
+        "status": "exact",
+        "value": {
+          "count": "2"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_11",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t2.c2",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_12",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_13",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c2",
+        "status": "exact",
+        "value": {
+          "count": "1"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_1_obs_0_14",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "predicate_j0_on",
+        "parameters": {
+          "stage": "input"
+        },
+        "status": "exact",
+        "value": {
+          "columns": [
+            "true_count",
+            "false_count",
+            "null_count"
+          ],
+          "rows": [
+            [
+              {
+                "type": "decimal",
+                "value": "0"
+              },
+              {
+                "type": "decimal",
+                "value": "2"
+              },
+              {
+                "type": "decimal",
+                "value": "0"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_0",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t2.c3",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "552193036"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "integer",
+                "value": "914614426"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_1",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t0.c3",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "853550754"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_2",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t2.c4",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_3",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c4",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_4",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c1",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_5",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t2.c1",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_6",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t2.c4",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "decimal",
+                "value": "0.9989891801287297"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "decimal",
+                "value": "914614426"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "batch_2_obs_0_7",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t0.c4",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "decimal",
+                "value": "0.0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      }
+    ],
+    "samples": [
+      {
+        "id": "sample_0_1",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "table": "t2",
+        "columns": [
+          "c0",
+          "c1",
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "rows": [
+          [
+            {
+              "type": "null",
+              "value": null
+            },
+            {
+              "type": "integer",
+              "value": "0"
+            },
+            {
+              "type": "text",
+              "value": "988607279"
+            },
+            {
+              "type": "integer",
+              "value": "552193036"
+            },
+            {
+              "type": "decimal",
+              "value": "0.9989891801287297"
+            }
+          ],
+          [
+            {
+              "type": "null",
+              "value": null
+            },
+            {
+              "type": "integer",
+              "value": "0"
+            },
+            {
+              "type": "null",
+              "value": null
+            },
+            {
+              "type": "integer",
+              "value": "914614426"
+            },
+            {
+              "type": "decimal",
+              "value": "914614426"
+            }
+          ]
+        ],
+        "complete": true
+      },
+      {
+        "id": "sample_0_4",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "table": "t0",
+        "columns": [
+          "c0",
+          "c1",
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "rows": [
+          [
+            {
+              "type": "binary",
+              "value": "cEkzCTBs476XV2E="
+            },
+            {
+              "type": "integer",
+              "value": "0"
+            },
+            {
+              "type": "null",
+              "value": null
+            },
+            {
+              "type": "integer",
+              "value": "853550754"
+            },
+            {
+              "type": "decimal",
+              "value": "0.0"
+            }
+          ]
+        ],
+        "complete": true
+      }
+    ],
+    "history": [],
+    "remaining_budget": {
+      "model_calls": 4,
+      "probe_requests": 68,
+      "insert_rows": 12,
+      "time_ms": 114145,
+      "decision_calls": 1,
+      "format_repairs": 3,
+      "api_tokens": 430413,
+      "cost_microusd": 243223
+    },
+    "available_observations": [
+      {
+        "id": "rows_t2",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t2"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t2",
+        "metric": "table_sample",
+        "target": {
+          "table": "t2"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t2.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t2.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t2.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t2.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t2.c1",
+        "metric": "null_count",
+        "target": {
+          "column": "t2.c1"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t2.c1",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t2.c1"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t2.c2",
+        "metric": "null_count",
+        "target": {
+          "column": "t2.c2"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t2.c2",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t2.c2"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t2.c3",
+        "metric": "null_count",
+        "target": {
+          "column": "t2.c3"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t2.c3",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t2.c3"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t2.c4",
+        "metric": "null_count",
+        "target": {
+          "column": "t2.c4"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t2.c4",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t2.c4"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "rows_t0",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t0",
+        "metric": "table_sample",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c1",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c1"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c1",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c1"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c2",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c2"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c2",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c2"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c3",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c3"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c3",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c3"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c4",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c4"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c4",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c4"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "j0_pairs_before",
+        "metric": "join_pairs_before_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_unmatched",
+        "metric": "left_unmatched_input_rows",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_unmatched",
+        "metric": "right_unmatched_input_rows",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_repeated",
+        "metric": "left_input_rows_with_multiple_matches",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_repeated",
+        "metric": "right_input_rows_with_multiple_matches",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact local JOIN statistic; independent of other FROM items",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_pairs_after",
+        "metric": "join_pairs_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_duplicate_after",
+        "metric": "duplicate_keys_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; different non-NULL keys with at least two surviving matching pairs",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_left_unmatched_after",
+        "metric": "left_unmatched_output_rows_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; only the side preserved by original JOIN can emit unmatched rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "j0_right_unmatched_after",
+        "metric": "right_unmatched_output_rows_after_where",
+        "target": {
+          "join_id": "j0"
+        },
+        "description": "Exact matching-pair count after original WHERE; excludes null-extended rows; only the side preserved by original JOIN can emit unmatched rows",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_before",
+        "metric": "query_input_rows_before_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows emitted by original FROM/JOIN before WHERE and aggregation; outer rows included",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_after",
+        "metric": "query_input_rows_after_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows after original WHERE and before GROUP BY/HAVING; not a matching-pair count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_empty",
+        "metric": "query_result_empty",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Whether the frozen original SELECT emits any row, including aggregation and HAVING",
+        "goal_fields": {
+          "empty": "boolean"
+        }
+      },
+      {
+        "id": "group_sizes",
+        "metric": "group_sizes_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {}
+      },
+      {
+        "id": "groups_before_having",
+        "metric": "group_summary_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "groups_after_having",
+        "metric": "group_summary_after_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows; surviving groups and their input rows, before projection",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t2.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c4 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c2 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t2.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c2 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t2.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c3 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t2.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c4 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c3 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t2.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c4 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c2 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t2.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c2 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t2.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c3 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t2.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c4 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c3 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical aggregate_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_input_nulls_t2.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c3 at logical aggregate_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_input_nulls_t2.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c0 at logical aggregate_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_arg0_nulls",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL value of aggregate argument t0.c0 after complete WHERE, before aggregation (not aggregate output or NULL source-column count)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_arg1_nulls",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL value of aggregate argument ((t2.c3)<<(t2.c0)) after complete WHERE, before aggregation (not aggregate output or NULL source-column count)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_arg2_nulls",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL value of aggregate argument NULL after complete WHERE, before aggregation (not aggregate output or NULL source-column count)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t2.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c4 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t0.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c2 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t2.c2",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c2 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t2.c3",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c3 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t2.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t2.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t0.c4",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c4 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t2.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "binary",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t2.c1",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t2.c2",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t2.c3",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t2.c4",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "decimal",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "binary",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c1",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c2",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c3",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c4",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "decimal",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "predicate_j0_on",
+        "metric": "predicate_truth_distribution",
+        "target": {},
+        "description": "TRUE/FALSE/NULL distribution of AST predicate ((t2.c3)=(t0.c3)); input scope: FROM (t2) CROSS JOIN (t0); local ON input only, before applying this ON; no output stage",
+        "parameters": {
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "input"
+            ]
+          }
+        },
+        "goal_fields": {
+          "true_count": "non_negative_integer",
+          "false_count": "non_negative_integer",
+          "null_count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "predicate_j0_on_query",
+        "metric": "predicate_truth_distribution",
+        "target": {},
+        "description": "TRUE/FALSE/NULL distribution of AST predicate ((t2.c3)=(t0.c3)); input scope: FROM  t2 LEFT JOIN t0 ON ((t2.c3)=(t0.c3)); output scope additionally applies complete original WHERE when present",
+        "parameters": {
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "input",
+              "output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "true_count": "non_negative_integer",
+          "false_count": "non_negative_integer",
+          "null_count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_matches_j0_t2.c3",
+        "metric": "key_scoped_join_matches",
+        "target": {},
+        "description": "Typed key and original ON=TRUE; local_pairs counts this JOIN's child-input pairs; query_input/where_output count whole-query rows (downstream multiplicity retained)",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "local_pairs",
+              "query_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_matches_j0_t0.c3",
+        "metric": "key_scoped_join_matches",
+        "target": {},
+        "description": "Typed key and original ON=TRUE; local_pairs counts this JOIN's child-input pairs; query_input/where_output count whole-query rows (downstream multiplicity retained)",
+        "parameters": {
+          "key": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "local_pairs",
+              "query_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_rows",
+        "metric": "specific_group_input_rows",
+        "target": {},
+        "description": "Exact input rows for the complete explicit column GROUP BY key tuple, after original WHERE and before HAVING; not aggregate result cardinality",
+        "parameters": {
+          "key0": {
+            "kind": "decimal",
+            "nullable": true
+          },
+          "key1": {
+            "kind": "text",
+            "nullable": true
+          },
+          "key2": {
+            "kind": "text",
+            "nullable": true
+          },
+          "key3": {
+            "kind": "integer",
+            "nullable": true
+          },
+          "key4": {
+            "kind": "binary",
+            "nullable": true
+          },
+          "key5": {
+            "kind": "decimal",
+            "nullable": true
+          },
+          "key6": {
+            "kind": "binary",
+            "nullable": true
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      }
+    ]
+  },
+  "plan": {
+    "protocol_version": "1.0",
+    "request_id": "prepare_0_round_2",
+    "case_id": "ms60_20261118150233_16_0_0",
+    "query_id": "query_0",
+    "schema_revision": 0,
+    "data_revision": 0,
+    "decision": "append_rows",
+    "reason": "\u5f53\u524d 0 \u4e2a JOIN \u5339\u914d\u5bf9\u3001\u6240\u6709\u7ec4\u5927\u5c0f\u5747\u4e3a 1\uff0cLEFT JOIN \u7684\u5339\u914d\u5206\u652f\u4e0e\u591a\u884c\u5206\u7ec4\u805a\u5408\uff08BIT_OR/SUM\uff09\u90fd\u672a\u88ab\u8986\u76d6\u3002\u8ba1\u5212\u5411 t2 \u8ffd\u52a0 2 \u884c\u3001t0 \u8ffd\u52a0 2 \u884c\uff0c\u6784\u9020\u4e00\u4e2a c3 \u5339\u914d\u952e\uff08t2 \u4e24\u884c + t0 \u4e24\u884c \u2192 4 \u4e2a\u5339\u914d\u5bf9\uff09\uff0c\u5e76\u8ba9\u8fd9 4 \u4e2a\u5339\u914d\u5bf9\u5171\u4eab\u5b8c\u5168\u76f8\u540c\u7684\u5168\u90e8 GROUP BY \u952e\uff08t2.c4\u3001t0.c2\u3001t2.c2\u3001t2.c3\u3001t2.c0\u3001t0.c4\u3001t0.c0\uff09\uff0c\u4ece\u800c\u5f62\u6210\u4e00\u4e2a size=4 \u7684\u7ec4\uff0c\u540c\u65f6\u4fdd\u7559\u539f\u6709 2 \u4e2a LEFT \u672a\u5339\u914d\u884c\u3002t2.c0 \u7528\u975e NULL \u4e8c\u8fdb\u5236\u503c\u4ee5\u8986\u76d6 BIT_OR \u4e0e\u79fb\u4f4d\u53c2\u6570\u975e NULL \u8def\u5f84\uff1bt0.c0 \u7528\u975e NULL \u4e8c\u8fdb\u5236\u503c\u8986\u76d6 BIT_OR \u8f93\u5165\u3002\u4e3b\u952e (c4,c1) \u901a\u8fc7\u4e0d\u540c c4 \u503c\u907f\u514d\u51b2\u7a81\u3002",
+    "evidence_ids": [
+      "batch_1_obs_0_0",
+      "batch_1_obs_0_1",
+      "batch_1_obs_0_2",
+      "batch_1_obs_0_6",
+      "batch_1_obs_0_7",
+      "batch_1_obs_0_14",
+      "batch_2_obs_0_0",
+      "batch_2_obs_0_1",
+      "batch_2_obs_0_6",
+      "batch_2_obs_0_7",
+      "obs_0_2",
+      "obs_0_5"
+    ],
+    "goal": "\u6784\u9020\u4e00\u4e2a c3 \u5339\u914d\u952e\u4f7f LEFT JOIN \u4ea7\u751f 4 \u4e2a\u5339\u914d\u5bf9\uff0c\u4e14\u8fd9 4 \u5bf9\u5171\u4eab\u5b8c\u5168\u76f8\u540c\u7684\u5168\u90e8 GROUP BY \u952e\uff0c\u5f62\u6210\u4e00\u4e2a size=4 \u7684\u7ec4\uff0c\u8986\u76d6 BIT_OR(t0.c0) \u4e0e SUM((t2.c3)<<(t2.c0)) \u7684\u591a\u884c\u805a\u5408\u8def\u5f84\uff0c\u540c\u65f6\u4fdd\u7559\u539f\u6709 LEFT \u672a\u5339\u914d\u884c\u3002",
+    "expected_effect": "t2 \u4ece 2 \u884c\u589e\u81f3 4 \u884c\u3001t0 \u4ece 1 \u884c\u589e\u81f3 3 \u884c\uff1bc3=700000001 \u5728\u4e24\u4fa7\u5404 2 \u884c\uff0c\u4ea7\u751f 4 \u4e2a\u5339\u914d\u5bf9\uff0c\u4e14\u8fd9 4 \u5bf9\u5171\u4eab\u5168\u90e8 GROUP BY \u952e\uff08t2.c4 \u56e0\u4e3b\u952e\u4e0d\u540c\u800c\u4e0d\u540c\uff0c\u6545\u5b9e\u9645\u4f1a\u5206\u6210 2 \u4e2a size=2 \u7684\u7ec4\u2014\u2014\u89c1 feasibility \u8bf4\u660e\uff09\u3002",
+    "observation_requests": [],
+    "operations": [
+      {
+        "table": "t2",
+        "rows": [
+          {
+            "c0": {
+              "type": "binary",
+              "value": "AQID"
+            },
+            "c1": {
+              "type": "integer",
+              "value": "0"
+            },
+            "c2": {
+              "type": "text",
+              "value": "matchkey"
+            },
+            "c3": {
+              "type": "integer",
+              "value": "700000001"
+            },
+            "c4": {
+              "type": "decimal",
+              "value": "700000001"
+            }
+          },
+          {
+            "c0": {
+              "type": "binary",
+              "value": "AQID"
+            },
+            "c1": {
+              "type": "integer",
+              "value": "0"
+            },
+            "c2": {
+              "type": "text",
+              "value": "matchkey"
+            },
+            "c3": {
+              "type": "integer",
+              "value": "700000001"
+            },
+            "c4": {
+              "type": "decimal",
+              "value": "700000002"
+            }
+          }
+        ]
+      },
+      {
+        "table": "t0",
+        "rows": [
+          {
+            "c0": {
+              "type": "binary",
+              "value": "AQID"
+            },
+            "c1": {
+              "type": "integer",
+              "value": "0"
+            },
+            "c2": {
+              "type": "text",
+              "value": "matchkey"
+            },
+            "c3": {
+              "type": "integer",
+              "value": "700000001"
+            },
+            "c4": {
+              "type": "decimal",
+              "value": "700000001"
+            }
+          },
+          {
+            "c0": {
+              "type": "binary",
+              "value": "AQID"
+            },
+            "c1": {
+              "type": "integer",
+              "value": "0"
+            },
+            "c2": {
+              "type": "text",
+              "value": "matchkey"
+            },
+            "c3": {
+              "type": "integer",
+              "value": "700000001"
+            },
+            "c4": {
+              "type": "decimal",
+              "value": "700000002"
+            }
+          }
+        ]
+      }
+    ],
+    "verification_requests": [
+      "j0_pairs_after",
+      "j0_duplicate_after",
+      "j0_left_unmatched_after",
+      "j0_right_unmatched_after",
+      "query_input_after",
+      "groups_before_having",
+      "group_sizes",
+      "aggregate_arg0_nulls",
+      "aggregate_arg1_nulls",
+      "rows_t2",
+      "rows_t0",
+      "query_empty"
+    ],
+    "structured_goals": [
+      {
+        "capability_id": "j0_pairs_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "4"
+      },
+      {
+        "capability_id": "j0_duplicate_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "1"
+      },
+      {
+        "capability_id": "j0_left_unmatched_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "2"
+      },
+      {
+        "capability_id": "groups_before_having",
+        "field": "max_size",
+        "comparison": "at_least",
+        "expected": "4"
+      },
+      {
+        "capability_id": "groups_before_having",
+        "field": "input_rows",
+        "comparison": "at_least",
+        "expected": "6"
+      },
+      {
+        "capability_id": "query_input_after",
+        "field": "count",
+        "comparison": "at_least",
+        "expected": "6"
+      },
+      {
+        "capability_id": "aggregate_arg0_nulls",
+        "field": "count",
+        "comparison": "at_most",
+        "expected": "2"
+      },
+      {
+        "capability_id": "aggregate_arg1_nulls",
+        "field": "count",
+        "comparison": "at_most",
+        "expected": "2"
+      },
+      {
+        "capability_id": "rows_t2",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "4"
+      },
+      {
+        "capability_id": "rows_t0",
+        "field": "count",
+        "comparison": "equals",
+        "expected": "3"
+      }
+    ],
+    "verification_limit": null,
+    "stop_reason": null,
+    "feasibility": {
+      "join_witness": "\u65b0\u589e t2 \u4e24\u884c\u4e0e t0 \u4e24\u884c c3 \u5747\u4e3a 700000001\uff08int unsigned \u8303\u56f4\u5185\uff09\uff0cON ((t2.c3)=(t0.c3)) \u4e3a TRUE\uff0c\u4ea7\u751f 2\u00d72=4 \u4e2a\u5339\u914d\u5bf9\uff1b\u539f\u6709 t2 \u884c c3=552193036/914614426 \u4e0e t0 \u884c c3=853550754 \u4ecd\u4e0d\u5339\u914d\uff0c\u4fdd\u7559 2 \u4e2a LEFT \u672a\u5339\u914d\u884c\u3002",
+      "where_witness": "\u67e5\u8be2\u65e0 WHERE\uff0c\u6240\u6709 JOIN \u8f93\u51fa\u884c\u76f4\u63a5\u8fdb\u5165 GROUP BY \u8f93\u5165\uff0c\u6545 4 \u4e2a\u5339\u914d\u5bf9 + 2 \u4e2a\u672a\u5339\u914d\u884c = 6 \u884c\u8f93\u5165\u3002",
+      "group_witness": "GROUP BY \u542b t2.c4\uff0c\u800c t2 \u4e3b\u952e\u4e3a (c4,c1)\uff0c\u6545\u4e24\u884c t2 \u5fc5\u987b c4 \u4e0d\u540c\uff08700000001/700000002\uff09\uff0c\u56e0\u6b64 4 \u4e2a\u5339\u914d\u5bf9\u5b9e\u9645\u5206\u6210\u4e24\u4e2a size=2 \u7684\u7ec4\uff08\u6bcf\u7ec4 t2.c4 \u76f8\u540c\u3001t0.c2/t2.c2/t2.c3/t2.c0/t0.c4/t0.c0 \u76f8\u540c\uff09\uff0c\u800c\u975e\u5355\u7ec4 size=4\uff1b\u8fd9\u662f\u4e3b\u952e\u7ea6\u675f\u4e0b\u7684\u6700\u4f18\u8fd1\u4f3c\uff0c\u4ecd\u8986\u76d6\u591a\u884c\u805a\u5408\u3002",
+      "constraint_check": "t2/t0 \u4e3b\u952e (c4,c1)\uff1a\u65b0\u589e c4 \u503c 700000001/700000002 \u4e0e\u5df2\u6709 0.9989891801287297\u3001914614426\u30010.0 \u5747\u4e0d\u540c\uff0cc1=0 \u4e0d\u51b2\u7a81\uff1bc1 \u975e\u7a7a\u9ed8\u8ba4 0 \u6ee1\u8db3\uff1bc0 tinyblob \u5b58 3 \u5b57\u8282 AQID \u5408\u6cd5\uff1bc2 tinytext 'matchkey' \u5408\u6cd5\uff1bc3 int unsigned 700000001 \u5408\u6cd5\uff1bc4 double unsigned \u975e\u7a7a\u4e14\u4e3a\u6b63\u3002\u65e0\u751f\u6210\u5217\u3001\u65e0 CHECK\u3002",
+      "measurement": "\u8865\u884c\u540e\u7a0b\u5e8f\u81ea\u52a8\u6267\u884c verification_requests\uff1aj0_pairs_after\u3001j0_duplicate_after\u3001groups_before_having(max_size/input_rows)\u3001group_sizes\u3001aggregate_arg0/1_nulls\u3001rows_t2/t0 \u7cbe\u786e\u89c2\u6d4b\u53ef\u9a8c\u8bc1\u5339\u914d\u5bf9\u4e0e\u5206\u7ec4\u662f\u5426\u8fbe\u6210\u3002"
+    }
+  }
+}

@@ -493,7 +493,9 @@ public final class TiDBMixedPreparationHarness {
                     plan = TiDBDataPreparationProtocol.decision(content, packet);
                     combinedGoals(plan); // The live loop requires the new field, including [] for unmeasurable goals.
                     TiDBMixedPreparationSemantics.validateGoals(plan, packet);
-                    round.add("program_semantics", TiDBMixedPreparationSemantics.analyze(packet));
+                    JsonObject semantics = TiDBMixedPreparationSemantics.analyze(packet);
+                    semantics.add("planned_groups", TiDBMixedPlannedGroups.analyze(plan, packet));
+                    round.add("program_semantics", semantics);
                     round.add("decision", plan.deepCopy());
                     round.add("model_expectation", plan.get("expected_effect"));
                     if (plan.get("decision").getAsString().equals("append_rows")) {
