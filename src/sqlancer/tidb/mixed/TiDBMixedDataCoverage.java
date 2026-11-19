@@ -118,7 +118,7 @@ public final class TiDBMixedDataCoverage {
             }
         }
         JsonObject result = new JsonObject();
-        result.addProperty("scope_version", 2);
+        result.addProperty("scope_version", 3);
         for (String scope : present.keySet()) {
             // Facts from older packets may not have a capability catalog; they still remain measurable.
             expected.get(scope).addAll(measured.get(scope));
@@ -142,13 +142,14 @@ public final class TiDBMixedDataCoverage {
                 unsupported.add(fact.deepCopy());
             }
         });
+        result.add("scale", TiDBMixedDataScale.snapshot(packet, facts));
         result.add("unsupported", unsupported);
         result.add("query_empty", facts.containsKey("query_empty") ? facts.get("query_empty").get("empty")
                 : com.google.gson.JsonNull.INSTANCE);
         return result;
     }
 
-    private static String scope(String id) {
+    static String scope(String id) {
         if (id.startsWith("rows_") || id.startsWith("nulls_") || id.startsWith("base_where_boundary_")
                 || id.matches("j[0-9]+_(pairs_before|left_unmatched|right_unmatched|left_repeated|right_repeated)")) {
             return "base_data";
@@ -199,8 +200,12 @@ public final class TiDBMixedDataCoverage {
                 result.add(scope, difference(before.getAsJsonObject(scope), after.getAsJsonObject(scope)));
             }
         }
+        if (before.has("scale") && after.has("scale")) {
+            result.add("scale",
+                    TiDBMixedDataScale.difference(before.getAsJsonObject("scale"), after.getAsJsonObject("scale")));
+        }
         if (result.has("query_stages")) {
-            result.addProperty("scope_version", 2);
+            result.addProperty("scope_version", 3);
         }
         return result;
     }

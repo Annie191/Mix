@@ -1,0 +1,2360 @@
+{
+  "source": "Saved seed 63 exact independent before/after assessments; no new API or database execution",
+  "before": {
+    "query_id": "query_0",
+    "schema_revision": 0,
+    "data_revision": 0,
+    "available_observations": [
+      {
+        "id": "rows_t0",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t0",
+        "metric": "table_sample",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "rows_t1",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t1",
+        "metric": "table_sample",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t1.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t1.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t1.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t1.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "query_input_before",
+        "metric": "query_input_rows_before_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows emitted by original FROM/JOIN before WHERE and aggregation; outer rows included",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_after",
+        "metric": "query_input_rows_after_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows after original WHERE and before GROUP BY/HAVING; not a matching-pair count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_empty",
+        "metric": "query_result_empty",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Whether the frozen original SELECT emits any row, including aggregation and HAVING",
+        "goal_fields": {
+          "empty": "boolean"
+        }
+      },
+      {
+        "id": "group_sizes",
+        "metric": "group_sizes_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {}
+      },
+      {
+        "id": "groups_before_having",
+        "metric": "group_summary_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "groups_after_having",
+        "metric": "group_summary_after_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows; surviving groups and their input rows, before projection",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_arg0_nulls",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL value of aggregate argument (('E!p%')NOT REGEXP('0.13242586793811217')) after complete WHERE, before aggregation (not aggregate output or NULL source-column count)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t1.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_rows",
+        "metric": "specific_group_input_rows",
+        "target": {},
+        "description": "Exact input rows for the complete explicit column GROUP BY key tuple, after original WHERE and before HAVING; not aggregate result cardinality",
+        "parameters": {
+          "key0": {
+            "kind": "text",
+            "nullable": true
+          },
+          "key1": {
+            "kind": "text",
+            "nullable": true
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      }
+    ],
+    "observations": [
+      {
+        "id": "obs_0_0",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t0",
+        "status": "exact",
+        "value": {
+          "count": "3"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_1",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_2",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "rows_t1",
+        "status": "exact",
+        "value": {
+          "count": "9"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_3",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_4",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_input_before",
+        "status": "exact",
+        "value": {
+          "count": "27"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_5",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_input_after",
+        "status": "exact",
+        "value": {
+          "count": "27"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_6",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "query_empty",
+        "status": "exact",
+        "value": {
+          "empty": false
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_7",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "group_sizes",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_key_0",
+            "group_key_1",
+            "group_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_8",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "groups_before_having",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_count",
+            "input_rows",
+            "min_size",
+            "max_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "24"
+              },
+              {
+                "type": "decimal",
+                "value": "27"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_9",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "groups_after_having",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_count",
+            "input_rows",
+            "min_size",
+            "max_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "24"
+              },
+              {
+                "type": "decimal",
+                "value": "27"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_10",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "where_input_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_11",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "where_input_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_12",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "where_output_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_13",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "where_output_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_14",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "aggregate_arg0_nulls",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_15",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "group_input_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_16",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "group_input_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_18",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_20",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "sample_t1",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "]"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "f"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "l"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "-"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "0"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_21",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t0.c0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_0_22",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 0,
+        "capability_id": "freq_t1.c0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      }
+    ]
+  },
+  "after": {
+    "query_id": "query_0",
+    "schema_revision": 0,
+    "data_revision": 2,
+    "available_observations": [
+      {
+        "id": "rows_t0",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t0",
+        "metric": "table_sample",
+        "target": {
+          "table": "t0"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t0.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t0.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t0.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "rows_t1",
+        "metric": "table_row_count",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Exact physical row count in TiKV snapshot",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "sample_t1",
+        "metric": "table_sample",
+        "target": {
+          "table": "t1"
+        },
+        "description": "Bounded table sample; complete only when the entire result is read",
+        "goal_fields": {}
+      },
+      {
+        "id": "nulls_t1.c0",
+        "metric": "null_count",
+        "target": {
+          "column": "t1.c0"
+        },
+        "description": "Exact NULL row count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "freq_t1.c0",
+        "metric": "key_frequency",
+        "target": {
+          "column": "t1.c0"
+        },
+        "description": "Key frequencies including NULL; truncated lists are sampled, never full distributions",
+        "goal_fields": {}
+      },
+      {
+        "id": "query_input_before",
+        "metric": "query_input_rows_before_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows emitted by original FROM/JOIN before WHERE and aggregation; outer rows included",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_input_after",
+        "metric": "query_input_rows_after_where",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Rows after original WHERE and before GROUP BY/HAVING; not a matching-pair count",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "query_empty",
+        "metric": "query_result_empty",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Whether the frozen original SELECT emits any row, including aggregation and HAVING",
+        "goal_fields": {
+          "empty": "boolean"
+        }
+      },
+      {
+        "id": "group_sizes",
+        "metric": "group_sizes_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {}
+      },
+      {
+        "id": "groups_before_having",
+        "metric": "group_summary_before_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "groups_after_having",
+        "metric": "group_summary_after_having",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "Explicit column GROUP BY; counts are separate from pre-group input rows; surviving groups and their input rows, before projection",
+        "goal_fields": {
+          "group_count": "non_negative_integer",
+          "input_rows": "non_negative_integer",
+          "min_size": "non_negative_integer",
+          "max_size": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_input_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical where_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "where_output_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical where_output; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "aggregate_arg0_nulls",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL value of aggregate argument (('E!p%')NOT REGEXP('0.13242586793811217')) after complete WHERE, before aggregation (not aggregate output or NULL source-column count)",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t0.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t0.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_nulls_t1.c0",
+        "metric": "query_stage_count",
+        "target": {
+          "query_id": "query_0"
+        },
+        "description": "NULL column t1.c0 at logical group_input; includes outer NULL extension; does not prove arbitrary expression evaluates to NULL",
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t0.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "key_rows_t1.c0",
+        "metric": "key_scoped_rows",
+        "target": {},
+        "description": "Exact rows with this typed key; base existence and actual whole-query JOIN output are distinct; outer rows included",
+        "parameters": {
+          "key": {
+            "kind": "text",
+            "nullable": true
+          },
+          "stage": {
+            "kind": "enum",
+            "values": [
+              "base",
+              "where_input",
+              "where_output"
+            ]
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      },
+      {
+        "id": "group_input_rows",
+        "metric": "specific_group_input_rows",
+        "target": {},
+        "description": "Exact input rows for the complete explicit column GROUP BY key tuple, after original WHERE and before HAVING; not aggregate result cardinality",
+        "parameters": {
+          "key0": {
+            "kind": "text",
+            "nullable": true
+          },
+          "key1": {
+            "kind": "text",
+            "nullable": true
+          }
+        },
+        "goal_fields": {
+          "count": "non_negative_integer"
+        }
+      }
+    ],
+    "observations": [
+      {
+        "id": "obs_2_0",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "rows_t0",
+        "status": "exact",
+        "value": {
+          "count": "5"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_1",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_2",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "rows_t1",
+        "status": "exact",
+        "value": {
+          "count": "9"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_3",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_4",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "query_input_before",
+        "status": "exact",
+        "value": {
+          "count": "45"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_5",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "query_input_after",
+        "status": "exact",
+        "value": {
+          "count": "45"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_6",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "query_empty",
+        "status": "exact",
+        "value": {
+          "empty": false
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_7",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "group_sizes",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_key_0",
+            "group_key_1",
+            "group_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "6"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_8",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "groups_before_having",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_count",
+            "input_rows",
+            "min_size",
+            "max_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "24"
+              },
+              {
+                "type": "decimal",
+                "value": "45"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "6"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_9",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "groups_after_having",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "group_count",
+            "input_rows",
+            "min_size",
+            "max_size"
+          ],
+          "rows": [
+            [
+              {
+                "type": "integer",
+                "value": "24"
+              },
+              {
+                "type": "decimal",
+                "value": "45"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "6"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_10",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "where_input_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_11",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "where_input_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_12",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "where_output_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_13",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "where_output_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_14",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "aggregate_arg0_nulls",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_15",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "group_input_nulls_t0.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_16",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "group_input_nulls_t1.c0",
+        "status": "exact",
+        "value": {
+          "count": "0"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_17",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "key_rows_t0.c0",
+        "parameters": {
+          "key": {
+            "type": "text",
+            "value": "9"
+          },
+          "stage": "base"
+        },
+        "status": "exact",
+        "value": {
+          "count": "3"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_18",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "group_input_rows",
+        "parameters": {
+          "key0": {
+            "type": "text",
+            "value": "9"
+          },
+          "key1": {
+            "type": "text",
+            "value": "9"
+          }
+        },
+        "status": "exact",
+        "value": {
+          "count": "6"
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_20",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "sample_t0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_22",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "sample_t1",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "c0"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "]"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "f"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "l"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "-"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "0"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_23",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "freq_t0.c0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "3"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "N"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      },
+      {
+        "id": "obs_2_24",
+        "query_id": "query_0",
+        "schema_revision": 0,
+        "data_revision": 2,
+        "capability_id": "freq_t1.c0",
+        "status": "exact",
+        "value": {
+          "columns": [
+            "key_value",
+            "frequency"
+          ],
+          "rows": [
+            [
+              {
+                "type": "text",
+                "value": "J"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "0"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "1"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "9"
+              },
+              {
+                "type": "integer",
+                "value": "2"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "]"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "f"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "l"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ],
+            [
+              {
+                "type": "text",
+                "value": "-"
+              },
+              {
+                "type": "integer",
+                "value": "1"
+              }
+            ]
+          ],
+          "complete": true
+        },
+        "error": null
+      }
+    ]
+  }
+}

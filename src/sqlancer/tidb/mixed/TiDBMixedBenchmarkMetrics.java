@@ -77,6 +77,7 @@ public final class TiDBMixedBenchmarkMetrics {
             }
             if (success > 0 && round.has("data_coverage_change")) {
                 JsonObject change = round.getAsJsonObject("data_coverage_change");
+                scaleRowGain(change, counts, success, "");
                 if (!change.has("query_stages")
                         || !change.getAsJsonObject("query_stages").get("complete").getAsBoolean()) {
                     add(counts, "rows_gain_unverified", success);
@@ -105,6 +106,7 @@ public final class TiDBMixedBenchmarkMetrics {
         }
         JsonObject change = report.has("data_coverage_change") ? report.getAsJsonObject("data_coverage_change")
                 : new JsonObject();
+        scaleRowGain(change, counts, successful, "case_");
         if (!change.has("query_stages") || !change.getAsJsonObject("query_stages").get("complete").getAsBoolean()) {
             add(counts, "case_rows_query_gain_unverified", successful);
         } else if (change.getAsJsonObject("query_stages").getAsJsonArray("added").isEmpty()) {
@@ -113,6 +115,62 @@ public final class TiDBMixedBenchmarkMetrics {
             // Case-level association only: do not attribute the gain to each particular inserted row.
             add(counts, "case_rows_with_new_query_scene", successful);
         }
+    }
+
+    private static void scaleRowGain(JsonObject change, Map<String, Long> counts, long rows, String prefix) {
+        JsonObject scale = change.has("scale") && change.getAsJsonObject("scale").has("query_stages")
+                ? change.getAsJsonObject("scale").getAsJsonObject("query_stages") : null;
+        if (scale != null && !scale.getAsJsonArray("increased").isEmpty()) {
+            add(counts, prefix + "rows_with_query_scale_expansion", rows);
+            if (prefix.isEmpty()) {
+                add(counts, "scale_expanding_append_rounds", 1);
+            }
+        } else if (scale == null || !scale.get("complete").getAsBoolean()) {
+            add(counts, prefix + "rows_scale_gain_unverified", rows);
+        } else if (scale.getAsJsonArray("changes").isEmpty()) {
+            add(counts, prefix + "rows_without_query_scale_change", rows);
+        } else {
+            add(counts, prefix + "rows_with_query_scale_contraction_only", rows);
+        }
+    }
+
+    private static JsonObject scopedScale(JsonArray reports, String strategy, String scope) {
+        JsonObject result = new JsonObject();
+        long missing = 0;
+        long complete = 0;
+        long unverified = 0;
+        long increases = 0;
+        long decreases = 0;
+        long transitions = 0;
+        for (JsonElement entry : reports) {
+            JsonObject report = entry.getAsJsonObject();
+            if (!strategy.equals(report.get("strategy").getAsString())) {
+                continue;
+            }
+            JsonObject change = report.has("data_coverage_change") ? report.getAsJsonObject("data_coverage_change")
+                    : null;
+            if (change == null || !change.has("scale")) {
+                missing++;
+                continue;
+            }
+            JsonObject scale = change.getAsJsonObject("scale").getAsJsonObject(scope);
+            increases += scale.getAsJsonArray("increased").size();
+            decreases += scale.getAsJsonArray("decreased").size();
+            transitions += scale.getAsJsonArray("bucket_transitions").size();
+            if (scale.get("complete").getAsBoolean()) {
+                complete++;
+            } else {
+                unverified++;
+            }
+        }
+        result.addProperty("increased_metrics", increases);
+        result.addProperty("decreased_metrics", decreases);
+        result.addProperty("bucket_transitions", transitions);
+        result.addProperty("complete_changes", complete);
+        result.addProperty("unverified_changes", unverified);
+        result.addProperty("missing_scale_reports", missing);
+        result.addProperty("meaning", "Magnitude changes, not first-time scenes or evidence of higher bug yield");
+        return result;
     }
 
     private static String proposedAction(JsonObject round) {
@@ -219,7 +277,11 @@ public final class TiDBMixedBenchmarkMetrics {
                     "completion_tokens", "preparation_elapsed_ms", "total_elapsed_ms", "legacy_unscoped_scene_hits",
                     "base_data_only_append_rounds", "observe_plans_proposed", "observe_plans_executed",
                     "observe_probes", "parameterized_probes", "case_rows_without_new_query_scene",
-                    "case_rows_with_new_query_scene", "case_rows_query_gain_unverified")) {
+                    "case_rows_with_new_query_scene", "case_rows_query_gain_unverified",
+                    "rows_with_query_scale_expansion", "rows_scale_gain_unverified", "rows_without_query_scale_change",
+                    "rows_with_query_scale_contraction_only", "scale_expanding_append_rounds",
+                    "case_rows_with_query_scale_expansion", "case_rows_scale_gain_unverified",
+                    "case_rows_without_query_scale_change", "case_rows_with_query_scale_contraction_only")) {
                 counts.put(key, 0L);
             }
             BigDecimal cost = BigDecimal.ZERO;
@@ -292,10 +354,14 @@ public final class TiDBMixedBenchmarkMetrics {
                 }
             }
             JsonObject result = new com.google.gson.Gson().toJsonTree(counts).getAsJsonObject();
-            result.addProperty("coverage_scope_version", 2);
+            result.addProperty("coverage_scope_version", 3);
             result.add("new_scene_buckets", new com.google.gson.Gson().toJsonTree(buckets));
             result.add("base_data", scopedCoverage(reports, strategy, "base_data"));
             result.add("query_stages", scopedCoverage(reports, strategy, "query_stages"));
+            result.add("base_data_scale", scopedScale(reports, strategy, "base_data"));
+            result.add("query_stage_scale", scopedScale(reports, strategy, "query_stages"));
+            result.addProperty("row_gain_semantics",
+                    "Rows are associated with case/round changes, not individually attributed; without_new_scene means no boolean first hit, not no benefit");
             result.add("engine_ratio_buckets", engineRatios);
             result.add("engine_join_buckets", engineJoins);
             result.addProperty("known_estimated_usd", cost);

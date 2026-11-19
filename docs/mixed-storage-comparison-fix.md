@@ -555,3 +555,14 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 
 验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`；日志 `logs/review-followups-20261119/03-verify.log`。新增回归覆盖真实失败计划、可行修订、完整 GROUP BY 键、有限/过期样本、浮点存储精度及未知分组值。没有再次调用真实模型，不能保证模型从此不犯语义错误。
 本项完整 verify：253 项中 240 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
+
+## 追加：区分首次命中与已有场景规模变化（2026-11-19）
+
+- 原 `added/lost` 继续只表示布尔场景的首次命中/失去，不因增加行数重新计一次场景。新增独立 `scale`，基础数据与查询阶段各有精确数值、分桶、变化及未验证清单；覆盖格式版本升为 3。
+- 规模指标包含分组数、分组输入行数、最小/最大组大小，以及已经采集的行数、NULL 数、匹配对数、重复匹配和未匹配计数。指标保留原名称和阶段含义，例如 `j0_duplicate_after.count` 是重复键数量，不冒充单个键的最大频率。分桶为 `0`、`1`、`2-3`、`4-7`、`8-15`……；桶内数值变化和下降也单独记录，不只计上升。
+- 只比较同查询、同 Schema 下，两侧都有当前精确观测的数值。样本、过期事实、不完整汇总或缺失写前测量标 unverified；不能把“后来才测到”算新增规模。分组后的结果行数仍不充当分组输入行数。不增加 SQL 探测，复用独立评估已经采集的事实。
+- 固定 seed 63 的[真实写前/写后观测](data-preparation-v2/seed63-scale-observations.json)：原首次命中仍为 0，最大组 `2→6` 报 `2-3→4-7`；分组输入 `27→45` 报 `16-31→32-63`。这是对已有证据的重新计量，不是新一轮模型实验。
+- Benchmark 增加 `query_stage_scale` / `base_data_scale` 和 `scale_expanding_append_rounds`、`case_rows_with_query_scale_expansion` 等计数，分别报告规模变化、布尔场景命中、目标达成及引擎路径。旧 `rows_without_new_scene` 仅指没有首次命中，不等于补行无效；行数统计只关联整轮/整例，不证明其中每行都有贡献。规模扩大本身也不能证明发现缺陷的能力提升。
+
+验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`；日志 `logs/review-followups-20261119/04-verify.log`。新增回归覆盖 seed 63、桶内增长/下降、大整数分桶、过期/有限观测、跨查询不可比较，以及实际 H2 JOIN 中基础重复输入 `2→4`、查询匹配对 `4→8` 的独立计量。未调用真实 DeepSeek、未重跑长测。
+本项完整 verify：258 项中 245 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。

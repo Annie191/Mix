@@ -96,3 +96,5 @@ thinking 对照可给两组相同的 8000 上限，仍受总 token、时间和�
 [Chat Completion](https://api-docs.deepseek.com/api/create-chat-completion/)。
 
 当前生产预算（2026-11-19）：观察 3 次、行动（追加/停止）3 次、格式修订 3 次，总 API 调用最多 9 次，仍共用时间/token/费用限额。最后的 API 机会优先留给行动及写后反馈决策；observe 用完后函数目录不再提供该动作。观察相同版本的精确事实只复用证据，history.observation_feedback 报告实际信息增量；重复观察仍扣观察及 API 次数。成功写入后旧版本失效，自动验证重新测量。下面链接中的历史实验保留当时预算，不代表当前默认值。
+
+覆盖报告版本 3 保留布尔场景 `added/lost`，另增 `scale.base_data` 和 `scale.query_stages`。快照含 `metrics` 中的精确 count/bucket；差值含 `changes`、`bucket_transitions`、`increased/decreased`、`unverified/complete`。新增场景为零时仍可能有已验证的规模变化；规模增长、目标达成、引擎路径有效性分别统计，不相互替代。例：seed 63 最大组 `2→6`、分组输入 `27→45`，见 [固定观测回归](seed63-scale-observations.json)。
