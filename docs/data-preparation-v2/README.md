@@ -94,3 +94,5 @@ thinking 对照可给两组相同的 8000 上限，仍受总 token、时间和�
 
 官方依据：[Tool Calls strict](https://api-docs.deepseek.com/guides/tool_calls/)、
 [Chat Completion](https://api-docs.deepseek.com/api/create-chat-completion/)。
+
+当前生产预算（2026-11-19）：观察 3 次、行动（追加/停止）3 次、格式修订 3 次，总 API 调用最多 9 次，仍共用时间/token/费用限额。最后的 API 机会优先留给行动及写后反馈决策；observe 用完后函数目录不再提供该动作。观察相同版本的精确事实只复用证据，history.observation_feedback 报告实际信息增量；重复观察仍扣观察及 API 次数。成功写入后旧版本失效，自动验证重新测量。下面链接中的历史实验保留当时预算，不代表当前默认值。

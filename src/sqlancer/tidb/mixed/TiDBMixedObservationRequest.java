@@ -139,6 +139,16 @@ final class TiDBMixedObservationRequest {
         return key(capabilityId(request), request.isJsonObject() ? request.getAsJsonObject().get("parameters") : null);
     }
 
+    static JsonObject currentExact(JsonObject state, JsonElement request) {
+        String identity = key(request);
+        return state.getAsJsonArray("observations").asList().stream().map(JsonElement::getAsJsonObject)
+                .filter(fact -> "exact".equals(fact.get("status").getAsString()) && !fact.get("value").isJsonNull()
+                        && java.util.List.of("query_id", "schema_revision", "data_revision").stream()
+                                .allMatch(version -> state.get(version).equals(fact.get(version)))
+                        && identity.equals(factKey(fact)))
+                .findFirst().orElse(null);
+    }
+
     static String factKey(JsonObject fact) {
         return key(fact.get("capability_id").getAsString(), fact.get("parameters"));
     }

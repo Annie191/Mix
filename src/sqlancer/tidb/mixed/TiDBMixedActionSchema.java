@@ -239,9 +239,22 @@ public final class TiDBMixedActionSchema {
         return schema.deepCopy();
     }
 
+    static boolean observationAllowed(JsonObject state) {
+        JsonObject budget = state.getAsJsonObject("remaining_budget");
+        if (!budget.has("observation_calls")) {
+            return true; // Existing v1 experiments retain their original single decision quota.
+        }
+        long reserve = budget.get("insert_rows").getAsLong() > 0 ? 2 : 1;
+        reserve = Math.min(reserve, budget.get("decision_calls").getAsLong());
+        return budget.get("observation_calls").getAsLong() > 0 && budget.get("model_calls").getAsLong() > reserve;
+    }
+
     public static JsonArray tools(JsonObject state) {
         JsonArray tools = new JsonArray();
         for (String action : List.of("observe", "append_rows", "stop")) {
+            if (action.equals("observe") && !observationAllowed(state)) {
+                continue;
+            }
             JsonObject function = new JsonObject();
             function.addProperty("name", action);
             function.addProperty("strict", true);

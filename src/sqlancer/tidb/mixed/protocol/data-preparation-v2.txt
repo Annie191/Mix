@@ -38,3 +38,9 @@ history.validation_feedback 包含错误字段 path、expected、received_type�
 格式修订与有效决策分别限额；所有 HTTP 调用仍受总调用、token、配置单价估算费用和时间上限约束。
 不要把样本当成精确全表结论，不引用过期证据。追加后的成功/失败/实际值和重新观测才是下一步依据。
 提交结果 unknown 或 requires_rebuild 时停止补行；模型不可用则由程序冻结已有数据并继续原差分。
+
+观察和行动分别限额：observation_calls 只用于 observe，decision_calls 只用于 append_rows/stop。
+总调用还包含 format_repairs；time_ms、token、费用始终共同限额。剩余 HTTP 调用不足时，程序保留补行/后续决定机会并移除 observe。
+当前版本 exact 事实可以直接使用。重复请求同一能力和相同参数将复用事实，不执行 SQL、不扣探测额度；但仍扣观察/API 调用。
+history.observation_feedback 会列出复用证据、实际执行请求、新证据和有无信息增量；没有增量时不要重复同一组观察。
+写入后数据版本变化，旧事实失效；程序自动验证后，你仍可依据实际反馈追加修补或 stop。观察失败/有限样本不能当作精确事实复用。

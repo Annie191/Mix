@@ -58,6 +58,7 @@ public final class TiDBMixedPreparationHarness {
         JsonObject budget = preparationBudget(Long.parseLong(System.getenv().getOrDefault("MS_PREPARATION_ROWS", "6")));
         budget.addProperty("model_calls", preparationCallLimit());
         budget.addProperty("decision_calls", 3);
+        budget.addProperty("observation_calls", 3);
         budget.addProperty("format_repairs", 3);
         budget.addProperty("api_tokens", 500_000);
         budget.addProperty("cost_microusd", 250_000);
@@ -65,7 +66,7 @@ public final class TiDBMixedPreparationHarness {
     }
 
     public static int preparationCallLimit() {
-        return 6;
+        return 9;
     }
 
     static JsonObject preparationBudget(long rows) {
@@ -221,13 +222,37 @@ public final class TiDBMixedPreparationHarness {
     private void observe(JsonArray requests, JsonObject round) throws SQLException {
         packet.getAsJsonArray("observations").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
         packet.getAsJsonArray("samples").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
-        if (requests.isEmpty()) {
+        JsonArray missing = new JsonArray();
+        JsonArray reused = new JsonArray();
+        for (JsonElement request : requests) {
+            JsonObject cached = TiDBMixedObservationRequest.currentExact(packet, request);
+            if (cached == null) {
+                missing.add(request.deepCopy());
+            } else {
+                reused.add(cached.get("id"));
+            }
+        }
+        JsonObject feedback = new JsonObject();
+        feedback.addProperty("requested", requests.size());
+        feedback.add("reused_evidence_ids", reused);
+        feedback.add("executed_requests", missing.deepCopy());
+        JsonArray added = new JsonArray();
+        feedback.add("new_evidence_ids", added);
+        feedback.addProperty("information_increment", false);
+        feedback.addProperty("guidance", missing.isEmpty()
+                ? "All requested facts are already exact at this version; use them to append, stop, or request different facts"
+                : "New probes run only for missing/non-exact facts; errors and samples are not complete evidence");
+        round.add("observation_feedback", feedback);
+        if (missing.isEmpty()) {
             return;
         }
+        Map<String, JsonObject> previous = new java.util.LinkedHashMap<>();
+        packet.getAsJsonArray("observations").forEach(entry -> previous
+                .put(TiDBMixedObservationRequest.factKey(entry.getAsJsonObject()), entry.getAsJsonObject().deepCopy()));
         TiDBMixedObservations facts = facts();
-        budget("probe_requests", budget("probe_requests") - requests.size());
-        facts.collectRequests(io, requests,
-                new TiDBMixedObservations.Budget(requests.size(), sampleRows, budget("time_ms")));
+        budget("probe_requests", budget("probe_requests") - missing.size());
+        facts.collectRequests(io, missing,
+                new TiDBMixedObservations.Budget(missing.size(), sampleRows, budget("time_ms")));
         String prefix = "batch_" + ++batch + "_";
         for (JsonArray entries : List.of(facts.observations, facts.samples)) {
             entries.forEach(entry -> {
@@ -237,13 +262,16 @@ public final class TiDBMixedPreparationHarness {
         }
         facts.audit.forEach(event -> event.put("observation_id", prefix + event.get("observation_id")));
         java.util.Set<String> refreshed = new java.util.HashSet<>();
-        requests.forEach(request -> refreshed.add(TiDBMixedObservationRequest.key(request)));
+        missing.forEach(request -> refreshed.add(TiDBMixedObservationRequest.key(request)));
         packet.getAsJsonArray("observations").asList()
                 .removeIf(entry -> refreshed.contains(TiDBMixedObservationRequest.factKey(entry.getAsJsonObject())));
         packet.getAsJsonArray("samples").asList().removeIf(entry -> refreshed.contains(
                 TiDBMixedObservationRequest.key("sample_" + entry.getAsJsonObject().get("table").getAsString(), null)));
         packet.getAsJsonArray("observations").addAll(facts.observations.deepCopy());
         packet.getAsJsonArray("samples").addAll(facts.samples.deepCopy());
+        facts.observations.forEach(fact -> added.add(fact.getAsJsonObject().get("id")));
+        feedback.addProperty("information_increment", facts.observations.asList().stream().anyMatch(
+                fact -> List.of("exact", "sampled").contains(fact.getAsJsonObject().get("status").getAsString())));
         round.add("probe_audit", new com.google.gson.Gson().toJsonTree(facts.audit));
         round.addProperty("observation_snapshot", facts.snapshot);
     }
@@ -514,7 +542,10 @@ public final class TiDBMixedPreparationHarness {
                 budget("model_calls", callsBefore - 1);
                 if (remaining.has("decision_calls")) {
                     if (plan != null) {
-                        budget("decision_calls", budget("decision_calls") - 1);
+                        String quota = remaining.has("observation_calls")
+                                && plan.get("decision").getAsString().equals("observe") ? "observation_calls"
+                                        : "decision_calls";
+                        budget(quota, budget(quota) - 1);
                     } else if (recoverable) {
                         if (budget("format_repairs") == 0) {
                             recoverable = false;
@@ -598,7 +629,8 @@ public final class TiDBMixedPreparationHarness {
         // Keep actionable proposals/failures. Current facts are already in the packet; full facts, SQL audit,
         // coverage snapshots and API responses remain once in rounds instead of multiplying in every request.
         for (String key : List.of("decision_id", "data_revision_before", "data_revision_after", "validation_status",
-                "decision", "model_expectation", "failure_reason", "validation_feedback", "writes")) {
+                "decision", "model_expectation", "failure_reason", "validation_feedback", "writes",
+                "observation_feedback")) {
             if (round.has(key)) {
                 summary.add(key, round.get(key).deepCopy());
             }

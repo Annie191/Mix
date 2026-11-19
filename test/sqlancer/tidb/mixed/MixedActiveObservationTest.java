@@ -126,7 +126,7 @@ class MixedActiveObservationTest {
             JsonObject packet = state(fixture, query, true);
             assertEquals(5, packet.getAsJsonArray("observations").size());
             assertEquals(91, packet.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
-            assertEquals(6, packet.getAsJsonObject("remaining_budget").get("model_calls").getAsInt());
+            assertEquals(9, packet.getAsJsonObject("remaining_budget").get("model_calls").getAsInt());
             assertEquals(3, packet.getAsJsonObject("remaining_budget").get("decision_calls").getAsInt());
             assertFalse(packet.getAsJsonArray("samples").get(0).getAsJsonObject().get("complete").getAsBoolean());
             assertEquals(2, packet.getAsJsonArray("samples").get(0).getAsJsonObject().getAsJsonArray("rows").size());
@@ -244,7 +244,7 @@ class MixedActiveObservationTest {
     }
 
     @Test
-    void partialObserveRetainsUnrelatedFactsSamplesAndParameterVariantsButReplacesRefreshedEvidence() throws Exception {
+    void partialObserveReusesExactEvidenceAndRetainsOtherFactsSamplesAndParameterVariants() throws Exception {
         try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
             Candidate query = MixedPreparationTest.query(fixture, false);
             JsonObject initial = state(fixture, query, true);
@@ -264,7 +264,7 @@ class MixedActiveObservationTest {
                             assertEquals(initial.get("samples"), packet.get("samples"));
                             return observe(packet, array(rows, keyTwo)).toString();
                         default:
-                            assertFalse(oldId.equals(fact(packet, rows).get("id").getAsString()));
+                            assertEquals(oldId, fact(packet, rows).get("id").getAsString());
                             assertEquals("1", scalar(fact(packet, keyOne), "count"));
                             assertEquals("0", scalar(fact(packet, keyTwo), "count"));
                             return MixedPreparationTest.response(packet, MixedPreparationTest.stop()).toString();
@@ -272,16 +272,18 @@ class MixedActiveObservationTest {
                     });
             JsonObject packet = result.getAsJsonObject("final_state");
             assertEquals(7, packet.getAsJsonArray("observations").size());
-            assertEquals(88, packet.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
+            assertEquals(89, packet.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
         }
     }
 
     @Test
-    void sameParameterRefreshErrorsRemoveOldExactProofButRetainOtherFacts() throws Exception {
+    void sameParameterErrorsReplaceNonExactEvidenceButRetainOtherFacts() throws Exception {
         try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
             Candidate query = MixedPreparationTest.query(fixture, false);
             JsonObject key = key("key_rows_t0.k", "base", 1);
             JsonObject initial = collect(fixture, query, array(key, new com.google.gson.JsonPrimitive("rows_t0")));
+            fact(initial, key).addProperty("status", "error");
+            fact(initial, key).add("value", com.google.gson.JsonNull.INSTANCE);
             fixture.insertWarning = true;
             AtomicInteger calls = new AtomicInteger();
             JsonObject result = new TiDBMixedPreparationHarness(fixture.state, query, initial, List.of(), 100, 64, 2)

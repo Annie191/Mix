@@ -535,3 +535,13 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 
 验证：`mvn -B -Djacoco.skip=true formatter:format '-Dtest=MixedAuxiliaryErrorsTest,MixedObservationTest,MixedReadOnlyTest' test`，27 项通过。新增测试覆盖内部异常归档、实际数据恢复材料、独立报错、普通失败、异常链以及导出失败仍保留证据；H2 执行真实 SELECT，TiDB 内部异常由 JDBC 注入。未在本次测试中再次启动原集群。日志：`logs/review-followups-20261119/01-auxiliary.log`。
 完整混合 Oracle 检查：使用 Maven 3.9.11 执行 `mvn -o -B -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify`，245 项中 232 项通过、13 项实库测试按开关跳过；formatter、XML、Checkstyle、PMD、SpotBugs 通过。系统 Maven 3.6 不满足 XML 插件要求，已切换现有 3.9.11 工具完成验证。
+
+## 追加：复用当前事实，保留补行后的决策机会（2026-11-19）
+
+- 生产预算拆为 `observation_calls=3`、`decision_calls=3`、`format_repairs=3`，总 API 上限 9。observe 只扣观察额度，append_rows/stop 扣行动额度；时间 120 秒、行数、token、费用仍共同限额。最后两次 API 调用在还有行预算时保留给行动及反馈后的决定；observe 不再进入可选函数，本地协议同样拒绝越额观察。旧版实验包未声明 observation_calls 时保持原计费，历史实验数据不改写。
+- 同查询、Schema 和数据版本下，按能力 ID 和规范化参数复用精确事实，保留证据 ID，不重跑 SELECT、不扣探测额度；即使剩余探测预算为 0，也可使用缓存。样本、错误、未知和旧版本不能冒充精确事实。成功追加后清除旧证据，自动验证重新测量。
+- 每轮及模型 history 增加 `observation_feedback`：复用了哪些 ID、实际执行哪些请求、新证据 ID、新增精确事实数、样本是否变化和有无信息增量。完全重复的精确请求明确反馈“没有信息增量”，仍扣观察与 API 额度，避免无限重复。提示词同步说明直接使用当前事实、写后自动验证及后续调整。
+- 回归固定执行“观察三次 → 补 t0 → 实测匹配仍为 0 → 改向 t1 补对应键 → 实测匹配为 1 → 停止”。三次观察只执行一次 SELECT，两次写后各重新测量一次；三次行动额度保留完整。此为模拟模型决策加真实 H2 SQL 执行，不代表真实 DeepSeek 的策略改善。
+
+验证命令使用 Maven 3.9.11：`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`。日志：`logs/review-followups-20261119/02-verify-final.log`。新增测试还检查零探测预算复用、数据版本变化、非精确事实不复用和 API 尾部预留；原局部观测测试改为核对缓存证据 ID 保留，非精确观测失败仍替换旧记录。
+本项完整 verify：248 项中 235 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
