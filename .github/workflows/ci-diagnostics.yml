@@ -29,6 +29,15 @@ jobs:
         with:
           script: |
             const repo = context.repo;
+            async function readLogs(job) {
+              try {
+                const reply = await github.rest.actions.downloadJobLogsForWorkflowRun({...repo, job_id: job.id});
+                return typeof reply.data === 'string' ? reply.data : Buffer.from(reply.data).toString('utf8');
+              } catch (error) {
+                core.warning(`Logs unavailable for ${job.name} (${job.html_url}): ${error.message}`);
+                return null;
+              }
+            }
             let runId = context.payload.inputs?.run_id ?? context.payload.workflow_run?.id;
             if (!runId) {
               const runs = await github.rest.actions.listWorkflowRuns({
@@ -46,8 +55,8 @@ jobs:
               'DBMS Tests (MySQL, CERT creation only)', 'DBMS Tests (Presto)', 'QPG Tests (Materialize)']);
             core.notice(jobs.filter(job => wanted.has(job.name)).map(job => `${job.name}: ${job.status}/${job.conclusion ?? 'pending'}`).join('\n'), {title: `CI run ${runId}: six-job status`});
             for (const job of jobs.filter(job => wanted.has(job.name) && job.status === 'completed')) {
-              const reply = await github.rest.actions.downloadJobLogsForWorkflowRun({...repo, job_id: job.id});
-              const body = typeof reply.data === 'string' ? reply.data : Buffer.from(reply.data).toString('utf8');
+              const body = await readLogs(job);
+              if (body === null) continue;
               const sections = body.split(/(?=\[INFO\] Running sqlancer\.)/).slice(1);
               const tests = sections.map(section => {
                 const name = section.match(/Running (sqlancer\.[\w.]+)/)?.[1];
@@ -60,8 +69,8 @@ jobs:
             const failed = jobs.filter(job => wanted.has(job.name) && ['failure', 'cancelled', 'timed_out'].includes(job.conclusion));
             core.summary.addHeading(`Failure evidence for CI run ${runId}`);
             for (const job of failed) {
-              const reply = await github.rest.actions.downloadJobLogsForWorkflowRun({...repo, job_id: job.id});
-              const body = typeof reply.data === 'string' ? reply.data : Buffer.from(reply.data).toString('utf8');
+              const body = await readLogs(job);
+              if (body === null) continue;
               const lines = body.replace(/\u001b\[[0-9;]*m/g, '').split('\n');
               const hits = lines.map((line, i) => !/\[WARNING\]|PKIX|maven.java.net/.test(line) &&
                 /Caused by:|(?:java|org|io|com)\.[\w.$]*(?:Exception|Error):|Unable to locate|404 |does not have a Release|^E:|FATAL:|ERROR:/.test(line) ? i : -1).filter(i => i >= 0);
