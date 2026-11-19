@@ -224,6 +224,9 @@ public class MaterializeProvider extends SQLProviderAdapter<MaterializeGlobalSta
             // index for them, see
             // https://github.com/MaterializeInc/materialize/issues/19431
             s.execute("SET auto_route_introspection_queries = false");
+            // Reject oversized results on the server before the JDBC driver buffers them. An error makes the
+            // oracle skip the entire candidate; a silently truncated result must never enter a comparison.
+            s.execute("SET max_query_result_size = 8388608");
         }
         return new SQLConnection(con);
     }

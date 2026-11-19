@@ -7,7 +7,7 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
-      - '.github/workflows/*.yml'
+      - '.github/workflows/main.yml'
       - 'pom.xml'
   pull_request:
     branches:
@@ -15,7 +15,7 @@ on:
     paths:
       - 'src/**'
       - 'test/**'
-      - '.github/workflows/*.yml'
+      - '.github/workflows/main.yml'
       - 'pom.xml'
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
 
   citus:
     name: DBMS Tests (Citus)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -57,7 +57,9 @@ jobs:
         run: mvn -B package -DskipTests=true
       - name: Set up Citus
         run: |
-          echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" | sudo tee  /etc/apt/sources.list.d/pgdg.list
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc >/dev/null
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           curl https://install.citusdata.com/community/deb.sh | sudo bash
           sudo sed -i 's/noble/jammy/g' /etc/apt/sources.list.d/citusdata_community.list # https://github.com/citusdata/citus/issues/7692
           sudo apt-get update

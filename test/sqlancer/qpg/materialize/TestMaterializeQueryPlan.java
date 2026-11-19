@@ -1,19 +1,53 @@
 package sqlancer.qpg.materialize;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import sqlancer.Main;
 import sqlancer.MainOptions;
+import sqlancer.ComparatorHelper;
+import sqlancer.IgnoreMeException;
 import sqlancer.SQLConnection;
+import sqlancer.common.query.ExpectedErrors;
 import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.materialize.MaterializeOptions;
 import sqlancer.materialize.MaterializeGlobalState;
 import sqlancer.materialize.MaterializeProvider;
 
 public class TestMaterializeQueryPlan {
+
+    @Test
+    void testOversizedResultIsSkippedWithoutTruncatingComparison() throws Exception {
+        assumeTrue("true".equalsIgnoreCase(System.getenv("MATERIALIZE_AVAILABLE")));
+        MaterializeGlobalState state = createState("resultbudget");
+        try (SQLConnection connection = state.getConnection()) {
+            assertEquals(List.of("8388608"), ComparatorHelper
+                    .getResultSetFirstColumnAsString("SHOW max_query_result_size", new ExpectedErrors(), state));
+            assertThrows(IgnoreMeException.class,
+                    () -> ComparatorHelper.getResultSetFirstColumnAsString("SELECT repeat('x', 8388609)",
+                            ExpectedErrors.from("result exceeds max size of"), state));
+            assertEquals(List.of("ok"),
+                    ComparatorHelper.getResultSetFirstColumnAsString("SELECT 'ok'", new ExpectedErrors(), state));
+        }
+    }
+
+    private static MaterializeGlobalState createState(String databaseName) throws Exception {
+        MaterializeProvider provider = new MaterializeProvider();
+        MaterializeGlobalState state = provider.getGlobalStateClass().getDeclaredConstructor().newInstance();
+        state.setDbmsSpecificOptions(provider.getOptionClass().getDeclaredConstructor().newInstance());
+        state.setDatabaseName(databaseName);
+        MainOptions options = new MainOptions();
+        state.setMainOptions(options);
+        state.setState(provider.getStateToReproduce(databaseName));
+        state.setStateLogger(new Main.StateLogger(databaseName, provider, options));
+        state.setConnection(provider.createDatabase(state));
+        return state;
+    }
 
     @Test
     void testMaterializeQueryPlan() throws Exception {
