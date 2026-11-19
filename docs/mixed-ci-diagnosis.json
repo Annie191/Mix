@@ -1,0 +1,111 @@
+{
+  "checked_commit": "0df5e14df55b61622c3c3c081b4d1bee370271f0",
+  "ci_run": "https://github.com/Annie191/Mix/actions/runs/44344586239",
+  "mixed_run": {
+    "url": "https://github.com/Annie191/Mix/actions/runs/44344585979",
+    "conclusion": "success"
+  },
+  "failed_jobs": [
+    {
+      "name": "DBMS Tests (Citus)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943420668",
+      "failed_steps": [
+        "Set up Citus"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "QPG Tests (Materialize)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421137",
+      "failed_steps": [
+        "Run Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "General tests",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421152",
+      "failed_steps": [
+        "Misc Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "DBMS Tests (Hive)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421323",
+      "failed_steps": [
+        "Run Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "QPG Tests (TiDB)",
+      "conclusion": "cancelled",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421390",
+      "failed_steps": [],
+      "earlier_run_44312983492": "cancelled"
+    },
+    {
+      "name": "DBMS Tests (MySQL, CERT creation only)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421486",
+      "failed_steps": [
+        "Run Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "DBMS Tests (Spark)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421530",
+      "failed_steps": [
+        "Run Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    },
+    {
+      "name": "DBMS Tests (Presto)",
+      "conclusion": "failure",
+      "url": "https://github.com/Annie191/Mix/actions/runs/44344586239/job/134943421978",
+      "failed_steps": [
+        "Run Tests"
+      ],
+      "earlier_run_44312983492": "failure"
+    }
+  ],
+  "unrelated_job_diagnosis_limitation": "Unauthenticated full log download returned HTTP 403. Database-test-stage failures are not classified as infrastructure failures without evidence.",
+  "general_test_reproduction": {
+    "command": "mvn -Djacoco.skip=true -B '-Dtest=!sqlancer.dbms.**,!sqlancer.qpg.**' test",
+    "before": {
+      "tests": 367,
+      "errors": 1,
+      "skipped": 16,
+      "failed_test": "TestUsageNamingConvention.testNonEmptyDescription",
+      "exception": "java.lang.reflect.InaccessibleObjectException",
+      "root_cause": "JCommander.addCommand received the option Class object rather than an option instance",
+      "original_line_commit": "a4756aeda"
+    },
+    "targeted_after": {
+      "tests": 2,
+      "failures": 0,
+      "errors": 0
+    },
+    "after": {
+      "tests": 367,
+      "passed": 351,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 16,
+      "result": "BUILD SUCCESS",
+      "log": "logs/ci-diagnosis-20261119/general-after.log"
+    },
+    "naming_check": {
+      "command": "python3 src/check_names.py",
+      "result": "passed"
+    }
+  }
+}

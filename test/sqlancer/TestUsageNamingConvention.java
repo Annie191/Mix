@@ -13,7 +13,7 @@ import com.beust.jcommander.Parameters;
 public class TestUsageNamingConvention {
 
     @Test
-    void testNonEmptyDescription() {
+    void testNonEmptyDescription() throws ReflectiveOperationException {
         List<DatabaseProvider<?, ?, ?>> providers = Main.getDBMSProviders();
         MainOptions options = new MainOptions();
         Builder commandBuilder = JCommander.newBuilder().addObject(options);
@@ -22,7 +22,7 @@ public class TestUsageNamingConvention {
             if (!name.toLowerCase().equals(name)) {
                 throw new AssertionError(name + " should be in lowercase!");
             }
-            commandBuilder.addCommand(provider.getDBMSName(), provider.getOptionClass());
+            commandBuilder.addCommand(provider.getDBMSName(), provider.getOptionClass().getConstructor().newInstance());
             Parameters param = provider.getOptionClass().getAnnotation(Parameters.class);
             assertNotEquals(null, param, provider.getOptionClass().toString());
             String databaseDescription = param.commandDescription();

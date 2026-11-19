@@ -484,3 +484,16 @@ JDBC 流程回归验证：初始化或调用失败后，仍完成导出、快照
 逐项结果见 [一小时记录](data-preparation-v2/query-1h-results.md)，实际模型的拒绝、修订、写入及未达目标见 [交互证据](data-preparation-v2/live-loop-example.json)。
 最终混合 Oracle 测试及 verify 检查共 **242 项：229 项通过、13 项真实测试按开关跳过，0 失败/错误**；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
 日志保存在项目 `logs/action-interface/`、`logs/paired-v2-20261118T150234Z/` 和 `logs/query-1h-deepseek-20261118T150233Z/`。
+
+## 追加：GitHub General tests 失败修复（2026-11-19）
+
+`0df5e14d` 的独立 Mixed storage oracle 检查通过，但通用 ci 有 7 项失败、1 项取消，不能宣称所有 CI 通过。
+本地按 General tests 原命令复现：367 项中 1 项错误，发生在 `TestUsageNamingConvention`。
+该测试把选项的 Class 对象传给 JCommander，导致其反射访问 `java.lang.Class` 私有方法，被 Java 17 拒绝。
+现改为 `provider.getOptionClass().getConstructor().newInstance()`，保留全部 provider 名称、参数描述及命令注册检查，不放宽 Java 模块权限。
+修复后按同一命令重跑：367 项中 351 项通过、16 项按条件跳过，0 失败、0 错误；两个参数相关定向测试及命名检查也通过。
+
+其余失败为 Citus、Hive、Spark、MySQL、Presto、Materialize QPG；在更早的 `e2c90c68` 对应运行中也有相同检查失败。
+Citus 失败于安装阶段，其余失败于数据库测试阶段；完整 Actions 日志下载返回 403，具体原因尚未确认，不能统一归因于环境。
+TiDB QPG 在本次运行中超时取消。未删除检查，也未使用忽略失败来改成绿色。
+逐项检查链接、失败阶段和复现结果见 [CI 诊断记录](mixed-ci-diagnosis.json)，本机日志保存在项目 `logs/ci-diagnosis-20261119/`。
