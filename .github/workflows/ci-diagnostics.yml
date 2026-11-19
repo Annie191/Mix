@@ -38,24 +38,25 @@ jobs:
             const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
               ...repo, run_id: Number(runId), per_page: 100
             });
-            const failed = jobs.filter(job => ['failure', 'cancelled', 'timed_out'].includes(job.conclusion));
+            const wanted = new Set(['DBMS Tests (Citus)', 'DBMS Tests (Hive)', 'DBMS Tests (Spark)',
+              'DBMS Tests (MySQL, CERT creation only)', 'DBMS Tests (Presto)', 'QPG Tests (Materialize)']);
+            const failed = jobs.filter(job => wanted.has(job.name) && ['failure', 'cancelled', 'timed_out'].includes(job.conclusion));
             core.summary.addHeading(`Failure evidence for CI run ${runId}`);
             for (const job of failed) {
               const reply = await github.rest.actions.downloadJobLogsForWorkflowRun({...repo, job_id: job.id});
               const body = typeof reply.data === 'string' ? reply.data : Buffer.from(reply.data).toString('utf8');
               const lines = body.replace(/\u001b\[[0-9;]*m/g, '').split('\n');
-              const hits = lines.map((line, i) => /\[ERROR\]|Exception|AssertionError|Caused by:|Unable to locate|404 |does not have a Release|FAILED|ERROR:/.test(line) ? i : -1).filter(i => i >= 0);
+              const hits = lines.map((line, i) => !/\[WARNING\]|PKIX|maven.java.net/.test(line) &&
+                /Caused by:|(?:java|org|io|com)\.[\w.$]*(?:Exception|Error):|Unable to locate|404 |does not have a Release|^E:|FATAL:|ERROR:/.test(line) ? i : -1).filter(i => i >= 0);
               const selected = new Set();
-              for (const i of [...hits.slice(0, 12), ...hits.slice(-12)]) {
-                for (let j = Math.max(0, i - 3); j < Math.min(lines.length, i + 9); j++) selected.add(j);
+              for (const i of hits.slice(0, 5)) {
+                for (let j = Math.max(0, i - 4); j < Math.min(lines.length, i + 7); j++) selected.add(j);
               }
-              if (!selected.size) for (let i = Math.max(0, lines.length - 70); i < lines.length; i++) selected.add(i);
-              const excerpt = [...selected].sort((a, b) => a - b).map(i => `${i + 1}: ${lines[i]}`).join('\n').slice(0, 18000);
+              if (!selected.size) for (let i = Math.max(0, lines.length - 35); i < lines.length; i++) selected.add(i);
+              const excerpt = [...selected].sort((a, b) => a - b).map(i => `${i + 1}: ${lines[i].slice(0, 600)}`).join('\n').slice(0, 6000);
               const escaped = excerpt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
               core.summary.addDetails(`${job.name} (${job.conclusion})`, `<p>${job.html_url}</p><pre>${escaped}</pre>`);
-              for (let i = 0; i < excerpt.length; i += 4500) {
-                core.notice(excerpt.slice(i, i + 4500), {title: `${job.name}: evidence ${i / 4500 + 1}`});
-              }
+              core.notice(excerpt, {title: `${job.name}: failure evidence`});
             }
             core.summary.addRaw(`Inspected ${jobs.length} jobs; ${failed.length} did not succeed.\n`);
             await core.summary.write();
