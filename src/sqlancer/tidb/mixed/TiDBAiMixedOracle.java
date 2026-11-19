@@ -293,7 +293,10 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 : TiDBDeepSeekAdvisor.fromEnvironment();
         Path directory = Path.of(System.getenv().getOrDefault("MS_ARTIFACT_DIR", "logs/mixed"),
                 state.getDatabaseName() + "_" + UUID.randomUUID());
+        TiDBMixedAuxiliaryErrors auxiliary = new TiDBMixedAuxiliaryErrors(directory.resolve("auxiliary-errors"));
+        state.setAuxiliaryErrors(auxiliary);
         Map<String, Object> report = new LinkedHashMap<>();
+        report.put("auxiliaryErrors", auxiliary.summary);
         report.put("target", TiDBMixedTarget.VERSION);
         report.put("tidbCommit", TiDBMixedTarget.COMMIT);
         report.put("sourceCommit", TiDBMixedTarget.SQLANCER_BASE);
@@ -456,6 +459,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
             }
             ai.suggest(Stage.DIAGNOSE, Map.of("error", error.toString(), "sql", lastQuery));
         } finally {
+            state.setAuxiliaryErrors(null);
             try {
                 io.reset();
             } catch (Exception cleanup) {
@@ -473,6 +477,7 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
         if (mismatch) {
             throw new AssertionError("Mixed-storage discrepancy; inspect " + directory);
         }
+        auxiliary.reportToSqlancer();
         if (cleanupFailed) {
             throw new java.sql.SQLException("Mixed-storage session cleanup failed; inspect " + directory);
         }

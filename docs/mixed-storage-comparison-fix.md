@@ -525,3 +525,13 @@ Presto 每次启动、重启均等待 CREATE → INSERT → SELECT 实际成功�
 远程验证：**Citus、Hive、Spark、Materialize QPG、Presto 在 `8e71e271` 通过；MySQL 在 `95abfb08` 通过（31 分 41 秒）**。MySQL 后续实现未改动；记录时（06:49 UTC）本轮仍在重跑，未把最新整轮写成全绿。五项本轮实库检查均未跳过；Presto 两种 Oracle 均通过，查询进度记录分别达到 1851、1491。逐项运行链接、测试数量及查询进度见 [CI 诊断记录](mixed-ci-diagnosis.json)。
 CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更不触发全数据库矩阵。原测试时长与差分断言保留。
 日志统一位于项目 `logs/ci-six-fixes-20261119/`。
+
+## 追加：辅助观测异常独立归档与复现（2026-11-19）
+
+- 每条辅助观测的 JDBC 错误立即写入用例目录 `auxiliary-errors/error-N.json` 和独立 `index.json`，包含 SQL、精确绑定参数、能力 ID、查询/Schema/数据版本、TSO、SQLSTATE、错误码及异常链；不再只能在大份观测记录中寻找。
+- 内部空指针、panic、断言失败标为 `INTERNAL_ERROR_CANDIDATE`，并在写入更多数据之前保存当时的表定义、数据及重排等会话设置。先保存最小错误，再捕获恢复材料；导出失败保留原始证据及 `CAPTURE_FAILED`。普通超时、转换等读取失败单列，不自动认定为数据库缺陷。
+- 差分 PASS 与辅助异常分别记录；用例证据保存后，内部异常候选抛出 AssertionError，进入 SQLancer 原有错误日志通道。它表示待复现候选，不表示差分不一致或已确认的新缺陷。辅助异常不会被最终 PASS 覆盖。
+- 新增 `sqlancer.tidb.mixed.TiDBMixedAuxiliaryReplay <jdbc-url> <error.json>` 入口，在新建的随机数据库中恢复并执行原辅助 SQL，支持有类型绑定参数。凭据读取 `MS_REPLAY_USER` / `MS_REPLAY_PASSWORD`；保留新数据库便于检查。恢复数据不复用旧数据库 TSO。
+
+验证：`mvn -B -Djacoco.skip=true formatter:format '-Dtest=MixedAuxiliaryErrorsTest,MixedObservationTest,MixedReadOnlyTest' test`，27 项通过。新增测试覆盖内部异常归档、实际数据恢复材料、独立报错、普通失败、异常链以及导出失败仍保留证据；H2 执行真实 SELECT，TiDB 内部异常由 JDBC 注入。未在本次测试中再次启动原集群。日志：`logs/review-followups-20261119/01-auxiliary.log`。
+完整混合 Oracle 检查：使用 Maven 3.9.11 执行 `mvn -o -B -Djacoco.skip=true '-Dtest=sqlancer.tidb.mixed.*Test' verify`，245 项中 232 项通过、13 项实库测试按开关跳过；formatter、XML、Checkstyle、PMD、SpotBugs 通过。系统 Maven 3.6 不满足 XML 插件要求，已切换现有 3.9.11 工具完成验证。

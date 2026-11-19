@@ -143,7 +143,7 @@ final class TiDBMixedReadOnly {
         return result;
     }
 
-    private static void bind(PreparedStatement statement, JsonArray values) throws SQLException {
+    static void bind(PreparedStatement statement, JsonArray values) throws SQLException {
         for (int i = 0; i < values.size(); i++) {
             JsonObject cell = values.get(i).getAsJsonObject();
             switch (cell.get("type").getAsString()) {

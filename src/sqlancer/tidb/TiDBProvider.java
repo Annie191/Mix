@@ -36,6 +36,7 @@ import sqlancer.tidb.gen.TiDBSetGenerator;
 import sqlancer.tidb.gen.TiDBTableGenerator;
 import sqlancer.tidb.gen.TiDBUpdateGenerator;
 import sqlancer.tidb.gen.TiDBViewGenerator;
+import sqlancer.tidb.mixed.TiDBMixedAuxiliaryErrors;
 
 @AutoService(DatabaseProvider.class)
 public class TiDBProvider extends SQLProviderAdapter<TiDBGlobalState, TiDBOptions> {
@@ -73,6 +74,15 @@ public class TiDBProvider extends SQLProviderAdapter<TiDBGlobalState, TiDBOption
     }
 
     public static class TiDBGlobalState extends SQLGlobalState<TiDBOptions, TiDBSchema> {
+        private TiDBMixedAuxiliaryErrors auxiliaryErrors;
+
+        public TiDBMixedAuxiliaryErrors getAuxiliaryErrors() {
+            return auxiliaryErrors;
+        }
+
+        public void setAuxiliaryErrors(TiDBMixedAuxiliaryErrors auxiliaryErrors) {
+            this.auxiliaryErrors = auxiliaryErrors;
+        }
 
         @Override
         protected TiDBSchema readSchema() throws SQLException {

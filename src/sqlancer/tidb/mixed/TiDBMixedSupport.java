@@ -639,6 +639,12 @@ public final class TiDBMixedSupport {
         return statements;
     }
 
+    void auxiliaryFailure(TiDBMixedGeneration.Candidate candidate, Map<String, Object> context, SQLException error) {
+        if (state.getAuxiliaryErrors() != null) {
+            state.getAuxiliaryErrors().record(this, candidate, context, error);
+        }
+    }
+
     public static void save(Path path, Object value) throws java.io.IOException {
         TiDBMixedEvidence.save(path, value);
     }

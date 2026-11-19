@@ -380,6 +380,9 @@ class MixedObservationTest {
         final List<TiDBTable> tables = List.of(table("t0"), table("t1"));
         final List<String> executed = new ArrayList<>();
         final TiDBMixedSupport io;
+        final MixedUnitTest.FakeState state = new MixedUnitTest.FakeState();
+        SQLException probeError;
+        boolean archiveMetadata;
         String snapshot = "";
         String engines = "tikv,tiflash";
         boolean active;
@@ -396,7 +399,6 @@ class MixedObservationTest {
                 statement.execute("INSERT INTO t0 VALUES (1),(1),(NULL),(2)");
                 statement.execute("INSERT INTO t1 VALUES (1),(1),(3)");
             }
-            MixedUnitTest.FakeState state = new MixedUnitTest.FakeState();
             state.setState(new StateToReproduce("facts_fixture", new TiDBProvider()));
             Connection connection = (Connection) Proxy.newProxyInstance(getClass().getClassLoader(),
                     new Class<?>[] { Connection.class }, (proxy, method, args) -> {
@@ -460,6 +462,21 @@ class MixedObservationTest {
                                 active = true;
                             } else if (sql.equals("ROLLBACK")) {
                                 active = false;
+                            }
+                            if (archiveMetadata && sql.startsWith("SELECT @@sql_mode")) {
+                                return rows(new String[] { "sql_mode", "tidb_opt_enable_advanced_join_reorder",
+                                        "tidb_enable_outer_join_reorder" }, new Object[] { "", "ON", "ON" });
+                            }
+                            if (archiveMetadata && sql.startsWith("SHOW CREATE TABLE")) {
+                                String table = sql.substring(sql.lastIndexOf(' ') + 1);
+                                return rows(new String[] { "table", "create table" },
+                                        new Object[] { table, "CREATE TABLE " + table + " (k INT)" });
+                            }
+                            if (archiveMetadata && sql.startsWith("SHOW FULL COLUMNS")) {
+                                return rows(new String[] { "field", "extra" }, new Object[] { "k", "" });
+                            }
+                            if (probeError != null && sql.startsWith("SELECT COUNT")) {
+                                throw probeError;
                             }
                             if (failure && sql.startsWith("SELECT")) {
                                 throw new SQLException("fixture error", "HY000", 3024);

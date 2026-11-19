@@ -507,6 +507,15 @@ public final class TiDBMixedObservations {
                 evidence.put("error_code", ((SQLException) error).getErrorCode());
             }
             record(probe, "error", null, error.toString(), evidence);
+            if (error instanceof SQLException) {
+                Map<String, Object> context = new LinkedHashMap<>(evidence);
+                context.put("query_id", queryId);
+                context.put("schema_revision", schemaRevision);
+                context.put("data_revision", dataRevision);
+                context.put("capability_id", probe.id);
+                context.put("bindings", probe.bindings.deepCopy());
+                io.auxiliaryFailure(candidate, context, (SQLException) error);
+            }
         }
     }
 
