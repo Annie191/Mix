@@ -107,5 +107,163 @@
       "command": "python3 src/check_names.py",
       "result": "passed"
     }
+  },
+  "six_job_repair": {
+    "code_commits": [
+      "1022488c",
+      "95abfb08"
+    ],
+    "evidence_run": "https://github.com/Annie191/Mix/actions/runs/44463799383",
+    "validation_ci_run": "https://github.com/Annie191/Mix/actions/runs/44465592299",
+    "jobs": [
+      {
+        "name": "Citus",
+        "root": "PGDG missing signing key on ubuntu-latest; apt exits 100",
+        "fix": "signed-by official PGDG key, HTTPS repository, ubuntu-22.04",
+        "status": "integration_success",
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362508014",
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestCitus",
+            "max_progress_queries": 7466,
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ]
+      },
+      {
+        "name": "Hive",
+        "root": "hive-serde 4.2.1 class file version 65 (Java21) loaded by Java17",
+        "fix": "hive-serde 4.0.1 aligns with existing hive-cli",
+        "status": "integration_success",
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507882",
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestHiveTLP",
+            "max_progress_queries": 321,
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ]
+      },
+      {
+        "name": "Spark",
+        "root": "same hive-serde class version failure",
+        "fix": "same Hive client dependency correction",
+        "status": "integration_success",
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507759",
+        "ci_tests": [
+          {
+            "name": "sqlancer.dbms.TestSparkTLP",
+            "max_progress_queries": 46,
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ]
+      },
+      {
+        "name": "Materialize QPG",
+        "root": "unbounded result collection throws Java heap space in ComparatorHelper",
+        "fix": "8MiB server result budget; reject complete candidate, never truncate",
+        "status": "integration_success",
+        "validation_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507532",
+        "ci_tests": [
+          {
+            "name": "sqlancer.qpg.materialize.TestMaterializeQPG",
+            "max_progress_queries": 6893,
+            "tests": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          {
+            "name": "sqlancer.qpg.materialize.TestMaterializeQueryPlan",
+            "max_progress_queries": null,
+            "tests": 2,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          }
+        ]
+      },
+      {
+        "name": "Presto",
+        "root": "invalid JSON -Infinity; subsequent TLP run also exposed loss of ARRAY element types in aggregate arguments and column selection",
+        "fix": "finite JSON numbers, escaped double quotes, preserve composite aggregate argument types, select columns with matching complete ARRAY types",
+        "status": "array_type_fix_awaiting_integration",
+        "intermediate_failure_url": "https://github.com/Annie191/Mix/actions/runs/44465592299/job/135362507916"
+      },
+      {
+        "name": "MySQL",
+        "root": "DQE session closes on first ordinary ROLLBACK; previous single-threaded CERT can set GLOBAL completion_type=RELEASE; server logs do not show a crash",
+        "fix": "DQE and EET DML use ROLLBACK AND NO CHAIN NO RELEASE",
+        "status": "integration_running"
+      }
+    ],
+    "local_checks": {
+      "general": {
+        "tests": 370,
+        "passed": 354,
+        "skipped": 16,
+        "failures": 0,
+        "errors": 0
+      },
+      "static_verify": {
+        "result": "BUILD SUCCESS",
+        "spotbugs": 0
+      },
+      "presto_strict_json": {
+        "generated_literals": 10000,
+        "old_code": "fails strict parser",
+        "new_code": "passes"
+      },
+      "mysql_session_rollback": {
+        "database": "MySQL 9.7.1",
+        "original_release_mode": "ERROR 2013 Lost connection",
+        "fixed_completion_modes": [
+          0,
+          1,
+          2
+        ],
+        "writes_undone": true,
+        "connection_usable": true,
+        "scope": "temporary table in one session; no global changes"
+      },
+      "materialize_query_plan_and_resource_guard": {
+        "tests": 2,
+        "passed": 2,
+        "skipped": 0,
+        "scope": "exact plan, oversized result skips entire query, following SELECT succeeds"
+      },
+      "materialize_qpg_local_attempt": {
+        "exit_code": 0,
+        "progress_queries": 0,
+        "usable_coverage_evidence": false,
+        "reason": "local service initialization consumed the run; rely on real CI query progress"
+      },
+      "mysql_local_fresh_instance": {
+        "status": "not_ready",
+        "usable_coverage_evidence": false
+      },
+      "logs": "logs/ci-six-fixes-20261119/",
+      "mysql_dqe_release_before_after": {
+        "database": "MySQL 9.7.1",
+        "old_DQE": "No operations allowed after connection closed / EOFException",
+        "fixed_DQE": "oracle check succeeds; all 3 original temporary rows retained; sum(c0)=6; connection usable",
+        "scope": "same fixed temporary-table fixture and RELEASE session; no global changes"
+      },
+      "presto_composite_types": {
+        "tests": 2,
+        "old_code": "both regressions fail",
+        "new_code": "both pass",
+        "scope": "MIN/MAX ARRAY(TIME) arguments; structurally equal nested arrays accepted; ARRAY(ARRAY(DECIMAL)) rejected for ARRAY(ARRAY(TIME))"
+      }
+    }
   }
 }

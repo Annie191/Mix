@@ -503,9 +503,7 @@ public final class PrestoTypedExpressionGenerator extends
 
     @Override
     protected PrestoExpression generateColumn(PrestoSchema.PrestoCompositeDataType type) {
-        List<PrestoSchema.PrestoColumn> columnList = columns.stream()
-                .filter(c -> c.getType().getPrimitiveDataType() == type.getPrimitiveDataType())
-                .collect(Collectors.toList());
+        List<PrestoSchema.PrestoColumn> columnList = filterColumns(type);
         PrestoSchema.PrestoColumn column = Randomly.fromList(columnList);
         return new PrestoColumnReference(column);
     }
@@ -515,7 +513,7 @@ public final class PrestoTypedExpressionGenerator extends
         if (Randomly.getBoolean()) {
             return generateConstant(type);
         } else {
-            List<PrestoSchema.PrestoColumn> columnList = filterColumns(type.getPrimitiveDataType());
+            List<PrestoSchema.PrestoColumn> columnList = filterColumns(type);
             if (columnList.isEmpty()) {
                 return generateConstant(type);
             } else {
@@ -524,11 +522,13 @@ public final class PrestoTypedExpressionGenerator extends
         }
     }
 
-    private List<PrestoSchema.PrestoColumn> filterColumns(PrestoSchema.PrestoDataType dataType) {
+    private List<PrestoSchema.PrestoColumn> filterColumns(PrestoSchema.PrestoCompositeDataType type) {
         if (columns == null) {
             return Collections.emptyList();
         } else {
-            return columns.stream().filter(c -> c.getType().getPrimitiveDataType() == dataType)
+            return columns.stream().filter(c -> c.getType().getPrimitiveDataType() == type.getPrimitiveDataType())
+                    .filter(c -> type.getPrimitiveDataType() != PrestoDataType.ARRAY
+                            || c.getType().toString().equals(type.toString()))
                     .collect(Collectors.toList());
         }
     }
@@ -540,7 +540,7 @@ public final class PrestoTypedExpressionGenerator extends
 
     @Override
     protected boolean canGenerateColumnOfType(PrestoSchema.PrestoCompositeDataType type) {
-        return columns.stream().anyMatch(c -> c.getType() == type);
+        return !filterColumns(type).isEmpty();
     }
 
     public PrestoExpression generateAggregate() {
@@ -568,11 +568,12 @@ public final class PrestoTypedExpressionGenerator extends
             PrestoAggregateFunction aggregateFunction) {
         List<PrestoSchema.PrestoDataType> returnTypes = aggregateFunction.getReturnTypes(type.getPrimitiveDataType());
         List<PrestoExpression> arguments = new ArrayList<>();
-        allowAggregates = false; //
+        allowAggregates = false;
         for (PrestoSchema.PrestoDataType argumentType : returnTypes) {
-            arguments.add(generateExpression(PrestoSchema.PrestoCompositeDataType.fromDataType(argumentType)));
+            PrestoCompositeDataType argumentCompositeType = argumentType == type.getPrimitiveDataType() ? type
+                    : PrestoCompositeDataType.fromDataType(argumentType);
+            arguments.add(generateExpression(argumentCompositeType));
         }
-        // return new NewFunctionNode<>(arguments, aggregateFunction);
         return arguments;
     }
 

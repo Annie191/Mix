@@ -509,12 +509,14 @@ TiDB QPG 在本次运行中超时取消。未删除检查，也未使用忽略�
 | Hive | hive-serde 4.2.1 需要 Java21，CI 为 Java17 | 改为与 hive-cli 一致的 4.0.1 |
 | Spark | 与 Hive 相同的客户端依赖问题 | 使用同一依赖修复，保留 Spark 3.5.1 测试 |
 | Materialize QPG | 无限收集巨大结果集，Java 堆耗尽 | 每个会话设置 max_query_result_size=8388608；超限整条跳过，不截断后比较 |
-| Presto | 随机 JSON 数字含 -Infinity，合法性错误被当成缺陷 | 数字改用 getFiniteDouble()，字符串补齐双引号转义；不忽略其他查询错误 |
+| Presto | JSON 可含 -Infinity；后续 TLP 暴露 ARRAY 聚合参数和选列丢失元素类型 | 生成合法 JSON；聚合参数保留复合类型，ARRAY 选列检查完整元素类型 |
 | MySQL | 前序单线程测试可修改全局 completion_type；普通 ROLLBACK 在 RELEASE 模式下断连 | DQE 和 EET DML 显式使用 ROLLBACK AND NO CHAIN NO RELEASE，不重连掩盖丢失的会话 |
 
 新增严格 JSON 解析回归（1 万个字面量）、三种 completion_type 下的实库回滚回归，以及 Materialize 超限整条跳过、连接继续可用的回归。
 MySQL 已独立复现普通 ROLLBACK 断连；相同会话设置下显式 NO RELEASE 后能够继续 SELECT。Materialize 原有精确查询计划测试和新增超限回归均已在实库通过。
-完整静态 verify 通过，SpotBugs 为 0；完整数据库 CI 正在重跑，最终结论以逐项实测结果为准。
+本地完整 General tests 为 370 项：354 项通过、16 项按条件跳过，0 失败/错误。完整静态 verify 通过，SpotBugs 为 0；完整数据库 CI 正在重跑，最终结论以逐项实测结果为准。
 
 CI 增加同分支并发取消，避免重复修订版本的长测堆积；诊断工作流变更不再触发全数据库矩阵。测试时长和差分断言保持，未使用 continue-on-error 或删除失败检查。
-本机日志统一位于项目 logs/ci-six-fixes-20261119/。
+本机日志统一位于项目 logs/ci-six-fixes-20261119/。逐项根因、新旧代码对照、CI 链接和测试计数见 [CI 诊断记录](mixed-ci-diagnosis.json)。
+
+Presto 的后续类型错误示例是 `coalesce(MAX(ARRAY[1557.0000, ...]), ARRAY[TIME ...], ...)`。`MAX` 参数被随机换成了小数数组。现保留请求的复合类型，嵌套数组选列也检查元素类型；两项回归在旧代码上均失败、修复后均通过。没有把该类型错误加入忽略列表。
