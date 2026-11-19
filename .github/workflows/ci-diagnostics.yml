@@ -1,0 +1,61 @@
+name: CI failure diagnostics
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/ci-diagnostics.yml']
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'CI run to diagnose (empty selects the latest completed ci run)'
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  failed-job-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read failed job logs and publish bounded excerpts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repo = context.repo;
+            let runId = context.payload.inputs?.run_id;
+            if (!runId) {
+              const runs = await github.rest.actions.listWorkflowRuns({
+                ...repo, workflow_id: 'main.yml', status: 'completed', per_page: 1
+              });
+              runId = runs.data.workflow_runs[0]?.id;
+            }
+            if (!runId || !/^\d+$/.test(String(runId))) {
+              throw new Error('A completed CI run id is required');
+            }
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              ...repo, run_id: Number(runId), per_page: 100
+            });
+            const failed = jobs.filter(job => ['failure', 'cancelled', 'timed_out'].includes(job.conclusion));
+            core.summary.addHeading(`Failure evidence for CI run ${runId}`);
+            for (const job of failed) {
+              const reply = await github.rest.actions.downloadJobLogsForWorkflowRun({...repo, job_id: job.id});
+              const body = typeof reply.data === 'string' ? reply.data : Buffer.from(reply.data).toString('utf8');
+              const lines = body.replace(/\u001b\[[0-9;]*m/g, '').split('\n');
+              const hits = lines.map((line, i) => /\[ERROR\]|Exception|AssertionError|Caused by:|Unable to locate|404 |does not have a Release|FAILED|ERROR:/.test(line) ? i : -1).filter(i => i >= 0);
+              const selected = new Set();
+              for (const i of [...hits.slice(0, 12), ...hits.slice(-12)]) {
+                for (let j = Math.max(0, i - 3); j < Math.min(lines.length, i + 9); j++) selected.add(j);
+              }
+              if (!selected.size) for (let i = Math.max(0, lines.length - 70); i < lines.length; i++) selected.add(i);
+              const excerpt = [...selected].sort((a, b) => a - b).map(i => `${i + 1}: ${lines[i]}`).join('\n').slice(0, 18000);
+              const escaped = excerpt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              core.summary.addDetails(`${job.name} (${job.conclusion})`, `<p>${job.html_url}</p><pre>${escaped}</pre>`);
+              for (let i = 0; i < excerpt.length; i += 4500) {
+                core.notice(excerpt.slice(i, i + 4500), {title: `${job.name}: evidence ${i / 4500 + 1}`});
+              }
+            }
+            core.summary.addRaw(`Inspected ${jobs.length} jobs; ${failed.length} did not succeed.\n`);
+            await core.summary.write();
