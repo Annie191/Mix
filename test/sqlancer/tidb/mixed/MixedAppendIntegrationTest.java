@@ -35,6 +35,33 @@ class MixedAppendIntegrationTest {
     Path artifacts;
 
     @Test
+    void tinyintOneUsesNumericCatalogSemanticsAndRealBitRetainsBinaryValues() throws Exception {
+        try (Live fixture = new Live()) {
+            fixture.io.exec("ALTER TABLE t1 ADD t TINYINT(1), ADD u TINYINT(1) UNSIGNED");
+            fixture.state.updateSchema();
+            fixture.packet.add("schema", TiDBMixedMetadata.collect(fixture.io, fixture.database,
+                    fixture.state.getSchema().getDatabaseTables(), 0).schema);
+            JsonObject plan = MixedAppendTest.plan(fixture.packet,
+                    "[{\"table\":\"t1\",\"rows\":[{\"k\":{\"type\":\"integer\",\"value\":\"12\"},"
+                            + "\"t\":{\"type\":\"integer\",\"value\":\"2\"},\"u\":{\"type\":\"integer\",\"value\":\"255\"}}]}]");
+            JsonObject feedback = fixture.executor(1).execute(plan.toString(), fixture.packet);
+            JsonObject write = MixedAppendTest.write(feedback, 0);
+            assertEquals("success", write.get("status").getAsString(), feedback.toString());
+            JsonObject actual = write.getAsJsonObject("actual_values");
+            assertEquals(MixedAppendTest.json("{\"type\":\"integer\",\"value\":\"2\"}"), actual.get("t"));
+            assertEquals(MixedAppendTest.json("{\"type\":\"integer\",\"value\":\"255\"}"), actual.get("u"));
+            TiDBMixedReadOnly.Result sample = TiDBMixedReadOnly.read(fixture.io, "SELECT t AS aliased, u FROM t1", 10,
+                    5);
+            assertEquals(actual.get("t"), sample.rows.get(0).getAsJsonArray().get(0));
+            fixture.io.exec("CREATE TABLE bit_probe(b BIT(3))");
+            fixture.io.exec("INSERT INTO bit_probe VALUES (b'101')");
+            TiDBMixedReadOnly.Result bits = TiDBMixedReadOnly.read(fixture.io, "SELECT b FROM bit_probe", 10, 5);
+            assertEquals(MixedAppendTest.json("{\"type\":\"binary\",\"value\":\"BQ==\"}"),
+                    bits.rows.get(0).getAsJsonArray().get(0));
+        }
+    }
+
+    @Test
     void unsignedMaxDecimalBinaryTextAndGeneratedValuesAreActuallyCommitted() throws Exception {
         try (Live fixture = new Live()) {
             JsonObject row = MixedAppendTest.json(MixedAppendTest.row(2));

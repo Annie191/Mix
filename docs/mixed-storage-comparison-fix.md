@@ -574,3 +574,11 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 - 新回归通过真实 H2 INSERT/SELECT 验证：观察用完最后一项额度后仍能补行并完成自动验证；固定验证下限不够时零模型调用、零写入、数据冻结。原有观察和验证计费断言分别检查两个池。
 
 验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`，260 项中 247 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 通过。日志：`logs/review-followups-20261123/01-verify-final.log`。尚未重跑真实模型长测。
+
+## 追加：90 分钟日志问题 2——tinyint 与 JDBC 类型统一（2026-11-23）
+
+- JDBC 将基表整数列报告为 BIT/BOOLEAN 时，读取层通过原表名、原列名查询 SQLancer 实际列类型；真实类型为整数时，以精确整数编码，不再把 `tinyint(1)` 的 `0/1/2` 编成 Base64。列别名不影响核对；真正 BIT/BLOB 保持原二进制表示。
+- 写后数字校验先检查实际单元格类型，不再对 Base64 文本直接构造 BigDecimal；类型不符按值不一致回滚，不漏成数字解析异常。
+- 目标 TiDB `b1d4142f99`、真实 Connector/J 的隔离实例上验证：普通 INSERT 提交 `tinyint(1)=2`、`tinyint(1) unsigned=255`，实际值与模型值精确一致；别名样本仍为 integer，真正 `BIT(3)=b'101'` 仍为 binary。隔离实例使用 unistore，不据此声称验证 TiFlash 路径。另有 JDBC BIT/BOOLEAN 映射回归。
+
+验证：实库追加与读取测试 32 项全部通过；完整 mixed verify 262 项，248 项通过、14 项实库测试按开关跳过，0 失败/错误；格式、XML、Checkstyle、PMD、SpotBugs 通过。日志：`logs/review-followups-20261123/02-tinyint-live-pass.log`、`02-verify.log`。所有运行材料位于项目 logs 目录。

@@ -114,6 +114,15 @@ public final class TiDBMixedSupport {
         return state.getConnection();
     }
 
+    boolean integerColumn(String table, String column) {
+        if (state.getSchema() == null) {
+            return false;
+        }
+        return state.getSchema().getDatabaseTables().stream().filter(t -> t.getName().equalsIgnoreCase(table))
+                .flatMap(t -> t.getColumns().stream()).anyMatch(c -> c.getName().equalsIgnoreCase(column)
+                        && TiDBMixedMetadata.valueKind(c.getSqlType()).equals("integer"));
+    }
+
     public static String quoteIdentifier(String identifier) {
         if (!identifier.matches("[A-Za-z_][A-Za-z0-9_]*")) {
             throw new IllegalArgumentException("identifier outside generated grammar");

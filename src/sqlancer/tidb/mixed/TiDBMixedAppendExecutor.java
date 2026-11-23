@@ -234,6 +234,9 @@ public final class TiDBMixedAppendExecutor {
             return type.equals(actual.get("type").getAsString());
         }
         if (type.equals("integer") || type.equals("decimal")) {
+            if (!List.of("integer", "decimal").contains(actual.get("type").getAsString())) {
+                return false;
+            }
             return new BigDecimal(expected.get("value").getAsString())
                     .compareTo(new BigDecimal(actual.get("value").getAsString())) == 0;
         }

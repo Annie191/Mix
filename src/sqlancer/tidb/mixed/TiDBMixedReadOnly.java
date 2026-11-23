@@ -35,7 +35,8 @@ final class TiDBMixedReadOnly {
         T read(ResultSet rows) throws SQLException;
     }
 
-    private static JsonObject value(ResultSet rows, ResultSetMetaData metadata, int index) throws SQLException {
+    static JsonObject value(TiDBMixedSupport io, ResultSet rows, ResultSetMetaData metadata, int index)
+            throws SQLException {
         JsonObject cell = new JsonObject();
         String text = rows.getString(index);
         if (text == null) {
@@ -43,7 +44,13 @@ final class TiDBMixedReadOnly {
             cell.add("value", JsonNull.INSTANCE);
             return cell;
         }
-        switch (metadata.getColumnType(index)) {
+        int jdbcType = metadata.getColumnType(index);
+        // Connector/J tinyInt1isBit can report a numeric base column as BIT/BOOLEAN. The actual catalog wins.
+        if ((jdbcType == Types.BIT || jdbcType == Types.BOOLEAN)
+                && io.integerColumn(metadata.getTableName(index), metadata.getColumnName(index))) {
+            jdbcType = Types.TINYINT;
+        }
+        switch (jdbcType) {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
@@ -101,7 +108,7 @@ final class TiDBMixedReadOnly {
                 }
                 JsonArray row = new JsonArray();
                 for (int i = 1; i <= columns; i++) {
-                    row.add(value(rows, metadata, i));
+                    row.add(value(io, rows, metadata, i));
                 }
                 result.rows.add(row);
             }

@@ -24,6 +24,45 @@ import sqlancer.tidb.mixed.TiDBMixedGeneration.Candidate;
 /** Broken/missing JDBC labels must not prevent observations or require decoding an existence probe. */
 class MixedReadOnlyTest {
     @Test
+    void driverBitMappingCannotTurnNumericCatalogValuesIntoBase64() throws Exception {
+        try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            TiDBMixedSupport io = new TiDBMixedSupport(fixture.state);
+            for (int reported : List.of(java.sql.Types.BIT, java.sql.Types.BOOLEAN)) {
+                ResultSetMetaData metadata = (ResultSetMetaData) Proxy.newProxyInstance(getClass().getClassLoader(),
+                        new Class<?>[] { ResultSetMetaData.class }, (proxy, method, args) -> {
+                            switch (method.getName()) {
+                            case "getColumnType":
+                                return reported;
+                            case "getTableName":
+                                return "T0";
+                            case "getColumnName":
+                                return (int) args[0] == 1 ? "k" : "b";
+                            default:
+                                throw new AssertionError(method.getName());
+                            }
+                        });
+                ResultSet rows = (ResultSet) Proxy.newProxyInstance(getClass().getClassLoader(),
+                        new Class<?>[] { ResultSet.class }, (proxy, method, args) -> {
+                            if (method.getName().equals("getString")) {
+                                return "2";
+                            }
+                            if (method.getName().equals("getBytes")) {
+                                return new byte[] { 2 };
+                            }
+                            if (method.getName().equals("getBoolean")) {
+                                return true;
+                            }
+                            throw new AssertionError(method.getName());
+                        });
+                assertEquals(MixedAppendTest.json("{\"type\":\"integer\",\"value\":\"2\"}"),
+                        TiDBMixedReadOnly.value(io, rows, metadata, 1));
+                JsonObject binary = TiDBMixedReadOnly.value(io, rows, metadata, 2);
+                assertEquals(reported == java.sql.Types.BIT ? "binary" : "boolean", binary.get("type").getAsString());
+            }
+        }
+    }
+
+    @Test
     void missingLabelsUseStablePositionsWhileTypesValuesAndSamplingRemainIntact() throws Exception {
         try (MixedObservationTest.Fixture fixture = new MixedObservationTest.Fixture()) {
             fixture.resultDecorator = rows -> decorate(rows, false, new int[3]);
