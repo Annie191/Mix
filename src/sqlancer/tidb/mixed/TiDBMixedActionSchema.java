@@ -85,17 +85,41 @@ public final class TiDBMixedActionSchema {
     }
 
     private static JsonObject requests(JsonObject state, boolean strict) {
+        return requests(state, strict, false);
+    }
+
+    private static JsonObject requests(JsonObject state, boolean strict, boolean missingOnly) {
         JsonArray variants = new JsonArray();
         JsonArray staticIds = new JsonArray();
         for (JsonElement entry : state.getAsJsonArray("available_observations")) {
             JsonObject capability = entry.getAsJsonObject();
             if (!capability.has("parameters")) {
+                if (missingOnly && TiDBMixedObservationRequest.currentExact(state, capability.get("id")) != null) {
+                    continue;
+                }
                 staticIds.add(capability.get("id"));
             } else {
                 JsonObject properties = new JsonObject();
                 properties.add("capability_id", enumeration(capability.get("id").getAsString()));
                 properties.add("parameters", parameters(capability));
-                variants.add(object(properties));
+                JsonObject variant = object(properties);
+                if (missingOnly) {
+                    JsonArray cached = new JsonArray();
+                    for (JsonElement fact : state.getAsJsonArray("observations")) {
+                        JsonObject observation = fact.getAsJsonObject();
+                        if (capability.get("id").equals(observation.get("capability_id"))
+                                && observation.has("parameters") && cached.size() < 4) {
+                            JsonObject request = new JsonObject();
+                            request.add("capability_id", capability.get("id"));
+                            request.add("parameters", observation.get("parameters"));
+                            if (TiDBMixedObservationRequest.currentExact(state, request) != null) {
+                                cached.add(observation.get("parameters").deepCopy());
+                            }
+                        }
+                    }
+                    variant.addProperty("description", "Request new parameters; already exact examples: " + cached);
+                }
+                variants.add(variant);
             }
         }
         if (!staticIds.isEmpty()) {
@@ -186,6 +210,10 @@ public final class TiDBMixedActionSchema {
     }
 
     private static JsonObject signature(JsonObject state, String action) {
+        return signature(state, action, false);
+    }
+
+    private static JsonObject signature(JsonObject state, String action, boolean missingOnly) {
         JsonObject properties = new JsonObject();
         properties.add("reason", type("string"));
         properties.add("evidence_ids", array(type("string")));
@@ -194,7 +222,7 @@ public final class TiDBMixedActionSchema {
         } else {
             properties.add("goal", type("string"));
             if (action.equals("observe")) {
-                JsonObject requests = requests(state, true);
+                JsonObject requests = requests(state, true, missingOnly);
                 requests.addProperty("minItems", 1);
                 properties.add("observation_requests", requests);
             } else {
@@ -244,6 +272,19 @@ public final class TiDBMixedActionSchema {
         if (!budget.has("observation_calls")) {
             return true; // Existing v1 experiments retain their original single decision quota.
         }
+        if (budget.get("probe_requests").getAsLong() == 0) {
+            return false;
+        }
+        long noGain = state.getAsJsonArray("history").asList().stream().map(JsonElement::getAsJsonObject)
+                .filter(round -> state.get("data_revision").equals(round.get("data_revision_after")))
+                .filter(round -> round.has("decision") && round.get("decision").isJsonObject()
+                        && "observe".equals(round.getAsJsonObject("decision").get("decision").getAsString()))
+                .filter(round -> round.has("observation_feedback") && round.get("observation_feedback").isJsonObject()
+                        && !round.getAsJsonObject("observation_feedback").get("information_increment").getAsBoolean())
+                .count();
+        if (noGain >= 2) {
+            return false;
+        }
         long reserve = budget.get("insert_rows").getAsLong() > 0 ? 2 : 1;
         reserve = Math.min(reserve, budget.get("decision_calls").getAsLong());
         return budget.get("observation_calls").getAsLong() > 0 && budget.get("model_calls").getAsLong() > reserve;
@@ -262,7 +303,7 @@ public final class TiDBMixedActionSchema {
                     ? "Append rows only; justify full JOIN/WHERE/GROUP BY witnesses. Program measures afterwards without another API call."
                     : action.equals("observe") ? "Request program-owned read-only facts; no writes"
                             : "Finish preparation; keep existing data for differential testing");
-            function.add("parameters", serverSchema(signature(state, action)));
+            function.add("parameters", serverSchema(signature(state, action, action.equals("observe"))));
             JsonObject tool = new JsonObject();
             tool.addProperty("type", "function");
             tool.add("function", function);

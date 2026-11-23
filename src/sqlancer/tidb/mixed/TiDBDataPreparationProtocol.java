@@ -381,7 +381,7 @@ public final class TiDBDataPreparationProtocol {
             JsonObject details = new JsonObject();
             details.addProperty("path", "$.decision");
             details.addProperty("expected",
-                    "append_rows or stop; observation quota is exhausted or calls are reserved for follow-up");
+                    "append_rows or stop; observation quota/probes exhausted, repeated no-gain rounds, or calls reserved for follow-up");
             details.addProperty("received_type", "string");
             details.addProperty("example", "stop");
             throw new ValidationException("OBSERVATION_BUDGET_EXHAUSTED",

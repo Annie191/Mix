@@ -305,8 +305,26 @@ public final class TiDBMixedPreparationHarness {
         packet.getAsJsonArray("observations").addAll(facts.observations.deepCopy());
         packet.getAsJsonArray("samples").addAll(facts.samples.deepCopy());
         facts.observations.forEach(fact -> added.add(fact.getAsJsonObject().get("id")));
-        feedback.addProperty("information_increment", facts.observations.asList().stream().anyMatch(
-                fact -> List.of("exact", "sampled").contains(fact.getAsJsonObject().get("status").getAsString())));
+        int newExact = 0;
+        int changedSamples = 0;
+        int unchangedSamples = 0;
+        for (JsonElement entry : facts.observations) {
+            JsonObject fact = entry.getAsJsonObject();
+            JsonObject old = previous.get(TiDBMixedObservationRequest.factKey(fact));
+            if (fact.get("status").getAsString().equals("exact")) {
+                newExact++;
+            } else if (fact.get("status").getAsString().equals("sampled")) {
+                if (old == null || !fact.get("value").equals(old.get("value"))) {
+                    changedSamples++;
+                } else {
+                    unchangedSamples++;
+                }
+            }
+        }
+        feedback.addProperty("new_exact_facts", newExact);
+        feedback.addProperty("changed_samples", changedSamples);
+        feedback.addProperty("unchanged_samples", unchangedSamples);
+        feedback.addProperty("information_increment", newExact > 0 || changedSamples > 0);
         round.add("probe_audit", new com.google.gson.Gson().toJsonTree(facts.audit));
         round.addProperty("observation_snapshot", facts.snapshot);
     }
