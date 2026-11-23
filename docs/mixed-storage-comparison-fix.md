@@ -609,3 +609,20 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 - 回归检查工具选项与验证选项的区别；通过真实 H2 样本证明连续重复读取没有信息收益，并验证关闭观察后补行/停止决策额度仍完整，新版本可以继续观察。
 
 验证：完整 mixed verify 271 项，256 项通过、15 项实库测试按开关跳过，0 失败/错误；格式、XML、Checkstyle、PMD、SpotBugs 全部通过。日志：`logs/review-followups-20261123/05-verify.log`。尚未重跑真实模型长测，不能把协议上的限制当成实测成本收益。
+
+## 追加：90 分钟日志问题 6——辅助异常按签名计数并保存复现结果（2026-11-23）
+
+- 保留既有每次异常的独立 `error-N.json`、原始上下文、会话设置、数据恢复语句，以及 SQLancer AssertionError 报错通道。原查询 PASS 与辅助内部异常继续独立记录；不因签名重复丢弃任一次证据或数据版本。
+- 每例归档索引新增 `error_occurrences`、`internal_error_occurrences`、`distinct_error_signatures`、`distinct_internal_error_signatures` 和 `signature_groups`。签名按原 SQL、顺序不变的有类型绑定参数及完整异常链计算，不含观测 ID、数据版本；组内列出各次证据文件。绑定对象字段顺序规范化，未配对 UTF-16 代理项保留区别。旧 `internal_candidates` 保持发生次数含义。SQLancer 错误消息同时列发生次数与语句/错误签名数。
+- 签名相同只证明记录中的语句、参数与错误相同，不证明根因相同；索引 `root_cause_verified=false`，候选仍 `confirmed=false`。因此 seed 66 的 8 次异常、3 条不同辅助 SQL，不能报成 8 个独立 bug。
+- `TiDBMixedAuxiliaryReplay` 保留两参数用法，增加可选第三参数结果文件；默认在原归档旁生成唯一复现结果文件。记录时间、隔离数据库、服务版本、失败阶段及错误链，区分 `REPRODUCED_ERROR_SIGNATURE`、`DIFFERENT_ERROR`、`NOT_REPRODUCED` 和 `REPLAY_SETUP_FAILED`。恢复/连接失败也保存结果并返回错误，结果路径不能覆盖原归档。重新建库后使用新读，不重用旧 TSO；复现成功仍不是根因确认。
+
+复现入口（连接凭据仍通过 MS_REPLAY_USER / MS_REPLAY_PASSWORD 提供）：
+
+```sh
+java -cp target/sqlancer-2.0.0.jar sqlancer.tidb.mixed.TiDBMixedAuxiliaryReplay '<jdbc-url>' '<error.json>' '<replay-result.json>'
+```
+
+验证：新增回归覆盖重复发生、不同绑定/SQL、异常链签名、代理项、复现成功/不同错误/未复现、连接失败留证和禁止覆盖原归档；完整 mixed verify 275 项，260 项通过、15 项实库测试按开关跳过，0 失败/错误，格式、XML、Checkstyle、PMD、SpotBugs 全部通过。日志：`logs/review-followups-20261123/06-verify.log`。
+
+另在目标提交 `b1d4142f99` 的隔离 TiDB unistore 实例重放旧日志 `error-0/1/3.json`，三条不同辅助 SQL 均返回相同签名的 `HY000 / 1105` 内部错误；结果保存于 `logs/review-followups-20261123/06-replay-0.json`、`06-replay-1.json`、`06-replay-3.json`。这是辅助 SQL 的复现验证，不是 TiFlash 路径联调，也没有据此确定三个独立根因。隔离实例已停止，全部材料位于项目 logs 目录；本轮没有再调用真实模型或重跑长测。

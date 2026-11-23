@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,6 +23,53 @@ import sqlancer.tidb.ast.TiDBJoin;
 class MixedAuxiliaryErrorsTest {
     @TempDir
     Path directory;
+
+    @Test
+    void repeatedErrorsKeepEveryOccurrenceButGroupOnlyTheSameStatementBindingsAndError() throws Exception {
+        try (MixedObservationTest.Fixture fixture = new MixedObservationTest.Fixture()) {
+            fixture.archiveMetadata = true;
+            TiDBMixedAuxiliaryErrors archive = new TiDBMixedAuxiliaryErrors(directory);
+            Map<String, Object> context = new LinkedHashMap<>();
+            context.put("sql", "SELECT COUNT(*) FROM t0 WHERE k=?");
+            context.put("bindings", JsonParser.parseString("[{\"type\":\"integer\",\"value\":\"1\"}]"));
+            context.put("data_revision", 0);
+            SQLException error = new SQLException("runtime error: nil pointer", "HY000", 1105);
+            archive.record(fixture.io, fixture.query(TiDBJoin.JoinType.RIGHT), context, error);
+            context.put("data_revision", 1);
+            archive.record(fixture.io, fixture.query(TiDBJoin.JoinType.RIGHT), context, error);
+            context.put("bindings", JsonParser.parseString("[{\"value\":\"2\",\"type\":\"integer\"}]"));
+            archive.record(fixture.io, fixture.query(TiDBJoin.JoinType.RIGHT), context, error);
+            context.put("sql", "SELECT COUNT(*) FROM t1 WHERE k=?");
+            archive.record(fixture.io, fixture.query(TiDBJoin.JoinType.RIGHT), context, error);
+            JsonObject index = JsonParser.parseString(Files.readString(directory.resolve("index.json")))
+                    .getAsJsonObject();
+            assertEquals(4, index.get("internal_error_occurrences").getAsInt());
+            assertEquals(3, index.get("distinct_internal_error_signatures").getAsInt());
+            JsonObject group = index.getAsJsonArray("signature_groups").get(0).getAsJsonObject();
+            assertEquals(2, group.get("occurrences").getAsInt());
+            assertEquals(2, group.getAsJsonArray("occurrence_files").size());
+            assertFalse(group.get("confirmed").getAsBoolean());
+            assertFalse(index.get("root_cause_verified").getAsBoolean());
+            for (int i = 0; i < 4; i++) {
+                JsonObject occurrence = JsonParser
+                        .parseString(Files.readString(directory.resolve("error-" + i + ".json"))).getAsJsonObject();
+                assertEquals("CAPTURED", occurrence.get("replay_status").getAsString());
+                assertEquals(i == 0 ? 0 : 1, occurrence.get("data_revision").getAsInt());
+            }
+        }
+    }
+
+    @Test
+    void signaturePreservesUnpairedSurrogatesAndCanonicalBindingFieldOrder() {
+        JsonObject first = MixedAppendTest
+                .json("{\"sql\":\"SELECT ?\",\"bindings\":[{\"type\":\"text\",\"value\":\"x\"}]}");
+        JsonObject reordered = MixedAppendTest
+                .json("{\"bindings\":[{\"value\":\"x\",\"type\":\"text\"}],\"sql\":\"SELECT ?\"}");
+        assertEquals(TiDBMixedAuxiliaryErrors.signature(first), TiDBMixedAuxiliaryErrors.signature(reordered));
+        first.addProperty("sql", "SELECT '\ud800'");
+        reordered.addProperty("sql", "SELECT '\ud801'");
+        assertFalse(TiDBMixedAuxiliaryErrors.signature(first).equals(TiDBMixedAuxiliaryErrors.signature(reordered)));
+    }
 
     @Test
     void internalObservationArchivesActualDataAndReportsThroughSqlancerIndependently() throws Exception {
