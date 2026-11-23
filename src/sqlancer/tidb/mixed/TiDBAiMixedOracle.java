@@ -344,7 +344,8 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                 record.put("guidedColumns", query.guidedColumns);
                 // Precheck before INSERT. Unknown SQL errors are recorded, not added to expected errors by AI.
                 try {
-                    io.textRows("EXPLAIN FORMAT='brief' " + query.sql);
+                    TiDBMixedSupport.requireScannedCandidate(io.textRows("EXPLAIN FORMAT='brief' " + query.sql));
+                    io.inspectCandidate(query.sql);
                 } catch (java.sql.SQLException | Rejected error) {
                     record.put("status", "PRECHECK_REJECTED");
                     record.put("error", error.toString());
@@ -359,6 +360,22 @@ public final class TiDBAiMixedOracle implements TestOracle<TiDBGlobalState> {
                         revision);
                 record.put("actualMetadata", actualMetadata.schema);
                 record.put("metadataEvidence", actualMetadata.evidence);
+                try {
+                    io.preparationRead(query);
+                    record.put("preparationEligibility", "PASS");
+                } catch (java.sql.SQLException | Rejected error) {
+                    record.put("status", "PREPARATION_READ_REJECTED");
+                    record.put("preparationEligibility", "REJECTED");
+                    record.put("error", error.toString());
+                    if (error instanceof java.sql.SQLException
+                            && TiDBMixedAuxiliaryErrors.internal((java.sql.SQLException) error)) {
+                        auxiliary.record(io, query,
+                                Map.of("sql", query.sql, "capability_id", "preparation_read", "data_revision", 0,
+                                        "schema_revision", revision, "bindings", new JsonArray()),
+                                (java.sql.SQLException) error);
+                    }
+                    continue;
+                }
                 TiDBMixedObservations facts = new TiDBMixedObservations(query, "query_" + revision, revision, 0);
                 JsonObject preparationBudget = closedLoop ? TiDBMixedPreparationHarness.preparationBudget() : null;
                 try {

@@ -582,3 +582,12 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 - 目标 TiDB `b1d4142f99`、真实 Connector/J 的隔离实例上验证：普通 INSERT 提交 `tinyint(1)=2`、`tinyint(1) unsigned=255`，实际值与模型值精确一致；别名样本仍为 integer，真正 `BIT(3)=b'101'` 仍为 binary。隔离实例使用 unistore，不据此声称验证 TiFlash 路径。另有 JDBC BIT/BOOLEAN 映射回归。
 
 验证：实库追加与读取测试 32 项全部通过；完整 mixed verify 262 项，248 项通过、14 项实库测试按开关跳过，0 失败/错误；格式、XML、Checkstyle、PMD、SpotBugs 通过。日志：`logs/review-followups-20261123/02-tinyint-live-pass.log`、`02-verify.log`。所有运行材料位于项目 logs 目录。
+
+## 追加：90 分钟日志问题 3——调用模型前检查可判定性，细分警告（2026-11-23）
+
+- 原始候选 EXPLAIN 后先检查是否还有实际基表扫描；被化简为 TableDual 的候选记 PRECHECK_REJECTED，不消耗模型补行调用。使用同一投影的 LIMIT 0 读取 JDBC 元数据，浮点结果提前记 `UNSUPPORTED_EXACT_RESULT_TYPE`；不通过放宽比较精度增加 PASS。
+- 数据生成后、模型准备前，固定 TiKV 执行一次原查询的 EXPLAIN ANALYZE，提前发现已有数据触发的转换警告、执行错误或超时。不能用流式 SELECT 做这个检查：目标 Connector/J 下，流关闭后 JDBC 警告链与 SHOW WARNINGS 都可能失去转换警告；回归已复现并改为返回有界计划的执行方式。检查完恢复引擎设置；拒绝原因留在 preparationEligibility/error，内部错误仍独立归档。
+- 仅将 EXPLAIN 的三类明确 TiFlash 下推能力提示标为 `PLAN_CAPABILITY_NOTICE`，保留原 SQL 和提示。执行结果、忽略提示、转换截断、混合警告及未知消息仍严格拒绝。静态计划与 ANALYZE 实际扫描仍必须分别验证目标引擎，不能因提示被分类就算有效路径。
+- 模型补行后可能新引入警告，后续完整差分校验继续有效；写前通过不是最终 PASS。本项减少可提前识别的无效准备，不保证所有随机查询从此可判定。
+
+验证：目标 TiDB 的实库追加/筛查加 JDBC 边界测试 30 项全部通过；完整 mixed verify 265 项中 250 项通过、15 项实库测试按开关跳过，0 失败/错误，静态检查全部通过。日志：`logs/review-followups-20261123/03-live-and-jdbc-pass.log`、`03-verify.log`。尚无新一轮长测效果结论。

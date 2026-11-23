@@ -45,6 +45,42 @@ class MixedJdbcTest {
     Path temporary;
 
     @Test
+    void capabilityNoticesNeedScanValidationAndNeverExemptExecutionOrConversionWarnings() throws Exception {
+        Fixture fixture = new Fixture();
+        TiDBMixedSupport io = fixture.support();
+        io.beginSnapshot();
+        fixture.warning = new SQLWarning(
+                "Aggregation can not be pushed to tiflash because AggFunc `bit_and` is not supported now", "HY000",
+                1105);
+        fixture.explainWarningOnly = true;
+        Config config = new Config(Map.of("t0", "tikv", "t1", "tiflash"));
+        assertEquals("OK", io.execute("SELECT c FROM t0,t1", config, false).status);
+        assertTrue(io.events.stream().anyMatch(event -> "PLAN_CAPABILITY_NOTICE".equals(event.get("stage"))));
+        fixture.invalidPlan = true;
+        assertEquals("INVALID_CONFIGURATION", io.execute("SELECT c FROM t0,t1", config, false).status);
+        assertFalse(TiDBMixedSupport.planningNotice("SELECT 1", fixture.warning));
+        assertFalse(TiDBMixedSupport.planningNotice("EXPLAIN SELECT 1",
+                new SQLWarning("Truncated incorrect INTEGER value: 'A'", "22007", 1292)));
+        fixture.invalidPlan = false;
+        fixture.warning.setNextWarning(new SQLWarning("hint ignored", "HY000", 1815));
+        assertEquals("INCONCLUSIVE", io.execute("SELECT c FROM t0,t1", config, false).status);
+    }
+
+    @Test
+    void floatMetadataAndPlansWithoutStorageAreRejectedBeforePreparation() throws Exception {
+        Fixture fixture = new Fixture();
+        fixture.resultType = Types.DOUBLE;
+        TiDBMixedSupport io = fixture.support();
+        TiDBMixedSupport.Rejected rejected = assertThrows(TiDBMixedSupport.Rejected.class,
+                () -> io.inspectCandidate("SELECT c FROM t0,t1"));
+        assertEquals("UNSUPPORTED_EXACT_RESULT_TYPE", rejected.status);
+        assertTrue(fixture.queries.stream().anyMatch(sql -> sql.endsWith("LIMIT 0")));
+        assertThrows(TiDBMixedSupport.Rejected.class, () -> TiDBMixedSupport
+                .requireScannedCandidate(List.of(Map.of("id", "TableDual", "access object", ""))));
+        TiDBMixedSupport.requireScannedCandidate(List.of(Map.of("id", "TableFullScan", "access object", "table:t0")));
+    }
+
+    @Test
     void incompatibleOracleOptionsFailBeforeConnectingOrChangingTheDatabase() {
         MixedUnitTest.FakeState state = new MixedUnitTest.FakeState();
         state.getDbmsSpecificOptions().oracle = List.of(TiDBOracleFactory.AI_MIXED_STORAGE, TiDBOracleFactory.WHERE);
@@ -513,6 +549,7 @@ class MixedJdbcTest {
         int rowCount = 2;
         int resultType = Types.INTEGER;
         SQLWarning warning;
+        boolean explainWarningOnly;
         SQLException queryError;
 
         TiDBMixedSupport support() {
@@ -555,7 +592,8 @@ class MixedJdbcTest {
                         case "close":
                             return null;
                         case "getWarnings":
-                            return warning;
+                            return explainWarningOnly && !queries.get(queries.size() - 1).startsWith("EXPLAIN ") ? null
+                                    : warning;
                         default:
                             throw new UnsupportedOperationException(method.getName());
                         }

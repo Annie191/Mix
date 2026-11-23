@@ -35,6 +35,29 @@ class MixedAppendIntegrationTest {
     Path artifacts;
 
     @Test
+    void preparationEligibilityRejectsFloatAndConversionWarningsBeforeModelWork() throws Exception {
+        try (Live fixture = new Live()) {
+            TiDBMixedSupport.Rejected floating = assertThrows(TiDBMixedSupport.Rejected.class,
+                    () -> fixture.io.inspectCandidate("SELECT CAST(1 AS DOUBLE) FROM t1"));
+            assertEquals("UNSUPPORTED_EXACT_RESULT_TYPE", floating.status);
+            fixture.io.exec("INSERT INTO t1 VALUES (1)");
+            sqlancer.tidb.ast.TiDBSelect select = new sqlancer.tidb.ast.TiDBSelect();
+            sqlancer.tidb.TiDBSchema.TiDBTable table = fixture.state.getSchema().getDatabaseTables().stream()
+                    .filter(t -> t.getName().equals("t0")).findFirst().orElseThrow();
+            select.setFetchColumns(java.util.List.of(new sqlancer.tidb.ast.TiDBCastOperation(
+                    new sqlancer.tidb.ast.TiDBColumnReference(
+                            table.getColumns().stream().filter(c -> c.getName().equals("s")).findFirst().orElseThrow()),
+                    "SIGNED")));
+            select.setFromList(java.util.List.of(new sqlancer.tidb.ast.TiDBTableReference(table)));
+            TiDBMixedGeneration.Candidate query = new TiDBMixedGeneration.Candidate(select, java.util.List.of(table),
+                    java.util.List.of());
+            assertThrows(TiDBMixedSupport.Rejected.class, () -> fixture.io.preparationRead(query),
+                    () -> query.sql + " events=" + fixture.io.events);
+            assertEquals("tikv,tiflash", fixture.scalar("SELECT @@tidb_isolation_read_engines AS v"));
+        }
+    }
+
+    @Test
     void tinyintOneUsesNumericCatalogSemanticsAndRealBitRetainsBinaryValues() throws Exception {
         try (Live fixture = new Live()) {
             fixture.io.exec("ALTER TABLE t1 ADD t TINYINT(1), ADD u TINYINT(1) UNSIGNED");

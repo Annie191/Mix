@@ -29,6 +29,7 @@ import sqlancer.Randomly;
 import sqlancer.SQLConnection;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
+import sqlancer.tidb.mixed.TiDBMixedGeneration.Candidate;
 
 public final class TiDBMixedSupport {
     private final TiDBGlobalState state;
@@ -154,12 +155,79 @@ public final class TiDBMixedSupport {
 
     private void warnings(Statement statement, String sql) throws SQLException {
         List<String> warnings = new ArrayList<>();
+        List<String> notices = new ArrayList<>();
         for (SQLWarning warning = statement.getWarnings(); warning != null; warning = warning.getNextWarning()) {
-            warnings.add(warning.getErrorCode() + ":" + warning.getMessage());
+            String text = warning.getErrorCode() + ":" + warning.getMessage();
+            if (planningNotice(sql, warning)) {
+                notices.add(text);
+            } else {
+                warnings.add(text);
+            }
+        }
+        if (!notices.isEmpty()) {
+            events.add(Map.of("stage", "PLAN_CAPABILITY_NOTICE", "sql", sql, "warnings", notices,
+                    "requires_scan_validation", true));
         }
         if (!warnings.isEmpty()) {
             events.add(Map.of("stage", "WARNING", "sql", sql, "warnings", warnings));
             throw new Rejected("INCONCLUSIVE", "SQL warnings require review: " + sql + "; " + warnings);
+        }
+    }
+
+    static boolean planningNotice(String sql, SQLWarning warning) {
+        // Only optimizer capability messages on EXPLAIN; execution warnings and ignored hints stay fatal.
+        if (!sql.startsWith("EXPLAIN ") || warning.getErrorCode() != 1105) {
+            return false;
+        }
+        String message = String.valueOf(warning.getMessage());
+        return message.matches("Aggregation can not be pushed to tiflash because AggFunc `[^`]+` is not supported now")
+                || message.matches(
+                        "Aggregation can not be pushed to tiflash because arguments of AggFunc `[^`]+` contains unsupported exprs")
+                || message.matches(
+                        "Scalar function '[^']+'\\(signature: [^,]+, return type: [^)]+\\) is not supported to push down to tiflash now\\.");
+    }
+
+    static void requireScannedCandidate(List<Map<String, String>> plan) {
+        boolean scan = plan.stream().anyMatch(row -> row.getOrDefault("access object", "").contains("table:"));
+        if (!scan) {
+            throw new Rejected("NO_STORAGE_SCAN",
+                    "candidate plan does not read a base table; no engine path to compare");
+        }
+    }
+
+    void inspectCandidate(String sql) throws SQLException {
+        // MixedGeneration emits SELECT without LIMIT/OFFSET. LIMIT 0 asks for the same projection metadata only.
+        String metadataSql = sql + " LIMIT 0";
+        events.add(Map.of("stage", "CANDIDATE_METADATA", "sql", metadataSql));
+        try (Statement statement = connection().createStatement()) {
+            statement.setQueryTimeout(35);
+            try (ResultSet rows = statement.executeQuery(metadataSql)) {
+                ResultSetMetaData metadata = rows.getMetaData();
+                for (int i = 1; i <= metadata.getColumnCount(); i++) {
+                    int type = metadata.getColumnType(i);
+                    if (Set.of(Types.FLOAT, Types.REAL, Types.DOUBLE).contains(type)) {
+                        throw new Rejected("UNSUPPORTED_EXACT_RESULT_TYPE", "column " + i + ": "
+                                + metadata.getColumnTypeName(i) + " is outside the exact differential oracle");
+                    }
+                }
+            }
+            warnings(statement, metadataSql);
+        }
+    }
+
+    void preparationRead(Candidate query) throws SQLException {
+        exec("SET SESSION tidb_isolation_read_engines='tikv'");
+        try {
+            // Execute without buffering data rows. Streaming SELECT can discard warnings when the stream closes.
+            List<Map<String, String>> analyzed = textRows("EXPLAIN ANALYZE " + query.sql);
+            List<Map<String, String>> serverWarnings = textRows("SHOW WARNINGS");
+            if (!serverWarnings.isEmpty()) {
+                events.add(Map.of("stage", "PREPARATION_WARNING", "sql", query.sql, "warnings", serverWarnings));
+                throw new Rejected("INCONCLUSIVE", "Preparation read produced server warnings: " + serverWarnings);
+            }
+            events.add(Map.of("stage", "PREPARATION_READ", "status", "OK", "analyzed", analyzed));
+        } finally {
+            exec("SET SESSION tidb_isolation_read_engines='tikv,tiflash'");
         }
     }
 
