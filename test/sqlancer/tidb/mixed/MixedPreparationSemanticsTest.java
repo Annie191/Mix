@@ -36,7 +36,7 @@ class MixedPreparationSemanticsTest {
     }
 
     @Test
-    void incompleteMetadataNullableOrPrefixKeysAndOuterJoinsCannotProveTheBound() throws Exception {
+    void incompleteMetadataNullableOrPrefixKeysAndUnknownJoinsCannotProveTheBound() throws Exception {
         for (int mutation = 0; mutation < 5; mutation++) {
             JsonObject state = state(49);
             JsonObject table = state.getAsJsonObject("schema").getAsJsonArray("tables").get(0).getAsJsonObject();
@@ -51,10 +51,21 @@ class MixedPreparationSemanticsTest {
                         .getAsJsonObject().addProperty("prefix_length", 3);
             } else {
                 state.getAsJsonObject("query").getAsJsonArray("joins").get(0).getAsJsonObject().addProperty("type",
-                        "LEFT");
+                        "UNKNOWN");
             }
             assertTrue(TiDBMixedPreparationSemantics.analyze(state).get("max_input_rows_per_group").isJsonNull());
         }
+    }
+
+    @Test
+    void outerNullExtensionCannotMultiplyAGroupContainingAllNonNullUniqueKeys() throws Exception {
+        JsonObject state = state(49);
+        state.getAsJsonObject("query").getAsJsonArray("joins").get(0).getAsJsonObject().addProperty("type", "RIGHT");
+        assertEquals("1", TiDBMixedPreparationSemantics.analyze(state).get("max_input_rows_per_group").getAsString());
+        JsonObject plan = MixedAppendTest.json("{\"structured_goals\":[{\"capability_id\":\"group_input_rows\","
+                + "\"field\":\"count\",\"comparison\":\"at_least\",\"expected\":\"2\"}]}");
+        assertThrows(TiDBDataPreparationProtocol.ValidationException.class,
+                () -> TiDBMixedPreparationSemantics.validateGoals(plan, state));
     }
 
     @Test

@@ -435,6 +435,7 @@ class MixedActiveObservationTest {
     @Test
     void failedInsertWithoutDataChangeKeepsUnrelatedCurrentEvidence() throws Exception {
         try (MixedAppendTest.Fixture fixture = new MixedAppendTest.Fixture()) {
+            fixture.insertWarning = true; // A runtime failure that cannot be proved from current catalog/sample facts.
             Candidate query = MixedPreparationTest.query(fixture, false);
             JsonObject initial = state(fixture, query, true);
             AtomicInteger calls = new AtomicInteger();
@@ -443,7 +444,7 @@ class MixedActiveObservationTest {
                         JsonObject packet = current(messages);
                         if (calls.getAndIncrement() == 0) {
                             JsonObject plan = MixedPreparationTest.response(packet,
-                                    MixedPreparationTest.append(1, false));
+                                    MixedPreparationTest.append(12, false));
                             plan.add("verification_requests", array(new com.google.gson.JsonPrimitive("rows_t0")));
                             return plan.toString();
                         }

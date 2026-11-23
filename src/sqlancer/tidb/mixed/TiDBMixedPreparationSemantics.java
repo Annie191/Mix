@@ -28,7 +28,8 @@ final class TiDBMixedPreparationSemantics {
         boolean bound = schema.get("complete").getAsBoolean() && !grouping.isEmpty();
         for (JsonElement entry : query.getAsJsonArray("joins")) {
             String kind = entry.getAsJsonObject().get("type").getAsString();
-            bound &= List.of("INNER", "STRAIGHT", "CROSS", "NATURAL_INNER").contains(kind);
+            // A tuple of all base-row unique keys identifies an output combination even with NULL extension.
+            bound &= List.of("INNER", "STRAIGHT", "CROSS", "NATURAL_INNER", "LEFT", "RIGHT").contains(kind);
         }
         JsonArray composite = new JsonArray();
         result.add("composite_key_guidance", composite);
@@ -137,9 +138,12 @@ final class TiDBMixedPreparationSemantics {
         JsonArray goals = plan.getAsJsonArray("structured_goals");
         for (int i = 0; i < goals.size(); i++) {
             JsonObject goal = goals.get(i).getAsJsonObject();
-            if (List.of("groups_before_having", "groups_after_having").contains(goal.get("capability_id").getAsString())
-                    && List.of("min_size", "max_size").contains(goal.get("field").getAsString())
-                    && !goal.get("comparison").getAsString().equals("at_most")
+            boolean groupSize = List.of("groups_before_having", "groups_after_having")
+                    .contains(goal.get("capability_id").getAsString())
+                    && List.of("min_size", "max_size").contains(goal.get("field").getAsString());
+            boolean specificGroup = goal.get("capability_id").getAsString().equals("group_input_rows")
+                    && goal.get("field").getAsString().equals("count");
+            if ((groupSize || specificGroup) && !goal.get("comparison").getAsString().equals("at_most")
                     && new BigInteger(goal.get("expected").getAsString()).compareTo(bound) > 0) {
                 JsonObject details = new JsonObject();
                 details.addProperty("path", "$.structured_goals[" + i + "].expected");
