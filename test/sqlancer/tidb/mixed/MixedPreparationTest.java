@@ -478,7 +478,8 @@ class MixedPreparationTest {
             });
             assertEquals(3, calls.get());
             assertTrue(round(result, 0).getAsJsonArray("writes").isEmpty());
-            assertTrue(round(result, 0).get("failure_reason").getAsString().contains("verification floor"));
+            assertEquals("VERIFICATION_REQUESTS_EXCEED_BUDGET",
+                    round(result, 0).getAsJsonObject("validation_feedback").get("code").getAsString());
             assertEquals(1, round(result, 1).getAsJsonArray("writes").size());
             assertEquals("unverified", outcome(result));
         }

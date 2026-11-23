@@ -297,7 +297,7 @@ public final class TiDBDataPreparationProtocol {
         JsonObject budget = object(state.get("remaining_budget"));
         require(budget.keySet().containsAll(Set.of("model_calls", "probe_requests", "insert_rows", "time_ms")) && Set
                 .of("model_calls", "probe_requests", "insert_rows", "time_ms", "decision_calls", "observation_calls",
-                        "format_repairs", "api_tokens", "cost_microusd")
+                        "format_repairs", "api_tokens", "cost_microusd", "verification_probe_requests")
                 .containsAll(budget.keySet()), "invalid budget fields");
         budget.entrySet().forEach(entry -> integer(entry.getValue()));
         require(!budget.has("observation_calls") || budget.has("decision_calls"),
@@ -412,8 +412,8 @@ public final class TiDBDataPreparationProtocol {
         long requiredProbes = observations.asList().stream()
                 .filter(request -> TiDBMixedObservationRequest.currentExact(state, request) == null).count();
         require(requiredProbes <= integer(budget.get("probe_requests")), "insufficient probe budget for missing facts");
-        TiDBMixedObservationRequest.validate(state, decision.get("verification_requests"),
-                integer(budget.get("probe_requests")));
+        TiDBMixedObservationRequest.validate(state, decision.get("verification_requests"), integer(budget
+                .get(budget.has("verification_probe_requests") ? "verification_probe_requests" : "probe_requests")));
         JsonArray operations = array(decision.get("operations"));
         if (action.equals("stop")) {
             text(decision.get("stop_reason"));

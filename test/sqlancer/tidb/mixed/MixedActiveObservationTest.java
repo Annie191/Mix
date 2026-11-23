@@ -372,8 +372,10 @@ class MixedActiveObservationTest {
                     });
             assertEquals(3, calls.get());
             assertEquals("achieved", result.getAsJsonObject("model_goal_evaluation").get("outcome").getAsString());
-            assertEquals(88, result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget")
+            assertEquals(89, result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget")
                     .get("probe_requests").getAsInt());
+            assertEquals(383, result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget")
+                    .get("verification_probe_requests").getAsInt());
             TiDBMixedSupport.save(Path.of("target/mixed-preparation/active-observe-loop.json"), result);
         }
     }

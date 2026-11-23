@@ -566,3 +566,11 @@ CI 增加同分支并发取消、完成后的只读诊断；诊断文件变更�
 
 验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`；日志 `logs/review-followups-20261119/04-verify.log`。新增回归覆盖 seed 63、桶内增长/下降、大整数分桶、过期/有限观测、跨查询不可比较，以及实际 H2 JOIN 中基础重复输入 `2→4`、查询匹配对 `4→8` 的独立计量。未调用真实 DeepSeek、未重跑长测。
 本项完整 verify：258 项中 245 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 全部通过。
+
+## 追加：90 分钟日志问题 1——独立预留写后验证预算（2026-11-23）
+
+- 生产准备预算增加 `verification_probe_requests=384`，主动观察继续使用 `probe_requests=96`。写后固定覆盖、模型验证请求及累计目标按规范化请求去重后，统一扣验证池；观察不能消耗该预留额度。总时间、行数、模型调用、token 和费用限制继续生效。旧实验包没有新字段时保留共享计费。
+- 额外验证请求超额反馈 `VERIFICATION_REQUESTS_EXCEED_BUDGET`，包含 required_probes、mandatory_probes、remaining_probes、shortfall 和具体字段路径。固定项及已接受目标本身已超额时，程序直接以 `verification_budget_exhausted` 冻结已有数据，继续后续差分；不再把它当成可反复修订的模型格式错误。最终记录保留预算池、固定项数、剩余及缺额。
+- 新回归通过真实 H2 INSERT/SELECT 验证：观察用完最后一项额度后仍能补行并完成自动验证；固定验证下限不够时零模型调用、零写入、数据冻结。原有观察和验证计费断言分别检查两个池。
+
+验证：Maven 3.9.11，`mvn -o -B -Djacoco.skip=true formatter:format '-Dtest=sqlancer.tidb.mixed.*Test' verify`，260 项中 247 项通过、13 项实库测试按开关跳过，0 失败/错误；formatter、XML、Checkstyle、PMD、SpotBugs 通过。日志：`logs/review-followups-20261123/01-verify-final.log`。尚未重跑真实模型长测。

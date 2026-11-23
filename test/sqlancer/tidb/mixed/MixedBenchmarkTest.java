@@ -276,7 +276,9 @@ class MixedBenchmarkTest {
                         .toString();
             });
             JsonObject finalState = result.getAsJsonObject("final_state");
-            assertEquals(95, finalState.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
+            assertEquals(96, finalState.getAsJsonObject("remaining_budget").get("probe_requests").getAsInt());
+            assertEquals(383,
+                    finalState.getAsJsonObject("remaining_budget").get("verification_probe_requests").getAsInt());
             assertEquals("exact",
                     finalState.getAsJsonArray("observations").get(0).getAsJsonObject().get("status").getAsString());
             assertThrows(IllegalArgumentException.class, () -> harness.verificationFloor(List.of("j0_pairs_after")));

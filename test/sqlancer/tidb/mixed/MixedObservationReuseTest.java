@@ -79,7 +79,8 @@ class MixedObservationReuseTest {
             JsonObject remaining = result.getAsJsonObject("final_state").getAsJsonObject("remaining_budget");
             assertEquals(0, remaining.get("decision_calls").getAsInt());
             assertEquals(0, remaining.get("observation_calls").getAsInt());
-            assertEquals(93, remaining.get("probe_requests").getAsInt()); // One read + two post-write remeasurements.
+            assertEquals(95, remaining.get("probe_requests").getAsInt()); // Only the active observation.
+            assertEquals(382, remaining.get("verification_probe_requests").getAsInt()); // Two remeasurements.
         }
     }
 

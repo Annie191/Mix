@@ -60,6 +60,8 @@ public final class TiDBMixedPreparationHarness {
         budget.addProperty("decision_calls", 3);
         budget.addProperty("observation_calls", 3);
         budget.addProperty("format_repairs", 3);
+        // Reserve three large verification batches independently; observations cannot spend this pool.
+        budget.addProperty("verification_probe_requests", 384);
         budget.addProperty("api_tokens", 500_000);
         budget.addProperty("cost_microusd", 250_000);
         return budget;
@@ -197,12 +199,37 @@ public final class TiDBMixedPreparationHarness {
             JsonElement request = TiDBMixedObservationRequest.goalRequest(goal.getAsJsonObject());
             requests.put(TiDBMixedObservationRequest.key(request), request);
         });
-        if (requests.size() > budget("probe_requests")) {
-            throw new IllegalArgumentException("verification floor exceeds remaining probe budget");
+        long remaining = budget(verificationBudgetKey());
+        if (requests.size() > remaining) {
+            JsonObject details = new JsonObject();
+            details.addProperty("path", "$.verification_requests");
+            details.addProperty("required_probes", requests.size());
+            details.addProperty("remaining_probes", remaining);
+            details.addProperty("shortfall", requests.size() - remaining);
+            details.addProperty("mandatory_probes", mandatoryVerification().size());
+            boolean impossible = mandatoryVerification().size() > remaining;
+            throw new TiDBDataPreparationProtocol.ValidationException(
+                    impossible ? "VERIFICATION_BUDGET_EXHAUSTED" : "VERIFICATION_REQUESTS_EXCEED_BUDGET",
+                    impossible ? "Mandatory verification cannot fit: stop preparation; shrinking the plan cannot help"
+                            : "Reduce additional verification requests or new goals to fit the verification budget",
+                    details);
         }
         JsonArray result = new JsonArray();
         requests.values().forEach(request -> result.add(request.deepCopy()));
         return result;
+    }
+
+    private String verificationBudgetKey() {
+        return packet.getAsJsonObject("remaining_budget").has("verification_probe_requests")
+                ? "verification_probe_requests" : "probe_requests";
+    }
+
+    private java.util.Set<String> mandatoryVerification() {
+        java.util.Set<String> ids = new java.util.LinkedHashSet<>();
+        verificationFloor.forEach(id -> ids.add(TiDBMixedObservationRequest.key(id, null)));
+        modelGoals.forEach(goal -> ids
+                .add(TiDBMixedObservationRequest.key(TiDBMixedObservationRequest.goalRequest(goal.getAsJsonObject()))));
+        return ids;
     }
 
     private JsonArray combinedGoals(JsonObject plan) {
@@ -220,6 +247,10 @@ public final class TiDBMixedPreparationHarness {
     }
 
     private void observe(JsonArray requests, JsonObject round) throws SQLException {
+        observe(requests, round, "probe_requests");
+    }
+
+    private void observe(JsonArray requests, JsonObject round, String budgetKey) throws SQLException {
         packet.getAsJsonArray("observations").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
         packet.getAsJsonArray("samples").asList().removeIf(entry -> !sameVersion(entry.getAsJsonObject()));
         JsonArray missing = new JsonArray();
@@ -234,6 +265,7 @@ public final class TiDBMixedPreparationHarness {
         }
         JsonObject feedback = new JsonObject();
         feedback.addProperty("requested", requests.size());
+        feedback.addProperty("budget_pool", budgetKey);
         feedback.add("reused_evidence_ids", reused);
         feedback.add("executed_requests", missing.deepCopy());
         JsonArray added = new JsonArray();
@@ -250,7 +282,10 @@ public final class TiDBMixedPreparationHarness {
         packet.getAsJsonArray("observations").forEach(entry -> previous
                 .put(TiDBMixedObservationRequest.factKey(entry.getAsJsonObject()), entry.getAsJsonObject().deepCopy()));
         TiDBMixedObservations facts = facts();
-        budget("probe_requests", budget("probe_requests") - missing.size());
+        if (missing.size() > budget(budgetKey)) {
+            throw new IllegalStateException("validated probes exceed their reserved budget");
+        }
+        budget(budgetKey, budget(budgetKey) - missing.size());
         facts.collectRequests(io, missing,
                 new TiDBMixedObservations.Budget(missing.size(), sampleRows, budget("time_ms")));
         String prefix = "batch_" + ++batch + "_";
@@ -337,7 +372,7 @@ public final class TiDBMixedPreparationHarness {
         }
         if (!uncertain) {
             packet.add("data_revision", feedback.get("data_revision_after"));
-            observe(verification(plan), round);
+            observe(verification(plan), round, verificationBudgetKey());
         }
     }
 
@@ -457,6 +492,11 @@ public final class TiDBMixedPreparationHarness {
         String requestPrefix = packet.get("request_id").getAsString();
         try {
             while (budget("model_calls") > 0 && decisionBudget() && budget("time_ms") > 0) {
+                if (verificationBudgetKey().equals("verification_probe_requests")
+                        && mandatoryVerification().size() > budget(verificationBudgetKey())) {
+                    termination = "verification_budget_exhausted";
+                    break;
+                }
                 JsonObject remaining = packet.getAsJsonObject("remaining_budget");
                 if (remaining.has("api_tokens") && (budget("api_tokens") == 0 || budget("cost_microusd") == 0)) {
                     termination = "api_budget_exhausted";
@@ -509,6 +549,11 @@ public final class TiDBMixedPreparationHarness {
                     }
                     recoverable = received && invalid instanceof IllegalArgumentException
                             && !(invalid instanceof RepeatedFailedRow);
+                    if (invalid instanceof TiDBDataPreparationProtocol.ValidationException
+                            && ((TiDBDataPreparationProtocol.ValidationException) invalid).code
+                                    .equals("VERIFICATION_BUDGET_EXHAUSTED")) {
+                        recoverable = false;
+                    }
                     round.addProperty("validation_status", received ? "rejected" : "not_received");
                     if (!received) {
                         modelFailure = modelFailure("request", invalid);
@@ -662,6 +707,13 @@ public final class TiDBMixedPreparationHarness {
 
     private JsonObject result(String termination) {
         JsonObject result = new JsonObject();
+        JsonObject verification = new JsonObject();
+        verification.addProperty("budget_pool", verificationBudgetKey());
+        verification.addProperty("mandatory_probes", mandatoryVerification().size());
+        verification.addProperty("remaining_probes", budget(verificationBudgetKey()));
+        verification.addProperty("shortfall",
+                Math.max(0, mandatoryVerification().size() - budget(verificationBudgetKey())));
+        result.add("verification_budget", verification);
         result.add("model_failure", modelFailure == null ? JsonNull.INSTANCE : modelFailure.deepCopy());
         result.addProperty("termination", termination);
         result.addProperty("requires_rebuild", uncertain);
